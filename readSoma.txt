@@ -1,0 +1,28 @@
+INSERT INTO call_details (call_id, called_by, called_on, called_to, duration_in_seconds )
+VALUES (101, 111, '2022-12-30', 121212, 500);
+
+INSERT INTO customer (phone_number, email, password, plan_id, username )
+VALUES (111, 'soma@gmail.com', 'ABC', '1VODA', 'soma');
+
+INSERT INTO customer (phone_number, email, password, plan_id, username )
+VALUES (333, 'soma@gmail.com', 'bbb', '1', 'ravi');
+
+INSERT INTO friend (id, friend_no, phone_no )
+VALUES (1, 1234, 111);
+
+INSERT INTO plans ( plan_id, description, plan_name,validity )
+VALUES ("1", "VODA","SMART PLAN",3 );
+
+http://localhost:8761/
+http://localhost:4141/CallDetailsApi/111
+http://localhost:8082/CustomerApi/testurl/viewProfile/111
+http://localhost:4242/FriendApi/111
+http://localhost:4343/PlanApi/1
+viewcustprofile
+/viewcustprofile/{phoneNumber}
+http://localhost:8082/CustomerApi/test/viewcustprofile/111
+/test
+/CustomerApi
+
+
+
