@@ -1,1 +1,1 @@
-
+ @Query("update FxExclusion fxExc set fxExc.itemExclusionDesc = :itemExclusionDesc and where fxExc.itemExclusion = 'OM_AUTO_NBFI_CIF'")
