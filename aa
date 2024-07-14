@@ -1,5 +1,5 @@
- @GetMapping("/add_client")
-	  public Long add_client(@RequestParam String p_input_clientno,@RequestParam String p_input_buy_sell,@RequestParam String p_ccy_code,@RequestParam String p_SSI_req) {
-		  String fx_Client_Info_URL = "http://localhost:8084/fx-client/findcif/" + p_input_clientno;
-		  FxClientInfoDTO fxClientInfoDTO= restTemplate.getForObject(fx_Client_Info_URL, FxClientInfoDTO.class);
-			return fxClientInfoDTO.getCifCustN();
+failed; nested exception is java.lang.IllegalStateException: No instances available for localhost] with root cause
+
+java.lang.IllegalStateException: No instances available for localhost
+	at org.springframework.cloud.netflix.ribbon.RibbonLoadBalancerClient.execute(RibbonLoadBalancerClient.java:119) ~[spring-cloud-netflix-ribbon-2.2.4.RELEASE.jar:2.2.4.RELEASE]
+	at org.springframe
