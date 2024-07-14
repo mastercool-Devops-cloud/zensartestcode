@@ -1,1 +1,1 @@
- "org.hibernate.hql.internal.QueryExecutionRequestException: Not supported for DML operations [update com.fed.enclusion.entity.FxExclusion fxExc set fxExc.itemExclusionDesc = :itemExclusionDesc where fxExc.itemExclusion = 'OM_AUTO_NBFI_CIF']; nested exception is java.lang.IllegalStateException: org.hibernate.hql.internal.QueryExecutionRequestException: Not supported for DML operations [update com.fed.enclusion.entity.FxExclusion fxExc set fxExc.itemExclusionDesc = :itemExclusionDesc where fxExc.itemExclusion = 'OM_AUTO_NBFI_CIF']",
+if nvl(p_SSI_req, 'N') = 'Y'
