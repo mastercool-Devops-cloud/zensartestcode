@@ -1,20 +1,35 @@
-# Eureka Configuration
-eureka.client.register-with-eureka=true
-eureka.client.fetch-registry=true
-eureka.client.service-url.defaultZone=http://localhost:8761/eureka/
-eureka.instance.hostname=localhost
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    hostname: localhost
+    
+spring:
+  datasource:
+    url: "jdbc:oracle:thin:@(DESCRIPTION=(FAILOVER=ON)(LOAD_BALANCE=ON)(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1621))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1621))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1622))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1622))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1821))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1821))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1822))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1822))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1623))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1623))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1823))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1823))(CONNECT_DATA=(SERVICE_NAME=TCDUAT01)(SERVER=DEDICATED)(FAILOVER_MODE=(TYPE=session)(METHOD=basic)(DELAY=5)(RETRIES=100))))"
+    username: FX
+    password: XJS4x#LKX8vyPhr
+    driver-class-name: oracle.jdbc.OracleDriver
 
-# Spring Datasource Configuration
-spring.datasource.url=jdbc:oracle:thin:@(DESCRIPTION=(FAILOVER=ON)(LOAD_BALANCE=ON)(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1621))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1621))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1622))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1622))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1821))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1821))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1822))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1822))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1623))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1623))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1823))(ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1823))(CONNECT_DATA=(SERVICE_NAME=TCDUAT01)(SERVER=DEDICATED)(FAILOVER_MODE=(TYPE=session)(METHOD=basic)(DELAY=5)(RETRIES=100))))
-spring.datasource.username=FX
-spring.datasource.password=XJS4x#LKX8vyPhr
-spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.Oracle12cDialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
 
-# JPA Configuration
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.Oracle12cDialect
-spring.jpa.show-sql=true
-spring.jpa.hibernate.ddl-auto=update
+microservice:
+  fx-client-info-services:
+    endpoints:
+      endpoint:
+        uri: http://fx-client-info-services/fx-client/findcif/
+  nbfi-ad-services:
+    endpoints:
+      endpoint:
+        uri: http://nbfi-ad-services/nbfi-ad/test_ad_details/
 
-# Microservice Endpoints Configuration
-microservice.fx-client-info-services.endpoints.endpoint.uri=http://fx-client-info-services/fx-client/findcif/
-microservice.nbfi-ad-services.endpoints.endpoint.uri=http://nbfi-ad-services/nbfi-ad/test_ad_details/
+        
