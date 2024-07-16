@@ -1,2 +1,9 @@
-java.lang.IllegalStateException: Request URI does not contain a valid hostname: /fxclientInfoURI283074
-	at org.springframework.util.Assert.state(Assert.java:76) ~[spring-core-5.2.8.RELEASE.jar:5.2.8.RELEASE]
+microservice:
+  fx-client-info-services:
+    endpoints:
+      endpoint:
+        uri: http://fx-client-info-services/fx-client/findcif/
+  nbfi-ad-services:
+    endpoints:
+      endpoint:
+        uri: http://nbfi-ad-services/nbfi-ad/test_ad_details/
