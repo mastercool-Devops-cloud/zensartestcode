@@ -1,3 +1,2 @@
-cloud:
-    config:
-      uri: http://localhost:8888
+java.lang.IllegalStateException: Request URI does not contain a valid hostname: /fxclientInfoURI283074
+	at org.springframework.util.Assert.state(Assert.java:76) ~[spring-core-5.2.8.RELEASE.jar:5.2.8.RELEASE]
