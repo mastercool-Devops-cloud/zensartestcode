@@ -1,0 +1,19 @@
+Description:
+
+The bean 'uiServerConfigurator', defined in class path resource [zipkin2/autoconfigure/ui/ZipkinUiAutoConfiguration.class], could not be registered. A bean with that name has already been defined in zipkin2.server.internal.ui.ZipkinUiConfiguration and overriding is disabled.
+
+An attempt was made to call a method that does not exist. The attempt was made from the following location:
+
+    zipkin2.autoconfigure.ui.ZipkinUiAutoConfiguration.<clinit>(ZipkinUiAutoConfiguration.java:81)
+
+The following method did not exist:
+
+    com.linecorp.armeria.common.HttpHeaders.of(Lio/netty/util/AsciiString;Ljava/lang/String;)Lcom/linecorp/armeria/common/HttpHeaders;
+
+The method's class, com.linecorp.armeria.common.HttpHeaders, is available from the following locations:
+
+    jar:file:/C:/Users/RC76327/.m2/repository/com/linecorp/armeria/armeria/1.17.2/armeria-1.17.2.jar!/com/linecorp/armeria/common/HttpHeaders.class
+
+It was loaded from the following location:
+
+    file:/C:/Users/RC76327/.m2/repository/com/linecorp/armeria/armeria/1.17.2/armeria-1.17.2.jar
