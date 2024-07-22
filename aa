@@ -1,1 +1,1 @@
-Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field private final java.util.Comparator java.util.TreeMap.comparator accessible: module java.base does not "opens java.util" to unnamed module @55b699ef
+spring-boot.run.jvmArguments=--add-opens java.base/java.util=ALL-UNNAMED
