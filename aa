@@ -1,1 +1,1 @@
-Error: Cannot specify main class in environment variable JDK_JAVA_OPTIONS
+Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field private final java.util.Comparator java.util.TreeMap.comparator accessible: module java.base does not "opens java.util" to unnamed module @77afea7d
