@@ -33,3 +33,48 @@ springdoc:
         url: /nbfi-ad-services/v3/api-docs
       - name: fx-client-info-services
         url: /fx-client-info-services/v3/api-docs
+
+----------------------------------------------------------------------------------------------
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-gateway</artifactId>
+</dependency>
+
+-----------------------
+server:
+  port: 1414
+
+spring:
+  application:
+    name: GATEWAY-SERVER
+  config:
+    import: configserver:http://localhost:8888
+  cloud:
+    config:
+      uri: http://localhost:8888
+      fail-fast: true
+    gateway:
+      routes:
+        - id: fx-client-info-services
+          uri: lb://fx-client-info-services
+          predicates:
+            - Path=/fx-client-info-services/**
+        - id: nbfi-ad-services
+          uri: lb://nbfi-ad-services
+          predicates:
+            - Path=/nbfi-ad-services/**
+        - id: fx-exclusion-services
+          uri: lb://fx-exclusion-services
+          predicates:
+            - Path=/fx-exclusion-services/**
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: fx-exclusion-services
+        url: /fx-exclusion-services/v3/api-docs
+      - name: nbfi-ad-services
+        url: /nbfi-ad-services/v3/api-docs
+      - name: fx-client-info-services
+        url: /fx-client-info-services/v3/api-docs
