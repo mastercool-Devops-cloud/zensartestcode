@@ -27,3 +27,13 @@ org.springframework.web.client.ResourceAccessException: I/O error on POST reques
 Caused by: java.net.ConnectException: Connection refused: getsockopt
 
 http://localhost:1414/fx-client-info-services/v3/api-docs
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: fx-exclusion-services
+        url: /fx-exclusion-services/v3/api-docs
+      - name: nbfi-ad-services
+        url: /nbfi-ad-services/v3/api-docs
+      - name: fx-client-info-services
+        url: /fx-client-info-services/v3/api-docs
