@@ -31,3 +31,13 @@ set JAVA_OPTS=--add-opens java.base/java.util=ALL-UNNAMED
 
 Caused by: org.springframework.core.NestedIOException: ASM ClassReader failed to parse class file - probably due to a new Java class file version that isn't supported yet: file [D:\Fits Project\POC Demo code\BeforPackageNaeChang-03072024\eureka-server\target\classes\com\fed\eureka\EurekaServerApplication.class]; nested exception is java.lang.IllegalArgumentException: Unsupported class file major version 61
 Caused by: java.lang.IllegalStateException: Failed to introspect Class [org.springframework.cloud.context.properties.ConfigurationPropertiesBeans] from ClassLoader [jdk.internal.loader.ClassLoaders$AppClassLoader@1d44bcfa]
+
+
+No spring.config.import property has been defined
+
+Action:
+
+Add a spring.config.import=configserver: property to your configuration.
+	If configuration is not required add spring.config.import=optional:configserver: instead.
+	To disable this check, set spring.cloud.config.enabled=false or 
+	spring.cloud.config.import-check.enabled=false.
