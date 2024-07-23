@@ -21,3 +21,5 @@ java.lang.IllegalArgumentException: When allowCredentials is true, allowedOrigin
 java.lang.NoSuchMethodError: 'java.lang.String org.springframework.boot.web.servlet.error.ErrorController.getErrorPath()'
 com.netflix.zuul.exception.ZuulException: Forwarding error
 Caused by: com.netflix.client.ClientException: Load balancer does not have available server for client: fx-client-info-services
+
+response status is 500 /fx-client-info-services/v3/api-docs
