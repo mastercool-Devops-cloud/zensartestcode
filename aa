@@ -58,3 +58,7 @@ spring:
       uri: http://localhost:8888
       fail-fast: true
 	spring.cloud.config.import-check.enabled=false.
+
+
+java.lang.NoSuchMethodError: 'java.lang.String org.springframework.boot.web.servlet.error.ErrorController.getErrorPath()'
+	at org.springframework.cloud.netflix.zuul.web.ZuulHandlerMapping.lookupHandler(ZuulHandlerMapping.java:87) ~[spring-cloud-netflix-zuul-2.2.6.RELEASE.jar:2.2.6.RELEASE]
