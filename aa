@@ -41,3 +41,7 @@ springdoc:
 curl -X POST http://example.com/api/endpoint ^
      -H "Content-Type: application/json" ^
      -d "{\"arg1\":\"value1\", \"arg2\":\"value2\", \"arg3\":\"value3\"}"
+curl -X POST http://localhost:8082/fx-exclusion/add_client ^
+More?      -H "Content-Type: application/json" ^
+More?      -d "{\"arg1\":\"283074\", \"arg2\":\"B\", \"arg3\":\"USD\", \"arg4\":\"Y\", \"arg5\":\"15-JUL-24\"}"
+{"timestamp":"2024-07-23T16:50:45.892+00:00","status":405,"error":"Method Not Allowed","path":"/fx-exclusion/add_client"}
