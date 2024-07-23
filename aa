@@ -37,3 +37,7 @@ springdoc:
         url: /nbfi-ad-services/v3/api-docs
       - name: fx-client-info-services
         url: /fx-client-info-services/v3/api-docs
+
+curl -X POST http://example.com/api/endpoint ^
+     -H "Content-Type: application/json" ^
+     -d "{\"arg1\":\"value1\", \"arg2\":\"value2\", \"arg3\":\"value3\"}"
