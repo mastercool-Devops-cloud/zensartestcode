@@ -1,50 +1,9 @@
-server:
+erver:
   port: 1414
 
 spring:
-  application:
-    name: GATEWAY-SERVER
-  config:
-    import: configserver:http://localhost:8888
-  cloud:
-    config:
-      uri: http://localhost:8888
-      fail-fast: true
-
-zuul:
-  routes:
-    fx-client-info-services:
-      path: /fx-client-info-services/**
-      service-id: fx-client-info-services
-    nbfi-ad-services:
-      path: /nbfi-ad-services/**
-      service-id: nbfi-ad-services
-    fx-exclusion-services:
-      path: /fx-exclusion-services/**
-      service-id: fx-exclusion-services
-
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-    urls:
-      - name: fx-exclusion-services
-        url: /fx-exclusion-services/v3/api-docs
-      - name: nbfi-ad-services
-        url: /nbfi-ad-services/v3/api-docs
-      - name: fx-client-info-services
-        url: /fx-client-info-services/v3/api-docs
-
-----------------------------------------------------------------------------------------------
-<dependency>
-    <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-starter-gateway</artifactId>
-</dependency>
-
------------------------
-server:
-  port: 1414
-
-spring:
+  main:
+    web-application-type: reactive
   application:
     name: GATEWAY-SERVER
   config:
@@ -78,3 +37,24 @@ springdoc:
         url: /nbfi-ad-services/v3/api-docs
       - name: fx-client-info-services
         url: /fx-client-info-services/v3/api-docs
+
+------------------------------------------------------
+<dependencies>
+    <!-- Remove this dependency if present -->
+    <!-- <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency> -->
+    
+    <!-- Add this dependency for reactive web -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+
+    <!-- Other dependencies -->
+</dependencies>
+
+spring:
+  main:
+    web-application-type: reactive
