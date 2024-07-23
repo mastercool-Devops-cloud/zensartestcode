@@ -1,2 +1,5 @@
-com.netflix.zuul.exception.ZuulException: Forwarding error
-	at org.springframework.cloud.netflix.zuul.filters.route.RibbonRoutingFilter.handleException(RibbonRoutingFilter.java:198) ~[spring-cloud-netflix-zuul-2.2.10.RELEASE.jar:2.2.10.RELEASE]
+Please set spring.main.web-application-type=reactive or remove spring-boot-starter-web dependency.
+
+2024-07-23 14:35:53.893 ERROR 15668 --- [           main] o.s.test.context.TestContextManager      : Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@42a9e5d1] to prepare test instance [com.fed.zuul.GatwayServerApplicationTests@36ad5f2a]
+
+java.lang.IllegalStateException: Failed to load ApplicationContext
