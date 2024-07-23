@@ -16,5 +16,5 @@ Caused by: com.netflix.client.ClientException: Load balancer does not have avail
 Caused by: com.netflix.client.ClientException: Load balancer does not have available server for client: /fx-client-info-services/**
 	at com.netflix.loadbalancer.LoadBalancerContext.getServerFromLoadBalancer(LoadBalancerContext.java:483) ~[ribbon-loadbalancer-2.3.0.jar:2.3.0]
 
-
+allowedOriginPatterns
 java.lang.IllegalArgumentException: When allowCredentials is true, allowedOrigins cannot contain the special value "*" since that cannot be set on the "Access-Control-Allow-Origin" response header. To allow credentials to a set of origins, list them explicitly or consider using "allowedOriginPatterns" instead.
