@@ -1,1 +1,23 @@
-@CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST})
+import javax.annotation.PostConstruct;
+import java.util.Properties;
+
+@Configuration
+public class DynamicDatabaseConfig {
+
+    @Autowired
+    private ConfigurableEnvironment environment;
+
+    @PostConstruct
+    public void setDatabaseProperties() {
+        Properties props = new Properties();
+        // Fetch these values from a secure location or environment variables
+        String dynamicUsername = "myDynamicUser"; // Example, should fetch dynamically
+        String dynamicPassword = "myDynamicPassword"; // Example, should fetch dynamically
+
+        props.put("db.username", dynamicUsername);
+        props.put("db.password", dynamicPassword);
+
+        PropertiesPropertySource propertySource = new PropertiesPropertySource("dynamicProperties", props);
+        environment.getPropertySources().addFirst(propertySource);
+    }
+}
