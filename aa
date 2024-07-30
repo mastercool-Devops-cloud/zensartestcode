@@ -58,3 +58,85 @@ public class DataSourceConfig {
     }
 }
 
+--------------------------------------------------------------
+<dependencies>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>5.7.0</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>3.6.0</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.30</version>
+    </dependency>
+    <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.2.3</version>
+    </dependency>
+</dependencies>
+-------------------------------------------------------
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
+
+public class FileUtilsTest {
+
+    private static final Logger Log = LoggerFactory.getLogger(FileUtilsTest.class);
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    public void testGetPathKeystore_DirectoryCreated() throws IOException {
+        String testSubDir = "testSubDir";
+        Path expectedPath = tempDir.resolve(testSubDir);
+        System.setProperty("user.home", tempDir.toString());
+
+        FileUtils.getPathKeystore(testSubDir);
+
+        assertTrue(Files.exists(expectedPath));
+    }
+
+    @Test
+    public void testGetPathKeystore_DirectoryAlreadyExists() throws IOException {
+        String testSubDir = "existingSubDir";
+        Path existingPath = Files.createDirectories(tempDir.resolve(testSubDir));
+        System.setProperty("user.home", tempDir.toString());
+
+        FileUtils.getPathKeystore(testSubDir);
+
+        assertTrue(Files.exists(existingPath));
+    }
+
+    @Test
+    public void testGetPathKeystore_LogErrorOnException() throws IOException {
+        Logger logger = (Logger) LoggerFactory.getLogger(FileUtils.class);
+        Logger spyLogger = spy(logger);
+        doThrow(new IOException("Test Exception")).when(spyLogger).error(anyString());
+
+        String testSubDir = "errorSubDir";
+        System.setProperty("user.home", tempDir.toString());
+
+        FileUtils.getPathKeystore(testSubDir);
+
+        verify(spyLogger).error("Failed to create directory: Test Exception");
+    }
+}
