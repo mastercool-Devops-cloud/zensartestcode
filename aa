@@ -140,3 +140,68 @@ public class FileUtilsTest {
         verify(spyLogger).error("Failed to create directory: Test Exception");
     }
 }
+
+----------------------------------------------------------------------------------
+import static org.mockito.Mockito.when;
+
+import java.text.ParseException;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import javax.sql.DataSource;
+
+@SpringBootTest
+@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
+class DataSourceConfigTest {
+
+    @InjectMocks
+    private DataSourceConfig dataSourceConfig;
+
+    @Mock
+    private FxPasswordSubscriber fxPasswordSubscriber;
+
+    @Mock
+    private DbCredentials dbCredentials;
+
+    @Value("${spring.datasource.url}")
+    private String url = "jdbc:h2:mem:testdb";
+
+    @Value("${spring.datasource.driver-class-name}")
+    private String driverClassName = "org.h2.Driver";
+
+    @Value("${cyberarc.uat.url}")
+    private String cyberArcUrl = "http://mock-cyberarc-url";
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(dataSourceConfig, "url", url);
+        ReflectionTestUtils.setField(dataSourceConfig, "driverClassName", driverClassName);
+        ReflectionTestUtils.setField(dataSourceConfig, "cyberArcUrl", cyberArcUrl);
+    }
+
+    @Test
+    void testDataSource() throws ParseException {
+        when(fxPasswordSubscriber.getDbCredentials(cyberArcUrl)).thenReturn(dbCredentials);
+        when(dbCredentials.getUsername()).thenReturn("testUser");
+        when(dbCredentials.getPassword()).thenReturn("testPass");
+
+        DataSource dataSource = dataSourceConfig.dataSource();
+
+        assertNotNull(dataSource);
+        assertEquals(url, ((DriverManagerDataSource) dataSource).getUrl());
+        assertEquals(driverClassName, ((DriverManagerDataSource) dataSource).getDriverClassName());
+        assertEquals("testUser", ((DriverManagerDataSource) dataSource).getUsername());
+        assertEquals("testPass", ((DriverManagerDataSource) dataSource).getPassword());
+    }
+}
+
