@@ -197,9 +197,15 @@ class DataSourceConfigTest {
 
         DataSource dataSource = dataSourceConfig.dataSource();
 
-        assertNotNull(dataSource);
+        assertNotNull(dataSource, "The dataSource should not be null");
         assertEquals(url, ((DriverManagerDataSource) dataSource).getUrl());
-        assertEquals(driverClassName, ((DriverManagerDataSource) dataSource).getDriverClassName());
+        
+        // Use ReflectionTestUtils to check the driverClassName
+        String actualDriverClassName = (String) ReflectionTestUtils.getField(dataSource, "driverClassName");
+        assertEquals(driverClassName, actualDriverClassName);
+
+        assertEquals("testUser", ((DriverManagerDataSource) dataSource).getUsername());
+        assertEquals("testPass", ((DriverManagerDataSource) dataSource).getPassword());ssName());
         assertEquals("testUser", ((DriverManagerDataSource) dataSource).getUsername());
         assertEquals("testPass", ((DriverManagerDataSource) dataSource).getPassword());
     }
