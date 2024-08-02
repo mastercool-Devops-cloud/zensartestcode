@@ -1,3 +1,32 @@
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-test</artifactId>
+    <version>5.3.10</version>
+    <scope>test</scope>
+</dependency>
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest
 @TestPropertySource(properties = {
@@ -17,7 +46,9 @@ public class DataSourceConfigTest {
         assertTrue(dataSource instanceof DriverManagerDataSource);
         DriverManagerDataSource driverManagerDataSource = (DriverManagerDataSource) dataSource;
         assertEquals("jdbc:h2:mem:testdb", driverManagerDataSource.getUrl());
-        assertEquals("org.h2.Driver", driverManagerDataSource.getDriverClassName());
-        // Add more assertions as needed
+
+        // Use reflection to access the private driverClassName field
+        String driverClassName = (String) ReflectionTestUtils.getField(driverManagerDataSource, "driverClassName");
+        assertEquals("org.h2.Driver", driverClassName);
     }
 }
