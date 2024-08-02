@@ -312,3 +312,38 @@ class FxPasswordSubscriberTest {
         assertTrue(captor.getValue().contains("Mock Exception"));
     }
 }
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import org.junit.jupiter.api.Test;
+
+class DbCredentialsTest {
+
+    @Test
+    void testBuilder() {
+        // Create an instance using the builder
+        DbCredentials dbCredentials = DbCredentials.builder()
+                .username("testUser")
+                .password("testPass")
+                .build();
+
+        // Verify the values
+        assertEquals("testUser", dbCredentials.getUsername());
+        assertEquals("testPass", dbCredentials.getPassword());
+    }
+
+    @Test
+    void testBuilderWithNullValues() {
+        // Create an instance using the builder with null values
+        DbCredentials dbCredentials = DbCredentials.builder()
+                .username(null)
+                .password(null)
+                .build();
+
+        // Verify the values are null
+        assertNull(dbCredentials.getUsername());
+        assertNull(dbCredentials.getPassword());
+    }
+}
+
