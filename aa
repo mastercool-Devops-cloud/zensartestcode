@@ -1,9 +1,174 @@
-org.opentest4j.AssertionFailedError: The directory should be created ==> 
-Expected :true
-Actual   :false
-<Click to see difference>
-at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
-	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
-	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:214)
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+@ExtendWith(MockitoExtension.class)
+class FileUtilsTest {
+
+    private String originalUserHome;
+
+    @BeforeEach
+    void setUp() {
+        // Backup the original user.home value
+        originalUserHome = System.getProperty("user.home");
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Restore the original user.home value
+        System.setProperty("user.home", originalUserHome);
+    }
+
+    @Test
+    void testGetPathKeystore_DirectoryDoesNotExist() throws IOException {
+        Path customUserHome = Files.createTempDirectory("testUserHome");
+        System.setProperty("user.home", customUserHome.toString());
+
+        Path customPath = Paths.get("cashflow-processor", "keystore");
+
+        // Debug statement to print the custom path
+        System.out.println("Custom Path: " + customPath);
+
+        // Mock the log
+        Logger mockLogger = mock(Logger.class);
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
+
+            // Mock Files.createDirectories to ensure it does not throw an exception
+            try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+                filesMock.when(() -> Files.createDirectories(any(Path.class))).thenAnswer(invocation -> {
+                    Path path = invocation.getArgument(0);
+                    System.out.println("Mocked createDirectories called with: " + path);
+                    return null;
+                });
+
+                // Call the method
+                Path resultPath = FileUtils.getPathKeystore(customPath.toString());
+
+                // Verify the directory is created
+                assertTrue(Files.exists(resultPath), "The directory should be created");
+
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).info(captor.capture());
+                assertTrue(captor.getValue().contains("Keystore Directory created successfully!"));
+            }
+        }
+
+        // Clean up
+        Files.walk(customUserHome)
+                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    @Test
+    void testGetPathKeystore_DirectoryAlreadyExists() throws IOException {
+        Path customUserHome = Files.createTempDirectory("testUserHome");
+        System.setProperty("user.home", customUserHome.toString());
+
+        Path customPath = Paths.get("cashflow-processor", "keystore");
+        Files.createDirectories(customUserHome.resolve(customPath));
+
+        // Debug statement to print the custom path
+        System.out.println("Custom Path: " + customPath);
+
+        // Mock the log
+        Logger mockLogger = mock(Logger.class);
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
+
+            // Mock Files.createDirectories to ensure it does not throw an exception
+            try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+                filesMock.when(() -> Files.createDirectories(any(Path.class))).thenAnswer(invocation -> {
+                    Path path = invocation.getArgument(0);
+                    System.out.println("Mocked createDirectories called with: " + path);
+                    return null;
+                });
+
+                // Call the method
+                Path resultPath = FileUtils.getPathKeystore(customPath.toString());
+
+                // Verify the directory still exists
+                assertTrue(Files.exists(resultPath), "The directory should already exist");
+
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).info(captor.capture());
+                assertTrue(captor.getValue().contains("Keystore Directory already exists."));
+            }
+        }
+
+        // Clean up
+        Files.walk(customUserHome)
+                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    @Test
+    void testGetPathKeystore_IOException() throws IOException {
+        Path customUserHome = Files.createTempDirectory("testUserHome");
+        System.setProperty("user.home", customUserHome.toString());
+
+        Path customPath = Paths.get("cashflow-processor", "keystore");
+
+        // Debug statement to print the custom path
+        System.out.println("Custom Path: " + customPath);
+
+        // Mock Files.createDirectories to throw an IOException
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.createDirectories(any(Path.class))).thenThrow(new IOException("Test IOException"));
+
+            // Mock the log
+            Logger mockLogger = mock(Logger.class);
+            try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+                logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
+
+                // Call the method
+                FileUtils.getPathKeystore(customPath.toString());
+
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).error(captor.capture());
+                assertTrue(captor.getValue().contains("Failed to create directory"));
+            }
+        }
+
+        // Clean up
+        Files.walk(customUserHome)
+                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
+}
