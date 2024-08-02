@@ -1,188 +1,5 @@
-
-----------------------------------------------------------------------------------
-import static org.mockito.Mockito.when;
-
-import java.text.ParseException;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import javax.sql.DataSource;
-
-@SpringBootTest
-@ExtendWith(SpringExtension.class)
-@ExtendWith(MockitoExtension.class)
-class DataSourceConfigTest {
-
-    @InjectMocks
-    private DataSourceConfig dataSourceConfig;
-
-    @Mock
-    private FxPasswordSubscriber fxPasswordSubscriber;
-
-    @Mock
-    private DbCredentials dbCredentials;
-
-    @Value("${spring.datasource.url}")
-    private String url = "jdbc:h2:mem:testdb";
-
-    @Value("${spring.datasource.driver-class-name}")
-    private String driverClassName = "org.h2.Driver";
-
-    @Value("${cyberarc.uat.url}")
-    private String cyberArcUrl = "http://mock-cyberarc-url";
-
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(dataSourceConfig, "url", url);
-        ReflectionTestUtils.setField(dataSourceConfig, "driverClassName", driverClassName);
-        ReflectionTestUtils.setField(dataSourceConfig, "cyberArcUrl", cyberArcUrl);
-    }
-
-    @Test
-    void testDataSource() throws ParseException {
-        when(fxPasswordSubscriber.getDbCredentials(cyberArcUrl)).thenReturn(dbCredentials);
-        when(dbCredentials.getUsername()).thenReturn("testUser");
-        when(dbCredentials.getPassword()).thenReturn("testPass");
-
-        DataSource dataSource = dataSourceConfig.dataSource();
-
-        assertNotNull(dataSource, "The dataSource should not be null");
-        assertEquals(url, ((DriverManagerDataSource) dataSource).getUrl());
-        
-        // Use ReflectionTestUtils to check the driverClassName
-        String actualDriverClassName = (String) ReflectionTestUtils.getField(dataSource, "driverClassName");
-        assertEquals(driverClassName, actualDriverClassName);
-
-        assertEquals("testUser", ((DriverManagerDataSource) dataSource).getUsername());
-        assertEquals("testPass", ((DriverManagerDataSource) dataSource).getPassword());ssName());
-        assertEquals("testUser", ((DriverManagerDataSource) dataSource).getUsername());
-        assertEquals("testPass", ((DriverManagerDataSource) dataSource).getPassword());
-    }
-}
-
-<!-- Mockito -->
-    <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-core</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <!-- JUnit 5 -->
-    <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <scope>test</scope>
-    </dependency>
-----------------------------------------------------------
-<!-- Log4j2 -->
-    <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-api</artifactId>
-        <version>2.x.x</version>
-    </dependency>
-    <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>2.x.x</version>
-        <scope>test</scope>
-    </dependency>
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.ArgumentCaptor;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-@ExtendWith(MockitoExtension.class)
-class FileUtilsTest {
-
-    private static final Logger log = LogManager.getLogger(FileUtils.class);
-
-    @TempDir
-    Path tempDir;
-
-    @Test
-    void testGetPathKeystore_DirectoryDoesNotExist() throws IOException {
-        // Ensure the directory does not exist before the test
-        Path testPath = tempDir.resolve("keystore");
-        Files.deleteIfExists(testPath);
-
-        // Mock the log
-        Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        mockStatic(LogManager.class).when(LogManager::getLogger).thenReturn(mockLogger);
-
-        // Call the method
-        Path resultPath = FileUtils.getPathKeystore(testPath.toString());
-
-        // Verify the directory is created
-        assertTrue(Files.exists(resultPath), "The directory should be created");
-
-        // Verify the log message
-        verify(mockLogger).info(captor.capture());
-        assertTrue(captor.getValue().contains("Keystore Directory created successfully!"));
-    }
-
-    @Test
-    void testGetPathKeystore_DirectoryAlreadyExists() throws IOException {
-        // Ensure the directory exists before the test
-        Path testPath = tempDir.resolve("keystore");
-        Files.createDirectories(testPath);
-
-        // Mock the log
-        Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        mockStatic(LogManager.class).when(LogManager::getLogger).thenReturn(mockLogger);
-
-        // Call the method
-        Path resultPath = FileUtils.getPathKeystore(testPath.toString());
-
-        // Verify the directory still exists
-        assertTrue(Files.exists(resultPath), "The directory should already exist");
-
-        // Verify the log message
-        verify(mockLogger).info(captor.capture());
-        assertTrue(captor.getValue().contains("Keystore Directory already exists."));
-    }
-
-    @Test
-    void testGetPathKeystore_IOException() throws IOException {
-        // Create a path that will cause IOException
-        Path invalidPath = Paths.get("/invalid:/path");
-
-        // Mock the log
-        Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        mockStatic(LogManager.class).when(LogManager::getLogger).thenReturn(mockLogger);
-
-        // Call the method
-        FileUtils.getPathKeystore(invalidPath.toString());
-
-        // Verify the log message
-        verify(mockLogger).error(captor.capture());
-        assertTrue(captor.getValue().contains("Failed to create directory"));
-    }
-}
----------------------------------------------------------------
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -203,7 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MockitoExtension.class)
 class FileUtilsTest {
 
-    private static final Logger log = LogManager.getLogger(FileUtils.class);
     private String originalUserHome;
 
     @BeforeEach
@@ -220,7 +36,6 @@ class FileUtilsTest {
 
     @Test
     void testGetPathKeystore_DirectoryDoesNotExist() throws IOException {
-        // Create a custom test directory
         Path customUserHome = Files.createTempDirectory("testUserHome");
         System.setProperty("user.home", customUserHome.toString());
 
@@ -231,16 +46,21 @@ class FileUtilsTest {
         try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
             logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
 
-            // Call the method
-            Path resultPath = FileUtils.getPathKeystore(customPath.toString());
+            // Mock Files.createDirectories to ensure it does not throw an exception
+            try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+                filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(null);
 
-            // Verify the directory is created
-            assertTrue(Files.exists(resultPath), "The directory should be created");
+                // Call the method
+                Path resultPath = FileUtils.getPathKeystore(customPath.toString());
 
-            // Verify the log message
-            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-            verify(mockLogger).info(captor.capture());
-            assertTrue(captor.getValue().contains("Keystore Directory created successfully!"));
+                // Verify the directory is created
+                assertTrue(Files.exists(resultPath), "The directory should be created");
+
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).info(captor.capture());
+                assertTrue(captor.getValue().contains("Keystore Directory created successfully!"));
+            }
         }
 
         // Clean up
@@ -257,7 +77,6 @@ class FileUtilsTest {
 
     @Test
     void testGetPathKeystore_DirectoryAlreadyExists() throws IOException {
-        // Create a custom test directory
         Path customUserHome = Files.createTempDirectory("testUserHome");
         System.setProperty("user.home", customUserHome.toString());
 
@@ -269,303 +88,21 @@ class FileUtilsTest {
         try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
             logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
 
-            // Call the method
-            Path resultPath = FileUtils.getPathKeystore(customPath.toString());
+            // Mock Files.createDirectories to ensure it does not throw an exception
+            try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+                filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(null);
 
-            // Verify the directory still exists
-            assertTrue(Files.exists(resultPath), "The directory should already exist");
+                // Call the method
+                Path resultPath = FileUtils.getPathKeystore(customPath.toString());
 
-            // Verify the log message
-            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-            verify(mockLogger).info(captor.capture());
-            assertTrue(captor.getValue().contains("Keystore Directory already exists."));
-        }
+                // Verify the directory still exists
+                assertTrue(Files.exists(resultPath), "The directory should already exist");
 
-        // Clean up
-        Files.walk(customUserHome)
-                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-    }
-
-    @Test
-    void testGetPathKeystore_IOException() {
-        // Use an invalid path to trigger IOException
-        String invalidPath = "/invalid:/path";
-
-        // Mock the log
-        Logger mockLogger = mock(Logger.class);
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
-            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
-
-            // Call the method
-            FileUtils.getPathKeystore(invalidPath);
-
-            // Verify the log message
-            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-            verify(mockLogger).error(captor.capture());
-            assertTrue(captor.getValue().contains("Failed to create directory"));
-        }
-    }
-}
-
-------------------------------------------------------
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.*;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
-@ExtendWith(MockitoExtension.class)
-class FxPasswordSubscriberTest {
-
-    @Mock
-    private HttpURLConnection conn;
-
-    @Mock
-    private URL url;
-
-    @InjectMocks
-    private FxPasswordSubscriber fxPasswordSubscriber;
-
-    private static final Logger log = LogManager.getLogger(FxPasswordSubscriber.class);
-
-    @BeforeEach
-    void setUp() throws Exception {
-        when(url.openConnection()).thenReturn(conn);
-        ReflectionTestUtils.setField(FxPasswordSubscriber.class, "log", log);
-    }
-
-    @Test
-    void testGetDbCredentials_Success() throws Exception {
-        Path tempDir = Files.createTempDirectory("keystore");
-        Path keystorePath = tempDir.resolve("keystore.jks");
-
-        // Mock the FileUtils.getPathKeystore method
-        mockStatic(FileUtils.class);
-        when(FileUtils.getPathKeystore(anyString())).thenReturn(tempDir);
-
-        // Set up the HttpURLConnection mock
-        when(conn.getResponseCode()).thenReturn(200);
-        String jsonResponse = "{\"UserName\":\"testUser\",\"Content\":\"testPass\"}";
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(jsonResponse.getBytes());
-        when(conn.getInputStream()).thenReturn(inputStream);
-
-        DbCredentials dbCredentials = FxPasswordSubscriber.getDbCredentials("http://mock-vault-url");
-
-        assertEquals("testUser", dbCredentials.getUsername());
-        assertEquals("testPass", dbCredentials.getPassword());
-
-        // Capture and verify the logs
-        Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(mockLogger, times(2)).info(captor.capture());
-        assertTrue(captor.getAllValues().get(0).contains("JavaKeyStore Path For Vault API"));
-        assertTrue(captor.getAllValues().get(1).contains("Connection response code is 200"));
-    }
-
-    @Test
-    void testGetDbCredentials_Failure() throws Exception {
-        Path tempDir = Files.createTempDirectory("keystore");
-        Path keystorePath = tempDir.resolve("keystore.jks");
-
-        // Mock the FileUtils.getPathKeystore method
-        mockStatic(FileUtils.class);
-        when(FileUtils.getPathKeystore(anyString())).thenReturn(tempDir);
-
-        // Set up the HttpURLConnection mock to return a non-200 status code
-        when(conn.getResponseCode()).thenReturn(500);
-
-        DbCredentials dbCredentials = FxPasswordSubscriber.getDbCredentials("http://mock-vault-url");
-
-        assertNull(dbCredentials);
-
-        // Capture and verify the logs
-        Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(mockLogger).error(captor.capture());
-        assertTrue(captor.getValue().contains("Failed HTTP error code 500"));
-    }
-
-    @Test
-    void testGetDbCredentials_Exception() throws Exception {
-        Path tempDir = Files.createTempDirectory("keystore");
-        Path keystorePath = tempDir.resolve("keystore.jks");
-
-        // Mock the FileUtils.getPathKeystore method
-        mockStatic(FileUtils.class);
-        when(FileUtils.getPathKeystore(anyString())).thenReturn(tempDir);
-
-        // Set up the HttpURLConnection mock to throw an exception
-        when(conn.getInputStream()).thenThrow(new RuntimeException("Mock Exception"));
-
-        DbCredentials dbCredentials = FxPasswordSubscriber.getDbCredentials("http://mock-vault-url");
-
-        assertNull(dbCredentials);
-
-        // Capture and verify the logs
-        Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(mockLogger).error(captor.capture());
-        assertTrue(captor.getValue().contains("Mock Exception"));
-    }
-}
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-import org.junit.jupiter.api.Test;
-
-class DbCredentialsTest {
-
-    @Test
-    void testBuilder() {
-        // Create an instance using the builder
-        DbCredentials dbCredentials = DbCredentials.builder()
-                .username("testUser")
-                .password("testPass")
-                .build();
-
-        // Verify the values
-        assertEquals("testUser", dbCredentials.getUsername());
-        assertEquals("testPass", dbCredentials.getPassword());
-    }
-
-    @Test
-    void testBuilderWithNullValues() {
-        // Create an instance using the builder with null values
-        DbCredentials dbCredentials = DbCredentials.builder()
-                .username(null)
-                .password(null)
-                .build();
-
-        // Verify the values are null
-        assertNull(dbCredentials.getUsername());
-        assertNull(dbCredentials.getPassword());
-    }
-}
-
---------------------------------------------------------------------
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-@ExtendWith(MockitoExtension.class)
-class FileUtilsTest {
-
-    private static final Logger log = LogManager.getLogger(FileUtils.class);
-    private String originalUserHome;
-
-    @BeforeEach
-    void setUp() {
-        // Backup the original user.home value
-        originalUserHome = System.getProperty("user.home");
-    }
-
-    @AfterEach
-    void tearDown() {
-        // Restore the original user.home value
-        System.setProperty("user.home", originalUserHome);
-    }
-
-    @Test
-    void testGetPathKeystore_DirectoryDoesNotExist() throws IOException {
-        // Create a custom test directory
-        Path customUserHome = Files.createTempDirectory("testUserHome");
-        System.setProperty("user.home", customUserHome.toString());
-
-        Path customPath = Paths.get("cashflow-processor", "keystore");
-
-        // Mock the log
-        Logger mockLogger = mock(Logger.class);
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
-            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
-
-            // Call the method
-            Path resultPath = FileUtils.getPathKeystore(customPath.toString());
-
-            // Verify the directory is created
-            assertTrue(Files.exists(resultPath), "The directory should be created");
-
-            // Verify the log message
-            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-            verify(mockLogger).info(captor.capture());
-            assertTrue(captor.getValue().contains("Keystore Directory created successfully!"));
-        }
-
-        // Clean up
-        Files.walk(customUserHome)
-                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-    }
-
-    @Test
-    void testGetPathKeystore_DirectoryAlreadyExists() throws IOException {
-        // Create a custom test directory
-        Path customUserHome = Files.createTempDirectory("testUserHome");
-        System.setProperty("user.home", customUserHome.toString());
-
-        Path customPath = Paths.get("cashflow-processor", "keystore");
-        Files.createDirectories(customUserHome.resolve(customPath));
-
-        // Mock the log
-        Logger mockLogger = mock(Logger.class);
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
-            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
-
-            // Call the method
-            Path resultPath = FileUtils.getPathKeystore(customPath.toString());
-
-            // Verify the directory still exists
-            assertTrue(Files.exists(resultPath), "The directory should already exist");
-
-            // Verify the log message
-            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-            verify(mockLogger).info(captor.capture());
-            assertTrue(captor.getValue().contains("Keystore Directory already exists."));
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).info(captor.capture());
+                assertTrue(captor.getValue().contains("Keystore Directory already exists."));
+            }
         }
 
         // Clean up
@@ -582,52 +119,12 @@ class FileUtilsTest {
 
     @Test
     void testGetPathKeystore_IOException() throws IOException {
-        // Create a custom test directory
         Path customUserHome = Files.createTempDirectory("testUserHome");
         System.setProperty("user.home", customUserHome.toString());
 
         Path customPath = Paths.get("cashflow-processor", "keystore");
 
-        // Spy on the FileUtils class to throw an IOException
-        FileUtils spyFileUtils = spy(new FileUtils());
-        doThrow(new IOException("Test IOException")).when(spyFileUtils).createDirectories(any(Path.class));
-
-        // Mock the log
-        Logger mockLogger = mock(Logger.class);
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
-            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
-
-            // Call the method
-            spyFileUtils.getPathKeystore(customPath.toString());
-
-            // Verify the log message
-            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-            verify(mockLogger).error(captor.capture());
-            assertTrue(captor.getValue().contains("Failed to create directory"));
-        }
-
-        // Clean up
-        Files.walk(customUserHome)
-                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-    }
-}
-
-@Test
-    void testGetPathKeystore_IOException() throws IOException {
-        // Create a custom test directory
-        Path customUserHome = Files.createTempDirectory("testUserHome");
-        System.setProperty("user.home", customUserHome.toString());
-
-        Path customPath = Paths.get("cashflow-processor", "keystore");
-
-        // Mock the Files.createDirectories method to throw an IOException
+        // Mock Files.createDirectories to throw an IOException
         try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
             filesMock.when(() -> Files.createDirectories(any(Path.class))).thenThrow(new IOException("Test IOException"));
 
@@ -658,4 +155,3 @@ class FileUtilsTest {
                 });
     }
 }
-
