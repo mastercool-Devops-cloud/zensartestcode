@@ -1,96 +1,23 @@
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+@SpringBootTest
+@TestPropertySource(properties = {
+    "cyberarc.uat.url=http://example.com/your-uat-url",
+    "spring.datasource.url=jdbc:h2:mem:testdb",
+    "spring.datasource.driver-class-name=org.h2.Driver"
+})
+public class DataSourceConfigTest {
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-@ExtendWith(MockitoExtension.class)
-class FileUtilsTest {
-
-    private Logger logger;
-
-    @BeforeEach
-    void setUp() {
-        logger = mock(Logger.class);
-    }
+    @Autowired
+    private DataSourceConfig dataSourceConfig;
 
     @Test
-    void testGetPathKeystore_DirectoryDoesNotExist() throws IOException {
-        String path = "cashflow-processor/keystore";
-        Path userHomePath = Paths.get(System.getProperty("user.home"));
-        Path fullPath = userHomePath.resolve(path);
-
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class);
-             MockedStatic<Files> filesMock = mockStatic(Files.class)) {
-
-            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(logger);
-
-            // Mock the file existence and creation behavior
-            filesMock.when(() -> Files.exists(fullPath)).thenReturn(false);
-            filesMock.when(() -> Files.createDirectories(fullPath)).thenReturn(fullPath);
-
-            Path result = FileUtils.getPathKeystore(path);
-
-            // Verify interactions
-            verify(logger).info("Keystore Directory created successfully!");
-            assertEquals(fullPath, result);
-        }
-    }
-
-    @Test
-    void testGetPathKeystore_DirectoryExists() {
-        String path = "cashflow-processor/keystore";
-        Path userHomePath = Paths.get(System.getProperty("user.home"));
-        Path fullPath = userHomePath.resolve(path);
-
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class);
-             MockedStatic<Files> filesMock = mockStatic(Files.class)) {
-
-            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(logger);
-
-            // Mock the file existence behavior
-            filesMock.when(() -> Files.exists(fullPath)).thenReturn(true);
-
-            Path result = FileUtils.getPathKeystore(path);
-
-            // Verify interactions
-            verify(logger, never()).info("Keystore Directory created successfully!");
-            assertEquals(fullPath, result);
-        }
-    }
-
-    @Test
-    void testGetPathKeystore_IOException() throws IOException {
-        String path = "cashflow-processor/keystore";
-        Path userHomePath = Paths.get(System.getProperty("user.home"));
-        Path fullPath = userHomePath.resolve(path);
-
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class);
-             MockedStatic<Files> filesMock = mockStatic(Files.class)) {
-
-            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(logger);
-
-            // Mock the file existence and creation behavior with exception
-            filesMock.when(() -> Files.exists(fullPath)).thenReturn(false);
-            filesMock.when(() -> Files.createDirectories(fullPath)).thenThrow(new IOException("Test IOException"));
-
-            Path result = FileUtils.getPathKeystore(path);
-
-            // Verify interactions
-            verify(logger).error("Failed to create directory: Test IOException");
-            assertEquals(fullPath, result);
-        }
+    void testDataSource() throws ParseException {
+        DataSource dataSource = dataSourceConfig.dataSource();
+        assertNotNull(dataSource);
+        assertTrue(dataSource instanceof DriverManagerDataSource);
+        DriverManagerDataSource driverManagerDataSource = (DriverManagerDataSource) dataSource;
+        assertEquals("jdbc:h2:mem:testdb", driverManagerDataSource.getUrl());
+        assertEquals("org.h2.Driver", driverManagerDataSource.getDriverClassName());
+        // Add more assertions as needed
     }
 }
