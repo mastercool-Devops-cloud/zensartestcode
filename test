@@ -1,15 +1,27 @@
+logger.info(<Capturing argument: String>);
+-> at com.testr.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:60)
+Actually, there were zero interactions with this mock.
+
+	at com.testr.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:60)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+
+
+
+
 Wanted but not invoked:
 logger.error(<Capturing argument: String>);
--> at com.test.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:129)
+-> at com.testr.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:136)
+Actually, there were zero interactions with this mock.
 
-However, there was exactly 1 interaction with this mock:
-logger.info(
-    "Keystore Directory created successfully!"
-);
--> at com.test.util.FileUtils.getPathKeystore(FileUtils.java:20)
+Wanted but not invoked:
+logger.error(<Capturing argument: String>);
+-> at com.testr.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:136)
+Actually, there were zero interactions with this mock.
 
-
-	at com.test.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:129)
+	at com.testr.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:136)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
