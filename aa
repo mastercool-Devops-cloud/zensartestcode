@@ -228,9 +228,8 @@ class FileUtilsTest {
 
         // Mock the log
         Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
-            logManagerMock.when(LogManager::getLogger).thenReturn(mockLogger);
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
 
             // Call the method
             Path resultPath = FileUtils.getPathKeystore(customPath.toString());
@@ -239,10 +238,11 @@ class FileUtilsTest {
             assertTrue(Files.exists(resultPath), "The directory should be created");
 
             // Verify the log message
+            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
             verify(mockLogger).info(captor.capture());
             assertTrue(captor.getValue().contains("Keystore Directory created successfully!"));
         }
-        
+
         // Clean up
         Files.walk(customUserHome)
                 .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
@@ -266,9 +266,8 @@ class FileUtilsTest {
 
         // Mock the log
         Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
-            logManagerMock.when(LogManager::getLogger).thenReturn(mockLogger);
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
 
             // Call the method
             Path resultPath = FileUtils.getPathKeystore(customPath.toString());
@@ -277,10 +276,11 @@ class FileUtilsTest {
             assertTrue(Files.exists(resultPath), "The directory should already exist");
 
             // Verify the log message
+            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
             verify(mockLogger).info(captor.capture());
             assertTrue(captor.getValue().contains("Keystore Directory already exists."));
         }
-        
+
         // Clean up
         Files.walk(customUserHome)
                 .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
@@ -300,20 +300,19 @@ class FileUtilsTest {
 
         // Mock the log
         Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
-            logManagerMock.when(LogManager::getLogger).thenReturn(mockLogger);
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
 
             // Call the method
             FileUtils.getPathKeystore(invalidPath);
 
             // Verify the log message
+            ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
             verify(mockLogger).error(captor.capture());
             assertTrue(captor.getValue().contains("Failed to create directory"));
         }
     }
 }
-
 
 ------------------------------------------------------
 import static org.junit.jupiter.api.Assertions.assertEquals;
