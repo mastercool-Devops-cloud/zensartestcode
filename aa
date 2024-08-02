@@ -1,107 +1,97 @@
+
 import static org.mockito.Mockito.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-class FxPasswordSubscriberTest {
+class FileUtilsTest {
+
+    private Logger logger;
 
     @BeforeEach
     void setUp() {
-        // Initialization if necessary
+        logger = mock(Logger.class);
     }
 
     @Test
-    void testGetDbCredentials_Success() throws Exception {
-        String mockUrl = "http://mockurl";
-        String mockResponse = "{\"UserName\":\"testUser\",\"Content\":\"testPass\"}";
+    void testGetPathKeystore_DirectoryDoesNotExist() throws IOException {
+        String path = "cashflow-processor/keystore";
+        Path userHomePath = FileSystems.getDefault().getPath(System.getProperty("user.home"));
+        Path fullPath = userHomePath.resolve(path);
 
-        // Mock static methods for LogManager
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class);
+             MockedStatic<Files> filesMock = mockStatic(Files.class)) {
 
-            Logger mockLogger = mock(Logger.class);
-            logManagerMock.when(() -> LogManager.getLogger(FxPasswordSubscriber.class)).thenReturn(mockLogger);
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(logger);
 
-            // Mock URL and HttpURLConnection
-            URL mockUrlObject = mock(URL.class);
-            HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+            // Mock the file existence and creation behavior
+            filesMock.when(() -> Files.exists(fullPath)).thenReturn(false);
+            filesMock.when(() -> Files.createDirectories(fullPath)).thenReturn(fullPath);
 
-            // Stub URL.openConnection() to return the mocked HttpURLConnection
-            when(mockUrlObject.openConnection()).thenReturn(mockConnection);
+            Path result = FileUtils.getPathKeystore(path);
 
-            // Set up the HttpURLConnection to return a successful status code and mock response
-            when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-            InputStream mockInputStream = new ByteArrayInputStream(mockResponse.getBytes());
-            when(mockConnection.getInputStream()).thenReturn(mockInputStream);
-
-            // Mock the URL constructor to return mockUrlObject
-            try (MockedStatic<URL> urlMock = mockStatic(URL.class)) {
-                urlMock.when(() -> new URL(mockUrl)).thenReturn(mockUrlObject);
-
-                // Call the method
-                DbCredentials credentials = FxPasswordSubscriber.getDbCredentials(mockUrl);
-
-                // Verify credentials
-                assertNotNull(credentials);
-                assertEquals("testUser", credentials.getUsername());
-                assertEquals("testPass", credentials.getPassword());
-
-                // Verify logger interaction
-                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-                verify(mockLogger).info(captor.capture());
-                assertTrue(captor.getValue().contains("JavaKeyStore Path For Vault API"));
-            }
+            // Verify interactions
+            verify(logger).info("Keystore Directory created successfully!");
+            assertEquals(fullPath, result);
         }
     }
 
     @Test
-    void testGetDbCredentials_Failure() throws Exception {
-        String mockUrl = "http://mockurl";
+    void testGetPathKeystore_DirectoryExists() {
+        String path = "cashflow-processor/keystore";
+        Path userHomePath = FileSystems.getDefault().getPath(System.getProperty("user.home"));
+        Path fullPath = userHomePath.resolve(path);
 
-        // Mock static methods for LogManager
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class);
+             MockedStatic<Files> filesMock = mockStatic(Files.class)) {
 
-            Logger mockLogger = mock(Logger.class);
-            logManagerMock.when(() -> LogManager.getLogger(FxPasswordSubscriber.class)).thenReturn(mockLogger);
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(logger);
 
-            // Mock URL and HttpURLConnection
-            URL mockUrlObject = mock(URL.class);
-            HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+            // Mock the file existence behavior
+            filesMock.when(() -> Files.exists(fullPath)).thenReturn(true);
 
-            // Stub URL.openConnection() to return the mocked HttpURLConnection
-            when(mockUrlObject.openConnection()).thenReturn(mockConnection);
+            Path result = FileUtils.getPathKeystore(path);
 
-            // Set up the HttpURLConnection to return an error status code
-            when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_INTERNAL_ERROR);
+            // Verify interactions
+            verify(logger).info("Keystore Directory already exists.");
+            assertEquals(fullPath, result);
+        }
+    }
 
-            // Mock the URL constructor to return mockUrlObject
-            try (MockedStatic<URL> urlMock = mockStatic(URL.class)) {
-                urlMock.when(() -> new URL(mockUrl)).thenReturn(mockUrlObject);
+    @Test
+    void testGetPathKeystore_IOException() throws IOException {
+        String path = "cashflow-processor/keystore";
+        Path userHomePath = FileSystems.getDefault().getPath(System.getProperty("user.home"));
+        Path fullPath = userHomePath.resolve(path);
 
-                // Call the method
-                DbCredentials credentials = FxPasswordSubscriber.getDbCredentials(mockUrl);
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class);
+             MockedStatic<Files> filesMock = mockStatic(Files.class)) {
 
-                // Verify credentials
-                assertNull(credentials);
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(logger);
 
-                // Verify logger interaction
-                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-                verify(mockLogger).error(captor.capture());
-                assertTrue(captor.getValue().contains("Failed to fetch credentials"));
-            }
+            // Mock the file existence and creation behavior with exception
+            filesMock.when(() -> Files.exists(fullPath)).thenReturn(false);
+            filesMock.when(() -> Files.createDirectories(fullPath)).thenThrow(new IOException("Test IOException"));
+
+            Path result = FileUtils.getPathKeystore(path);
+
+            // Verify interactions
+            verify(logger).error("Failed to create directory: Test IOException");
+            assertEquals(fullPath, result);
         }
     }
 }
