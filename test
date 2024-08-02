@@ -35,3 +35,17 @@ Caused by: java.lang.IllegalArgumentException: Could not resolve placeholder 'cy
 	at org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.postProcessProperties(AutowiredAnnotationBeanPostProcessor.java:508)
 	... 18 more
 
+-------------------------------------------------------------------------
+logger.info(<Capturing argument: String>);
+-> at com.test.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:98)
+Actually, there were zero interactions with this mock.
+
+Wanted but not invoked:
+logger.info(<Capturing argument: String>);
+-> at com.test.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:98)
+Actually, there were zero interactions with this mock.
+
+	at com.test.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:98)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
