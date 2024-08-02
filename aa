@@ -619,3 +619,43 @@ class FileUtilsTest {
     }
 }
 
+@Test
+    void testGetPathKeystore_IOException() throws IOException {
+        // Create a custom test directory
+        Path customUserHome = Files.createTempDirectory("testUserHome");
+        System.setProperty("user.home", customUserHome.toString());
+
+        Path customPath = Paths.get("cashflow-processor", "keystore");
+
+        // Mock the Files.createDirectories method to throw an IOException
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.createDirectories(any(Path.class))).thenThrow(new IOException("Test IOException"));
+
+            // Mock the log
+            Logger mockLogger = mock(Logger.class);
+            try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+                logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
+
+                // Call the method
+                FileUtils.getPathKeystore(customPath.toString());
+
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).error(captor.capture());
+                assertTrue(captor.getValue().contains("Failed to create directory"));
+            }
+        }
+
+        // Clean up
+        Files.walk(customUserHome)
+                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
+}
+
