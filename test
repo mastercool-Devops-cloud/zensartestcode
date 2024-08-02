@@ -1,11 +1,16 @@
-java.lang.IllegalStateException: Could not access method or field: Can not set static final org.apache.logging.log4j.Logger field com.sb.fedssimplification.cashflowprocessor.util.FxPasswordSubscriber.log to org.apache.logging.slf4j.SLF4JLogger
+org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
+URL cannot be returned by lowerCaseProtocol()
+lowerCaseProtocol() should return String
+***
+If you're unsure why you're getting above error read on.
+Due to the nature of the syntax above problem might occur because:
+1. This exception *might* occur in wrongly written multi-threaded tests.
+   Please refer to Mockito FAQ on limitations of concurrency testing.
+2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
+   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
 
-	at org.springframework.util.ReflectionUtils.handleReflectionException(ReflectionUtils.java:107)
-	at org.springframework.util.ReflectionUtils.setField(ReflectionUtils.java:654)
-	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:201)
-	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:123)
-	at com.test.util.FxPasswordSubscriberTest.setUp(FxPasswordSubscriberTest.java:44)
+
+	at com..util.FxPasswordSubscriberTest.testGetDbCredentials_Success(FxPasswordSubscriberTest.java:54)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
