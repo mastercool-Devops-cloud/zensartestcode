@@ -1,2 +1,15 @@
-java.lang.NullPointerException: Cannot invoke "org.apache.logging.log4j.Logger.info(String)" 
-because "com.ok.test.cashflowprocessor.util.FileUtils.log" is null
+Wanted but not invoked:
+logger.error(<Capturing argument: String>);
+-> at com.test.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:129)
+
+However, there was exactly 1 interaction with this mock:
+logger.info(
+    "Keystore Directory created successfully!"
+);
+-> at com.test.util.FileUtils.getPathKeystore(FileUtils.java:20)
+
+
+	at com.test.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:129)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
