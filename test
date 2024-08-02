@@ -1,32 +1,157 @@
-logger.info(<Capturing argument: String>);
--> at com.test.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:60)
-Actually, there were zero interactions with this mock.
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-logger.info(<Capturing argument: String>);
--> at com.test.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:60)
-Actually, there were zero interactions with this mock.
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-Wanted but not invoked:
-logger.info(<Capturing argument: String>);
--> at com.test.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:60)
-Actually, there were zero interactions with this mock.
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-	at com.test.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:60)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+@ExtendWith(MockitoExtension.class)
+class FileUtilsTest {
 
-Wanted but not invoked:
-logger.error(<Capturing argument: String>);
--> at com.test.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:136)
-Actually, there were zero interactions with this mock.
+    private String originalUserHome;
 
-Wanted but not invoked:
-logger.error(<Capturing argument: String>);
--> at com.test.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:136)
-Actually, there were zero interactions with this mock.
+    @BeforeEach
+    void setUp() {
+        // Backup the original user.home value
+        originalUserHome = System.getProperty("user.home");
+    }
 
-	at com.test.util.FileUtilsTest.testGetPathKeystore_IOException(FileUtilsTest.java:136)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+    @AfterEach
+    void tearDown() {
+        // Restore the original user.home value
+        System.setProperty("user.home", originalUserHome);
+    }
+
+    @Test
+    void testGetPathKeystore_DirectoryDoesNotExist() throws IOException {
+        Path customUserHome = Files.createTempDirectory("testUserHome");
+        System.setProperty("user.home", customUserHome.toString());
+
+        Path customPath = Paths.get("cashflow-processor", "keystore");
+
+        // Mock the log
+        Logger mockLogger = mock(Logger.class);
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
+
+            // Mock Files.createDirectories to ensure it does not throw an exception
+            try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+                filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(null);
+
+                // Call the method
+                Path resultPath = FileUtils.getPathKeystore(customPath.toString());
+
+                // Verify the directory is created
+                assertTrue(Files.exists(resultPath), "The directory should be created");
+
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).info(captor.capture());
+                assertTrue(captor.getValue().contains("Keystore Directory created successfully!"));
+            }
+        }
+
+        // Clean up
+        Files.walk(customUserHome)
+                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    @Test
+    void testGetPathKeystore_DirectoryAlreadyExists() throws IOException {
+        Path customUserHome = Files.createTempDirectory("testUserHome");
+        System.setProperty("user.home", customUserHome.toString());
+
+        Path customPath = Paths.get("cashflow-processor", "keystore");
+        Files.createDirectories(customUserHome.resolve(customPath));
+
+        // Mock the log
+        Logger mockLogger = mock(Logger.class);
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+            logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
+
+            // Mock Files.createDirectories to ensure it does not throw an exception
+            try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+                filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(null);
+
+                // Call the method
+                Path resultPath = FileUtils.getPathKeystore(customPath.toString());
+
+                // Verify the directory still exists
+                assertTrue(Files.exists(resultPath), "The directory should already exist");
+
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).info(captor.capture());
+                assertTrue(captor.getValue().contains("Keystore Directory already exists."));
+            }
+        }
+
+        // Clean up
+        Files.walk(customUserHome)
+                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    @Test
+    void testGetPathKeystore_IOException() throws IOException {
+        Path customUserHome = Files.createTempDirectory("testUserHome");
+        System.setProperty("user.home", customUserHome.toString());
+
+        Path customPath = Paths.get("cashflow-processor", "keystore");
+
+        // Mock Files.createDirectories to throw an IOException
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.createDirectories(any(Path.class))).thenThrow(new IOException("Test IOException"));
+
+            // Mock the log
+            Logger mockLogger = mock(Logger.class);
+            try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+                logManagerMock.when(() -> LogManager.getLogger(FileUtils.class)).thenReturn(mockLogger);
+
+                // Call the method
+                FileUtils.getPathKeystore(customPath.toString());
+
+                // Verify the log message
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).error(captor.capture());
+                assertTrue(captor.getValue().contains("Failed to create directory"));
+            }
+        }
+
+        // Clean up
+        Files.walk(customUserHome)
+                .sorted((path1, path2) -> path2.compareTo(path1)) // Sort in reverse order so directories are deleted after their contents
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
+}
