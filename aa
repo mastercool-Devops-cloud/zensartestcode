@@ -1,16 +1,103 @@
-org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
-URL cannot be returned by lowerCaseProtocol()
-lowerCaseProtocol() should return String
-***
-If you're unsure why you're getting above error read on.
-Due to the nature of the syntax above problem might occur because:
-1. This exception *might* occur in wrongly written multi-threaded tests.
-   Please refer to Mockito FAQ on limitations of concurrency testing.
-2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
-   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
+import static org.mockito.Mockito.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-	at com.r.util.FxPasswordSubscriberTest.testGetDbCredentials_Success(FxPasswordSubscriberTest.java:55)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(MockitoExtension.class)
+class FxPasswordSubscriberTest {
+
+    @BeforeEach
+    void setUp() {
+        // Initialization if necessary
+    }
+
+    @Test
+    void testGetDbCredentials_Success() throws Exception {
+        String mockUrl = "http://mockurl";
+        String mockResponse = "{\"UserName\":\"testUser\",\"Content\":\"testPass\"}";
+
+        // Mock static methods for LogManager
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+
+            Logger mockLogger = mock(Logger.class);
+            logManagerMock.when(() -> LogManager.getLogger(FxPasswordSubscriber.class)).thenReturn(mockLogger);
+
+            // Mock URL and HttpURLConnection
+            URL mockUrlObject = mock(URL.class);
+            HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+
+            when(mockUrlObject.openConnection()).thenReturn(mockConnection);
+            when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
+
+            // Set up the InputStream to return mockResponse
+            InputStream mockInputStream = new ByteArrayInputStream(mockResponse.getBytes());
+            when(mockConnection.getInputStream()).thenReturn(mockInputStream);
+
+            // Mock the URL constructor to return mockUrlObject
+            try (MockedStatic<URL> urlMock = mockStatic(URL.class)) {
+                urlMock.when(() -> new URL(mockUrl)).thenReturn(mockUrlObject);
+
+                // Call the method
+                DbCredentials credentials = FxPasswordSubscriber.getDbCredentials(mockUrl);
+
+                // Verify credentials
+                assertNotNull(credentials);
+                assertEquals("testUser", credentials.getUsername());
+                assertEquals("testPass", credentials.getPassword());
+
+                // Verify logger interaction
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).info(captor.capture());
+                assertTrue(captor.getValue().contains("JavaKeyStore Path For Vault API"));
+            }
+        }
+    }
+
+    @Test
+    void testGetDbCredentials_Failure() throws Exception {
+        String mockUrl = "http://mockurl";
+
+        // Mock static methods for LogManager
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
+
+            Logger mockLogger = mock(Logger.class);
+            logManagerMock.when(() -> LogManager.getLogger(FxPasswordSubscriber.class)).thenReturn(mockLogger);
+
+            // Mock URL and HttpURLConnection
+            URL mockUrlObject = mock(URL.class);
+            HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+
+            when(mockUrlObject.openConnection()).thenReturn(mockConnection);
+            when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_INTERNAL_ERROR);
+
+            // Mock the URL constructor to return mockUrlObject
+            try (MockedStatic<URL> urlMock = mockStatic(URL.class)) {
+                urlMock.when(() -> new URL(mockUrl)).thenReturn(mockUrlObject);
+
+                // Call the method
+                DbCredentials credentials = FxPasswordSubscriber.getDbCredentials(mockUrl);
+
+                // Verify credentials
+                assertNull(credentials);
+
+                // Verify logger interaction
+                ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+                verify(mockLogger).error(captor.capture());
+                assertTrue(captor.getValue().contains("Failed to fetch credentials"));
+            }
+        }
+    }
+}
