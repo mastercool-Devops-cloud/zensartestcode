@@ -39,10 +39,11 @@ class FxPasswordSubscriberTest {
             URL mockUrlObject = mock(URL.class);
             HttpURLConnection mockConnection = mock(HttpURLConnection.class);
 
+            // Stub URL.openConnection() to return the mocked HttpURLConnection
             when(mockUrlObject.openConnection()).thenReturn(mockConnection);
-            when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
 
-            // Set up the InputStream to return mockResponse
+            // Set up the HttpURLConnection to return a successful status code and mock response
+            when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
             InputStream mockInputStream = new ByteArrayInputStream(mockResponse.getBytes());
             when(mockConnection.getInputStream()).thenReturn(mockInputStream);
 
@@ -80,7 +81,10 @@ class FxPasswordSubscriberTest {
             URL mockUrlObject = mock(URL.class);
             HttpURLConnection mockConnection = mock(HttpURLConnection.class);
 
+            // Stub URL.openConnection() to return the mocked HttpURLConnection
             when(mockUrlObject.openConnection()).thenReturn(mockConnection);
+
+            // Set up the HttpURLConnection to return an error status code
             when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_INTERNAL_ERROR);
 
             // Mock the URL constructor to return mockUrlObject
