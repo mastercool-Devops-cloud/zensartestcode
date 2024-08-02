@@ -1,13 +1,9 @@
 import static org.mockito.Mockito.*;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.ParseException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,19 +11,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(MockitoExtension.class)
 class FxPasswordSubscriberTest {
 
     @BeforeEach
     void setUp() {
-        // Prepare any necessary setup before each test
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
@@ -36,22 +31,25 @@ class FxPasswordSubscriberTest {
         String mockResponse = "{\"UserName\":\"testUser\",\"Content\":\"testPass\"}";
 
         // Mock static methods
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class);
-             MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
 
             Logger mockLogger = mock(Logger.class);
             logManagerMock.when(() -> LogManager.getLogger(FxPasswordSubscriber.class)).thenReturn(mockLogger);
 
-            // Mocking URL connection and response
+            // Mock URL and HttpURLConnection
+            URL mockUrlObject = mock(URL.class);
             HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+
+            when(mockUrlObject.openConnection()).thenReturn(mockConnection);
             when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
-            when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream(mockResponse.getBytes()));
 
+            // Set up the InputStream to return mockResponse
+            InputStream mockInputStream = new ByteArrayInputStream(mockResponse.getBytes());
+            when(mockConnection.getInputStream()).thenReturn(mockInputStream);
+
+            // Mock the URL constructor to return mockUrlObject
             try (MockedStatic<URL> urlMock = mockStatic(URL.class)) {
-                urlMock.when(() -> new URL(mockUrl)).thenReturn(new URL(mockUrl));
-
-                // Mock the connection object
-                when(urlMock.openConnection()).thenReturn(mockConnection);
+                urlMock.when(() -> new URL(mockUrl)).thenReturn(mockUrlObject);
 
                 // Call the method
                 DbCredentials credentials = FxPasswordSubscriber.getDbCredentials(mockUrl);
@@ -74,19 +72,21 @@ class FxPasswordSubscriberTest {
         String mockUrl = "http://mockurl";
 
         // Mock static methods
-        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class);
-             MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+        try (MockedStatic<LogManager> logManagerMock = mockStatic(LogManager.class)) {
 
             Logger mockLogger = mock(Logger.class);
             logManagerMock.when(() -> LogManager.getLogger(FxPasswordSubscriber.class)).thenReturn(mockLogger);
 
-            // Mocking URL connection failure
+            // Mock URL and HttpURLConnection
+            URL mockUrlObject = mock(URL.class);
             HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+
+            when(mockUrlObject.openConnection()).thenReturn(mockConnection);
             when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_INTERNAL_ERROR);
 
+            // Mock the URL constructor to return mockUrlObject
             try (MockedStatic<URL> urlMock = mockStatic(URL.class)) {
-                urlMock.when(() -> new URL(mockUrl)).thenReturn(new URL(mockUrl));
-                when(urlMock.openConnection()).thenReturn(mockConnection);
+                urlMock.when(() -> new URL(mockUrl)).thenReturn(mockUrlObject);
 
                 // Call the method
                 DbCredentials credentials = FxPasswordSubscriber.getDbCredentials(mockUrl);
