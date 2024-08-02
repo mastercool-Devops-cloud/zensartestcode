@@ -1,11 +1,4 @@
-Connected to the target VM, address: '127.0.0.1:62949', transport: 'socket'
-WARNING: A Java agent has been loaded dynamically (C:\Users\RC76327\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.18\byte-buddy-agent-1.14.18.jar)
-WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
-WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
-WARNING: Dynamic loading of agents will be disallowed by default in a future release
-Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
-
-java.lang.IllegalArgumentException: Could not find field 'cyberarc.uat.url' of type [null] on target object [com.test.cofig.DataSourceConfig@4930539b] or target class [class com.sb.fedssimplification.cashflowprocessor.cofig.DataSourceConfig]
+java.lang.IllegalArgumentException: Could not find field 'cyberarc.uat.url' of type [null] on target object [com.cashflowprocessor.cofig.DataSourceConfig@26a94fa5] or target class [class com.sb.fedssimplification.cashflowprocessor.cofig.DataSourceConfig]
 
 	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:190)
 	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:107)
@@ -15,6 +8,5 @@ java.lang.IllegalArgumentException: Could not find field 'cyberarc.uat.url' of t
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-Disconnected from the target VM, address: '127.0.0.1:62949', transport: 'socket'
 
 Process finished with exit code -1
