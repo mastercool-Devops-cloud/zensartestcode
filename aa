@@ -95,22 +95,21 @@ class DataSourceConfigTest {
         <scope>test</scope>
     </dependency>
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FileUtilsTest {
@@ -120,17 +119,16 @@ class FileUtilsTest {
     @TempDir
     Path tempDir;
 
-    private Path testPath;
-
-    @BeforeEach
-    void setUp() {
-        testPath = tempDir.resolve("testKeystore");
-    }
-
     @Test
     void testGetPathKeystore_DirectoryDoesNotExist() throws IOException {
         // Ensure the directory does not exist before the test
+        Path testPath = tempDir.resolve("keystore");
         Files.deleteIfExists(testPath);
+
+        // Mock the log
+        Logger mockLogger = mock(Logger.class);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        mockStatic(LogManager.class).when(LogManager::getLogger).thenReturn(mockLogger);
 
         // Call the method
         Path resultPath = FileUtils.getPathKeystore(testPath.toString());
@@ -138,25 +136,21 @@ class FileUtilsTest {
         // Verify the directory is created
         assertTrue(Files.exists(resultPath), "The directory should be created");
 
-        // Capture and verify the logs
-        Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        mockStatic(LogManager.class).when(LogManager::getLogger).thenReturn(mockLogger);
-
-        FileUtils.getPathKeystore(testPath.toString());
-
+        // Verify the log message
         verify(mockLogger).info(captor.capture());
         assertTrue(captor.getValue().contains("Keystore Directory created successfully!"));
     }
 
     @Test
-    void testGetPathKeystore_DirectoryAlreadyExists() {
+    void testGetPathKeystore_DirectoryAlreadyExists() throws IOException {
         // Ensure the directory exists before the test
-        try {
-            Files.createDirectories(testPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Path testPath = tempDir.resolve("keystore");
+        Files.createDirectories(testPath);
+
+        // Mock the log
+        Logger mockLogger = mock(Logger.class);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        mockStatic(LogManager.class).when(LogManager::getLogger).thenReturn(mockLogger);
 
         // Call the method
         Path resultPath = FileUtils.getPathKeystore(testPath.toString());
@@ -164,29 +158,25 @@ class FileUtilsTest {
         // Verify the directory still exists
         assertTrue(Files.exists(resultPath), "The directory should already exist");
 
-        // Capture and verify the logs
-        Logger mockLogger = mock(Logger.class);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        mockStatic(LogManager.class).when(LogManager::getLogger).thenReturn(mockLogger);
-
-        FileUtils.getPathKeystore(testPath.toString());
-
+        // Verify the log message
         verify(mockLogger).info(captor.capture());
         assertTrue(captor.getValue().contains("Keystore Directory already exists."));
     }
 
     @Test
-    void testGetPathKeystore_IOException() {
+    void testGetPathKeystore_IOException() throws IOException {
         // Create a path that will cause IOException
         Path invalidPath = Paths.get("/invalid:/path");
 
-        // Capture and verify the logs
+        // Mock the log
         Logger mockLogger = mock(Logger.class);
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         mockStatic(LogManager.class).when(LogManager::getLogger).thenReturn(mockLogger);
 
+        // Call the method
         FileUtils.getPathKeystore(invalidPath.toString());
 
+        // Verify the log message
         verify(mockLogger).error(captor.capture());
         assertTrue(captor.getValue().contains("Failed to create directory"));
     }
