@@ -1,5 +1,5 @@
 org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
-Logger$MockitoMock$vpAcBA7N cannot be returned by getLogger()
+Logger$MockitoMock$1179392028 cannot be returned by getLogger()
 getLogger() should return Logger
 ***
 If you're unsure why you're getting above error read on.
