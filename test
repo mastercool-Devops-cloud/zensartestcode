@@ -1,55 +1,16 @@
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.util.ReflectionTestUtils;
+org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
+URL cannot be returned by lowerCaseProtocol()
+lowerCaseProtocol() should return String
+***
+If you're unsure why you're getting above error read on.
+Due to the nature of the syntax above problem might occur because:
+1. This exception *might* occur in wrongly written multi-threaded tests.
+   Please refer to Mockito FAQ on limitations of concurrency testing.
+2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
+   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
 
-import javax.sql.DataSource;
-import java.text.ParseException;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-@SpringBootTest
-@TestPropertySource(properties = {
-    "cyberarc.uat.url=http://example.com/your-uat-url",
-    "spring.datasource.url=jdbc:h2:mem:testdb",
-    "spring.datasource.driver-class-name=org.h2.Driver"
-})
-@ExtendWith(MockitoExtension.class)
-public class DataSourceConfigTest {
-
-    @InjectMocks
-    private DataSourceConfig dataSourceConfig;
-
-    @MockBean
-    private FxPasswordSubscriber fxPasswordSubscriber;
-
-    @BeforeEach
-    void setUp() throws ParseException {
-        DbCredentials dbCredentials = DbCredentials.builder()
-                .username("testUser")
-                .password("testPass")
-                .build();
-        when(FxPasswordSubscriber.getDbCredentials(anyString())).thenReturn(dbCredentials);
-    }
-
-    @Test
-    void testDataSource() throws ParseException {
-        DataSource dataSource = dataSourceConfig.dataSource();
-        assertNotNull(dataSource);
-        assertTrue(dataSource instanceof DriverManagerDataSource);
-        DriverManagerDataSource driverManagerDataSource = (DriverManagerDataSource) dataSource;
-        assertEquals("jdbc:h2:mem:testdb", driverManagerDataSource.getUrl());
-        assertEquals("org.h2.Driver", driverManagerDataSource.getDriverClassName());
-        assertEquals("testUser", driverManagerDataSource.getUsername());
-        assertEquals("testPass", driverManagerDataSource.getPassword());
-    }
-}
+	at com.util.FxPasswordSubscriberTest.testGetDbCredentials_Success(FxPasswordSubscriberTest.java:59)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
