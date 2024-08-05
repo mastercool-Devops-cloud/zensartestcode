@@ -1,12 +1,55 @@
-java.lang.IllegalArgumentException: Could not find field 'cyberarc.uat.url' of type [null] on target object [com.cashflowprocessor.cofig.DataSourceConfig@26a94fa5] or target class [class com.sb.fedssimplification.cashflowprocessor.cofig.DataSourceConfig]
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
 
-	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:190)
-	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:107)
-	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:91)
-	at com.sb.fedssimplification.cashflowprocessor.config.DataSourceConfigTest.setUp(DataSourceConfigTest.java:48)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+import javax.sql.DataSource;
+import java.text.ParseException;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-Process finished with exit code -1
+@SpringBootTest
+@TestPropertySource(properties = {
+    "cyberarc.uat.url=http://example.com/your-uat-url",
+    "spring.datasource.url=jdbc:h2:mem:testdb",
+    "spring.datasource.driver-class-name=org.h2.Driver"
+})
+@ExtendWith(MockitoExtension.class)
+public class DataSourceConfigTest {
+
+    @InjectMocks
+    private DataSourceConfig dataSourceConfig;
+
+    @MockBean
+    private FxPasswordSubscriber fxPasswordSubscriber;
+
+    @BeforeEach
+    void setUp() throws ParseException {
+        DbCredentials dbCredentials = DbCredentials.builder()
+                .username("testUser")
+                .password("testPass")
+                .build();
+        when(FxPasswordSubscriber.getDbCredentials(anyString())).thenReturn(dbCredentials);
+    }
+
+    @Test
+    void testDataSource() throws ParseException {
+        DataSource dataSource = dataSourceConfig.dataSource();
+        assertNotNull(dataSource);
+        assertTrue(dataSource instanceof DriverManagerDataSource);
+        DriverManagerDataSource driverManagerDataSource = (DriverManagerDataSource) dataSource;
+        assertEquals("jdbc:h2:mem:testdb", driverManagerDataSource.getUrl());
+        assertEquals("org.h2.Driver", driverManagerDataSource.getDriverClassName());
+        assertEquals("testUser", driverManagerDataSource.getUsername());
+        assertEquals("testPass", driverManagerDataSource.getPassword());
+    }
+}
