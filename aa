@@ -1,6 +1,95 @@
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class FxPasswordSubscriberTest {
+
+    @InjectMocks
+    private FxPasswordSubscriber fxPasswordSubscriber;
+
+    @Mock
+    private HttpURLConnection mockConnection;
+
+    @Mock
+    private URL mockUrl;
+
+    @Spy
+    private FileUtils fileUtils;
+
+    private final String customDirectoryKeystorePath = "/custom/keystore/path";
+
+    @BeforeEach
+    void setUp() {
+        // Inject the customDirectoryKeystorePath into the FxPasswordSubscriber class
+        ReflectionTestUtils.setField(fxPasswordSubscriber, "customDirectoryKeystorePath", customDirectoryKeystorePath);
+    }
+
+    @Test
+    void testGetDbCredentials_Success() throws Exception {
+        // Use a real Path object
+        Path mockPath = Paths.get("/mock/path");
+
+        // Mock the behavior of fileUtils.getPathKeystore using doReturn().when() syntax for spies
+        doReturn(mockPath).when(fileUtils).getPathKeystore(customDirectoryKeystorePath);
+
+        // Mock the URL creation and connection opening
+        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
+        when(mockUrl.openConnection()).thenReturn(mockConnection);
+
+        when(mockConnection.getResponseCode()).thenReturn(200);
+        when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}".getBytes(StandardCharsets.UTF_8)));
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(mockConnection.getInputStream(), StandardCharsets.UTF_8));
+        when(br.readLine()).thenReturn("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}");
+
+        DbCredentials credentials = fxPasswordSubscriber.getDbCredentials("http://test-url");
+
+        assertNotNull(credentials);
+        assertEquals("testUser", credentials.getUsername());
+        assertEquals("testPass", credentials.getPassword());
+    }
+
+    @Test
+    void testGetDbCredentials_Failure() throws Exception {
+        // Use a real Path object
+        Path mockPath = Paths.get("/mock/path");
+
+        // Mock the behavior of fileUtils.getPathKeystore using doReturn().when() syntax for spies
+        doReturn(mockPath).when(fileUtils).getPathKeystore(customDirectoryKeystorePath);
+
+        // Mock the URL creation and connection opening
+        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
+        when(mockUrl.openConnection()).thenReturn(mockConnection);
+
+        when(mockConnection.getResponseCode()).thenReturn(500);
+
+        assertThrows(RuntimeException.class, () -> fxPasswordSubscriber.getDbCredentials("http://test-url"));
+    }
+}
+
+--------------------------------------------------------------------------------------------
+org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
