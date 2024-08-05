@@ -1,9 +1,1 @@
-WindowsPath cannot be returned by toString()
-toString() should return String
-***
-If you're unsure why you're getting above error read on.
-Due to the nature of the syntax above problem might occur because:
-1. This exception *might* occur in wrongly written multi-threaded tests.
-   Please refer to Mockito FAQ on limitations of concurrency testing.
-2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
-   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
+Method threw 'org.mockito.exceptions.misusing.UnfinishedStubbingException' exception. Cannot evaluate java.net.URL.toString()
