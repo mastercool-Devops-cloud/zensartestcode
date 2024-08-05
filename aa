@@ -1,17 +1,3 @@
-<dependency>
-    <groupId>org.powermock</groupId>
-    <artifactId>powermock-module-junit4</artifactId>
-    <version>2.0.9</version>
-    <scope>test</scope>
-</dependency>
-<dependency>
-    <groupId>org.powermock</groupId>
-    <artifactId>powermock-api-mockito2</artifactId>
-    <version>2.0.9</version>
-    <scope>test</scope>
-</dependency>
-
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,12 +6,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -61,8 +48,11 @@ public class FxPasswordSubscriberTest {
     void testGetDbCredentials_Success() throws Exception {
         Path mockPath = Paths.get("/mock/path");
         when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
-        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
+
+        // Correctly stub the URL creation and connection opening
+        doReturn(mockUrl).when(fxPasswordSubscriber).createUrl(anyString());
+        doReturn(mockConnection).when(mockUrl).openConnection();
+        
         when(mockConnection.getResponseCode()).thenReturn(200);
         when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}".getBytes(StandardCharsets.UTF_8)));
 
@@ -80,8 +70,11 @@ public class FxPasswordSubscriberTest {
     void testGetDbCredentials_Failure() throws Exception {
         Path mockPath = Paths.get("/mock/path");
         when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
-        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
+
+        // Correctly stub the URL creation and connection opening
+        doReturn(mockUrl).when(fxPasswordSubscriber).createUrl(anyString());
+        doReturn(mockConnection).when(mockUrl).openConnection();
+        
         when(mockConnection.getResponseCode()).thenReturn(500);
 
         assertThrows(RuntimeException.class, () -> fxPasswordSubscriber.getDbCredentials("http://test-url"));
