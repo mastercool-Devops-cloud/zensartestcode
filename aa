@@ -1,19 +1,89 @@
-org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
-Logger$MockitoMock$1179392028 cannot be returned by getLogger()
-getLogger() should return Logger
-***
-If you're unsure why you're getting above error read on.
-Due to the nature of the syntax above problem might occur because:
-1. This exception *might* occur in wrongly written multi-threaded tests.
-   Please refer to Mockito FAQ on limitations of concurrency testing.
-2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
-   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
+<dependency>
+    <groupId>org.powermock</groupId>
+    <artifactId>powermock-module-junit4</artifactId>
+    <version>2.0.9</version>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.powermock</groupId>
+    <artifactId>powermock-api-mockito2</artifactId>
+    <version>2.0.9</version>
+    <scope>test</scope>
+</dependency>
 
 
-	at com.sb.fedssimplification.cashflowprocessor.util.FileUtilsTest.testGetPathKeystore_DirectoryDoesNotExist(FileUtilsTest.java:62)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 
-Process finished with exit code -1
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class FxPasswordSubscriberTest {
+
+    @InjectMocks
+    private FxPasswordSubscriber fxPasswordSubscriber;
+
+    @Mock
+    private HttpURLConnection mockConnection;
+
+    @Mock
+    private BufferedReader mockBufferedReader;
+
+    @Mock
+    private URL mockUrl;
+
+    @Mock
+    private FileUtils fileUtils;
+
+    private final String customDirectoryKeystorePath = "/custom/keystore/path";
+
+    @BeforeEach
+    void setUp() {
+        // Inject the customDirectoryKeystorePath into the FxPasswordSubscriber class
+        ReflectionTestUtils.setField(fxPasswordSubscriber, "customDirectoryKeystorePath", customDirectoryKeystorePath);
+    }
+
+    @Test
+    void testGetDbCredentials_Success() throws Exception {
+        Path mockPath = Paths.get("/mock/path");
+        when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
+        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
+        when(mockUrl.openConnection()).thenReturn(mockConnection);
+        when(mockConnection.getResponseCode()).thenReturn(200);
+        when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}".getBytes(StandardCharsets.UTF_8)));
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(mockConnection.getInputStream(), StandardCharsets.UTF_8));
+        when(mockBufferedReader.readLine()).thenReturn("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}");
+
+        DbCredentials credentials = fxPasswordSubscriber.getDbCredentials("http://test-url");
+
+        assertNotNull(credentials);
+        assertEquals("testUser", credentials.getUsername());
+        assertEquals("testPass", credentials.getPassword());
+    }
+
+    @Test
+    void testGetDbCredentials_Failure() throws Exception {
+        Path mockPath = Paths.get("/mock/path");
+        when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
+        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
+        when(mockUrl.openConnection()).thenReturn(mockConnection);
+        when(mockConnection.getResponseCode()).thenReturn(500);
+
+        assertThrows(RuntimeException.class, () -> fxPasswordSubscriber.getDbCredentials("http://test-url"));
+    }
+}
