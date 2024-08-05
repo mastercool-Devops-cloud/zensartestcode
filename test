@@ -1,6 +1,5 @@
-org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
-URL cannot be returned by lowerCaseProtocol()
-lowerCaseProtocol() should return String
+WindowsPath cannot be returned by toString()
+toString() should return String
 ***
 If you're unsure why you're getting above error read on.
 Due to the nature of the syntax above problem might occur because:
@@ -8,9 +7,3 @@ Due to the nature of the syntax above problem might occur because:
    Please refer to Mockito FAQ on limitations of concurrency testing.
 2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
    - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
-
-
-	at com.util.FxPasswordSubscriberTest.testGetDbCredentials_Success(FxPasswordSubscriberTest.java:59)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
