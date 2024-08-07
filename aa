@@ -17,25 +17,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit.jupiter.SpringExtension;import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import java.util.Optional;
-
-import javax.sql.DataSource;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -111,89 +92,6 @@ public class HikariDataSourceConfigTest {
         @Value("${cyberarc.url:http://example.com}")
         public String cyberArcUrl() {
             return "http://example.com";
-        }
-    }
-}
-
-
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-
-@ExtendWith(SpringExtension.class)
-@SpringBootTest
-@Import(HikariDataSourceConfigTest.TestConfig.class)
-public class HikariDataSourceConfigTest {
-
-    @InjectMocks
-    private HikariDataSourceConfig hikariDataSourceConfig;
-
-    @MockBean
-    private FxPasswordClient fxPasswordClient;
-
-    @Value("${cyberarc.url}")
-    private String cyberArcUrl;
-
-    private HikariConfig hikariConfig;
-
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-        hikariConfig = new HikariConfig();
-    }
-
-    @Test
-    public void testDataSource() {
-        // Mock the behavior of fxPasswordClient to return an Optional with a password
-        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.of("testPassword"));
-
-        // Call the dataSource method
-        DataSource dataSource = hikariDataSourceConfig.dataSource(fxPasswordClient, hikariConfig, cyberArcUrl);
-
-        // Verify the password was set in the HikariConfig
-        assertEquals("testPassword", hikariConfig.getPassword());
-        assertTrue(dataSource instanceof HikariDataSource);
-
-        // Verify the password system property was set
-        assertEquals("testPassword", System.getProperty(HikariDataSourceConfig.DATABASE_PASSWORD));
-    }
-
-    @Test
-    public void testDataSourceWhenPasswordNotPresent() {
-        // Mock the behavior of fxPasswordClient to return an empty Optional
-        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.empty());
-
-        // Call the dataSource method
-        DataSource dataSource = hikariDataSourceConfig.dataSource(fxPasswordClient, hikariConfig, cyberArcUrl);
-
-        // Verify the password was not set in the HikariConfig
-        assertNull(hikariConfig.getPassword());
-        assertTrue(dataSource instanceof HikariDataSource);
-
-        // Verify the password system property was not set
-        assertNull(System.getProperty(HikariDataSourceConfig.DATABASE_PASSWORD));
-    }
-
-    @Configuration
-    static class TestConfig {
-
-        @Bean
-        @Value("${cyberarc.url:http://example.com}")
-        public String cyberArcUrl() {
-            return "http://example.com";
-        }
-
-        @Bean
-        public HikariConfig hikariConfig() {
-            HikariConfig hikariConfig = new HikariConfig();
-            hikariConfig.setJdbcUrl("jdbc:h2:mem:testdb");
-            hikariConfig.setUsername("sa");
-            hikariConfig.setPassword("");
-            return hikariConfig;
-        }
-
-        @Bean
-        public DataSource dataSource(HikariConfig hikariConfig) {
-            return new HikariDataSource(hikariConfig);
         }
     }
 }
