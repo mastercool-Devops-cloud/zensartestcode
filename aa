@@ -1,10 +1,10 @@
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -71,6 +71,9 @@ public class FxPasswordClientTest {
         when(objectMapper.readValue(responseJson, DbCredentials.class))
                 .thenReturn(dbCredentials);
 
+        // Injecting the mock HttpClient into the fxPasswordClient using Reflection
+        ReflectionTestUtils.setField(fxPasswordClient, "httpClient", httpClient);
+
         Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
 
         assertTrue(password.isPresent());
@@ -83,6 +86,9 @@ public class FxPasswordClientTest {
 
         when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
                 .thenThrow(IOException.class);
+
+        // Injecting the mock HttpClient into the fxPasswordClient using Reflection
+        ReflectionTestUtils.setField(fxPasswordClient, "httpClient", httpClient);
 
         Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
 
@@ -97,7 +103,8 @@ public class FxPasswordClientTest {
 
         // Mocking the file operations
         when(keystoreFile.getPath()).thenReturn("dummyPath");
-        when(new FileInputStream(keystoreFile)).thenReturn(mock(FileInputStream.class));
+        FileInputStream mockFileInputStream = mock(FileInputStream.class);
+        when(new FileInputStream(keystoreFile)).thenReturn(mockFileInputStream);
 
         // Call the private method via reflection
         SSLContext sslContext = (SSLContext) createSslContextMethod.invoke(fxPasswordClient);
