@@ -4,6 +4,8 @@ import static org.mockito.Mockito.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -26,7 +28,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.util.ResourceUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -90,29 +91,50 @@ public class FxPasswordClientTest {
 
     @Test
     public void testCreateSslContext() throws Exception {
-        KeyStore truststore = KeyStore.getInstance("JKS");
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        SSLContext sslContext = SSLContext.getInstance("TLS");
+        // Prepare the private method createSslContext
+        Method createSslContextMethod = FxPasswordClient.class.getDeclaredMethod("createSslContext");
+        createSslContextMethod.setAccessible(true);
 
-        try (FileInputStream fileInputStream = new FileInputStream(keystoreFile)) {
-            truststore.load(fileInputStream, null);
-            trustManagerFactory.init(truststore);
-            sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
-        }
+        // Mocking the file operations
+        when(keystoreFile.getPath()).thenReturn("dummyPath");
+        when(new FileInputStream(keystoreFile)).thenReturn(mock(FileInputStream.class));
 
-        when(ResourceUtils.getFile(keystorePath)).thenReturn(keystoreFile);
-        SSLContext resultSslContext = fxPasswordClient.createSslContext();
+        // Call the private method via reflection
+        SSLContext sslContext = (SSLContext) createSslContextMethod.invoke(fxPasswordClient);
 
-        assertNotNull(resultSslContext);
+        assertNotNull(sslContext);
     }
 
     @Test
     public void testGetKeystoreFile() throws Exception {
-        when(ResourceUtils.getFile(keystorePath)).thenReturn(keystoreFile);
+        // Prepare the private method getKeystoreFile
+        Method getKeystoreFileMethod = FxPasswordClient.class.getDeclaredMethod("getKeystoreFile");
+        getKeystoreFileMethod.setAccessible(true);
 
-        File resultFile = fxPasswordClient.getKeystoreFile();
+        when(new File(keystorePath)).thenReturn(keystoreFile);
+
+        // Call the private method via reflection
+        File resultFile = (File) getKeystoreFileMethod.invoke(fxPasswordClient);
 
         assertNotNull(resultFile);
         assertEquals(keystoreFile, resultFile);
+    }
+
+    @Test
+    public void testSetupHttpClient() throws Exception {
+        // Prepare the private method setupHttpClient
+        Method setupHttpClientMethod = FxPasswordClient.class.getDeclaredMethod("setupHttpClient");
+        setupHttpClientMethod.setAccessible(true);
+
+        // Mock the SSLContext creation
+        Method createSslContextMethod = FxPasswordClient.class.getDeclaredMethod("createSslContext");
+        createSslContextMethod.setAccessible(true);
+        SSLContext sslContext = mock(SSLContext.class);
+        when(createSslContextMethod.invoke(fxPasswordClient)).thenReturn(sslContext);
+
+        // Call the private method via reflection
+        HttpClient httpClient = (HttpClient) setupHttpClientMethod.invoke(fxPasswordClient);
+
+        assertNotNull(httpClient);
     }
 }
