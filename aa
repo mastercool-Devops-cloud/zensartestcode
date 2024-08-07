@@ -14,10 +14,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.zaxxer.hikari.HikariConfig;
@@ -25,16 +21,6 @@ import com.zaxxer.hikari.HikariDataSource;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
-@TestPropertySource(properties = {
-    "spring.datasource.hikari.pool-name=database_conn_pool",
-    "spring.datasource.hikari.transaction-isolation=8",
-    "spring.datasource.hikari.jdbc-url=jdbc:h2:~/test",
-    "spring.datasource.hikari.driver-class-name=org.h2.Driver",
-    "spring.datasource.hikari.username=sa",
-    "spring.datasource.hikari.password=",
-    "cyberarc.url=http://example.com"
-})
-@Import(HikariDataSourceConfigTest.TestConfig.class)
 public class HikariDataSourceConfigTest {
 
     @InjectMocks
@@ -46,9 +32,14 @@ public class HikariDataSourceConfigTest {
     @Value("${cyberarc.url}")
     private String cyberArcUrl;
 
+    private HikariConfig hikariConfig;
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
+        hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl("jdbc:h2:mem:testdb"); // Set a dummy JDBC URL
+        hikariConfig.setUsername("testUser"); // Set a dummy username
     }
 
     @Test
@@ -57,7 +48,6 @@ public class HikariDataSourceConfigTest {
         when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.of("testPassword"));
 
         // Call the dataSource method
-        HikariConfig hikariConfig = hikariDataSourceConfig.hikariConfig();
         DataSource dataSource = hikariDataSourceConfig.dataSource(fxPasswordClient, hikariConfig, cyberArcUrl);
 
         // Verify the password was set in the HikariConfig
@@ -74,7 +64,6 @@ public class HikariDataSourceConfigTest {
         when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.empty());
 
         // Call the dataSource method
-        HikariConfig hikariConfig = hikariDataSourceConfig.hikariConfig();
         DataSource dataSource = hikariDataSourceConfig.dataSource(fxPasswordClient, hikariConfig, cyberArcUrl);
 
         // Verify the password was not set in the HikariConfig
@@ -83,15 +72,5 @@ public class HikariDataSourceConfigTest {
 
         // Verify the password system property was not set
         assertNull(System.getProperty(HikariDataSourceConfig.DATABASE_PASSWORD));
-    }
-
-    @Configuration
-    static class TestConfig {
-
-        @Bean
-        @Value("${cyberarc.url:http://example.com}")
-        public String cyberArcUrl() {
-            return "http://example.com";
-        }
     }
 }
