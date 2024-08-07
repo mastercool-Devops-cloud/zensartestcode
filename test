@@ -1,9 +1,9 @@
-java.lang.IllegalArgumentException: dataSource or dataSourceClassName or jdbcUrl is required.
-
-	at com.zaxxer.hikari.HikariConfig.validate(HikariConfig.java:1032)
-	at com.zaxxer.hikari.HikariDataSource.<init>(HikariDataSource.java:76)
-	at com.sb.fedssimplification.cashflowprocessor.cofig.HikariDataSourceConfig.dataSource(HikariDataSourceConfig.java:35)
-	at com.sb.fedssimplification.cashflowprocessor.config.HikariDataSourceConfigTest.testDataSource(HikariDataSourceConfigTest.java:57)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+spring:
+  datasource:
+    hikari:
+      pool-name: database_conn_pool
+      transaction-isolation: 8
+      jdbc-url: jdbc:h2:~/test
+      driver-class-name: org.h2.Driver
+      username: sa
+      password:
