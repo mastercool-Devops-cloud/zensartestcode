@@ -1,435 +1,74 @@
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import java.io.ByteArrayInputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-public class FxPasswordSubscriberTest {
+import java.util.Optional;
 
-    @InjectMocks
-    private FxPasswordSubscriber fxPasswordSubscriber;
-
-    @Mock
-    private HttpURLConnection mockConnection;
-
-    @Mock
-    private URL mockUrl;
-
-    private MockedStatic<FileUtils> fileUtilsMock;
-
-    private final String customDirectoryKeystorePath = "/custom/keystore/path";
-
-    @BeforeEach
-    void setUp() {
-        fileUtilsMock = Mockito.mockStatic(FileUtils.class);
-        ReflectionTestUtils.setField(fxPasswordSubscriber, "customDirectoryKeystorePath", customDirectoryKeystorePath);
-    }
-
-    @Test
-    void testGetDbCredentials_Success() throws Exception {
-        Path mockPath = Paths.get("/mock/path");
-
-        fileUtilsMock.when(() -> FileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
-
-        // Mock URL and HttpURLConnection
-        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-        when(mockConnection.getResponseCode()).thenReturn(200);
-        when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}".getBytes(StandardCharsets.UTF_8)));
-
-        // Mock BufferedReader
-        BufferedReader br = new BufferedReader(new InputStreamReader(mockConnection.getInputStream(), StandardCharsets.UTF_8));
-        when(br.readLine()).thenReturn("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}");
-
-        DbCredentials credentials = fxPasswordSubscriber.getDbCredentials("http://test-url");
-
-        assertNotNull(credentials);
-        assertEquals("testUser", credentials.getUsername());
-        assertEquals("testPass", credentials.getPassword());
-    }
-
-    @Test
-    void testGetDbCredentials_Failure() throws Exception {
-        Path mockPath = Paths.get("/mock/path");
-
-        fileUtilsMock.when(() -> FileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
-
-        // Mock URL and HttpURLConnection
-        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-        when(mockConnection.getResponseCode()).thenReturn(500);
-
-        assertThrows(RuntimeException.class, () -> fxPasswordSubscriber.getDbCredentials("http://test-url"));
-    }
-
-    @AfterEach
-    void tearDown() {
-        fileUtilsMock.close();
-    }
-}
-
----------------------------------------------------------------------------------------------
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
-@ExtendWith(MockitoExtension.class)
-public class FxPasswordSubscriberTest {
-
-    @InjectMocks
-    private FxPasswordSubscriber fxPasswordSubscriber;
-
-    @Mock
-    private HttpURLConnection mockConnection;
-
-    @Mock
-    private URL mockUrl;
-
-    @Spy
-    private FileUtils fileUtils;
-
-    private final String customDirectoryKeystorePath = "/custom/keystore/path";
-
-    @BeforeEach
-    void setUp() {
-        // Inject the customDirectoryKeystorePath into the FxPasswordSubscriber class
-        ReflectionTestUtils.setField(fxPasswordSubscriber, "customDirectoryKeystorePath", customDirectoryKeystorePath);
-    }
-
-    @Test
-    void testGetDbCredentials_Success() throws Exception {
-        // Use a real Path object
-        Path mockPath = Paths.get("/mock/path");
-
-        // Mock the behavior of fileUtils.getPathKeystore using doReturn().when() syntax for spies
-        doReturn(mockPath).when(fileUtils).getPathKeystore(customDirectoryKeystorePath);
-
-        // Mock the URL creation and connection opening
-        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-
-        when(mockConnection.getResponseCode()).thenReturn(200);
-        when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}".getBytes(StandardCharsets.UTF_8)));
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(mockConnection.getInputStream(), StandardCharsets.UTF_8));
-        when(br.readLine()).thenReturn("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}");
-
-        DbCredentials credentials = fxPasswordSubscriber.getDbCredentials("http://test-url");
-
-        assertNotNull(credentials);
-        assertEquals("testUser", credentials.getUsername());
-        assertEquals("testPass", credentials.getPassword());
-    }
-
-    @Test
-    void testGetDbCredentials_Failure() throws Exception {
-        // Use a real Path object
-        Path mockPath = Paths.get("/mock/path");
-
-        // Mock the behavior of fileUtils.getPathKeystore using doReturn().when() syntax for spies
-        doReturn(mockPath).when(fileUtils).getPathKeystore(customDirectoryKeystorePath);
-
-        // Mock the URL creation and connection opening
-        whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-
-        when(mockConnection.getResponseCode()).thenReturn(500);
-
-        assertThrows(RuntimeException.class, () -> fxPasswordSubscriber.getDbCredentials("http://test-url"));
-    }
-}
-
---------------------------------------------------------------------------------------------
-org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
-@ExtendWith(MockitoExtension.class)
-public class FxPasswordSubscriberTest {
-
-    @InjectMocks
-    private FxPasswordSubscriber fxPasswordSubscriber;
-
-    @Mock
-    private HttpURLConnection mockConnection;
-
-    @Mock
-    private BufferedReader mockBufferedReader;
-
-    @Mock
-    private URL mockUrl;
-
-    @Mock
-    private FileUtils fileUtils;
-
-    private final String customDirectoryKeystorePath = "/custom/keystore/path";
-
-    @BeforeEach
-    void setUp() {
-        // Inject the customDirectoryKeystorePath into the FxPasswordSubscriber class
-        ReflectionTestUtils.setField(fxPasswordSubscriber, "customDirectoryKeystorePath", customDirectoryKeystorePath);
-    }
-
-    @Test
-    void testGetDbCredentials_Success() throws Exception {
-        Path mockPath = Paths.get("/mock/path");
-        when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
-
-        // Correctly stub the URL creation and connection opening
-        doReturn(mockUrl).when(fxPasswordSubscriber).createUrl(anyString());
-        doReturn(mockConnection).when(mockUrl).openConnection();
-        
-        when(mockConnection.getResponseCode()).thenReturn(200);
-        when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}".getBytes(StandardCharsets.UTF_8)));
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(mockConnection.getInputStream(), StandardCharsets.UTF_8));
-        when(mockBufferedReader.readLine()).thenReturn("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}");
-
-        DbCredentials credentials = fxPasswordSubscriber.getDbCredentials("http://test-url");
-
-        assertNotNull(credentials);
-        assertEquals("testUser", credentials.getUsername());
-        assertEquals("testPass", credentials.getPassword());
-    }
-
-    @Test
-    void testGetDbCredentials_Failure() throws Exception {
-        Path mockPath = Paths.get("/mock/path");
-        when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
-
-        // Correctly stub the URL creation and connection opening
-        doReturn(mockUrl).when(fxPasswordSubscriber).createUrl(anyString());
-        doReturn(mockConnection).when(mockUrl).openConnection();
-        
-        when(mockConnection.getResponseCode()).thenReturn(500);
-
-        assertThrows(RuntimeException.class, () -> fxPasswordSubscriber.getDbCredentials("http://test-url"));
-    }
-}
-
-------------------------------------------------------------------------------------------------------------------------
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
-@ExtendWith(MockitoExtension.class)
-public class FxPasswordSubscriberTest {
-
-    @InjectMocks
-    private FxPasswordSubscriber fxPasswordSubscriber;
-
-    @Mock
-    private HttpURLConnection mockConnection;
-
-    @Mock
-    private URL mockUrl;
-
-    @Mock
-    private FileUtils fileUtils;
-
-    private final String customDirectoryKeystorePath = "/custom/keystore/path";
-
-    @BeforeEach
-    void setUp() {
-        // Inject the customDirectoryKeystorePath into the FxPasswordSubscriber class
-        ReflectionTestUtils.setField(fxPasswordSubscriber, "customDirectoryKeystorePath", customDirectoryKeystorePath);
-    }
-
-    @Test
-    void testGetDbCredentials_Success() throws Exception {
-        Path mockPath = Paths.get("/mock/path");
-        when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
-
-        // Mock the URL creation and connection opening
-        doReturn(mockUrl).whenNew(URL.class).withArguments(anyString());
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-        
-        when(mockConnection.getResponseCode()).thenReturn(200);
-        when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}".getBytes(StandardCharsets.UTF_8)));
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(mockConnection.getInputStream(), StandardCharsets.UTF_8));
-        when(br.readLine()).thenReturn("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}");
-
-        DbCredentials credentials = fxPasswordSubscriber.getDbCredentials("http://test-url");
-
-        assertNotNull(credentials);
-        assertEquals("testUser", credentials.getUsername());
-        assertEquals("testPass", credentials.getPassword());
-    }
-
-    @Test
-    void testGetDbCredentials_Failure() throws Exception {
-        Path mockPath = Paths.get("/mock/path");
-        when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
-
-        // Mock the URL creation and connection opening
-        doReturn(mockUrl).whenNew(URL.class).withArguments(anyString());
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-        
-        when(mockConnection.getResponseCode()).thenReturn(500);
-
-        assertThrows(RuntimeException.class, () -> fxPasswordSubscriber.getDbCredentials("http://test-url"));
-    }
-}
-
-============================================================================================
-<dependency>
-    <groupId>org.powermock</groupId>
-    <artifactId>powermock-module-junit4-rule-agent</artifactId>
-    <version>2.0.9</version>
-    <scope>test</scope>
-</dependency>
-
+import javax.sql.DataSource;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit5.PowerMockRunner;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
-@ExtendWith(MockitoExtension.class)
-@PrepareForTest(FxPasswordSubscriber.class)
-public class FxPasswordSubscriberTest {
+@ExtendWith(SpringExtension.class)
+@SpringBootTest
+public class HikariDataSourceConfigTest {
 
     @InjectMocks
-    private FxPasswordSubscriber fxPasswordSubscriber;
+    private HikariDataSourceConfig hikariDataSourceConfig;
 
-    @Mock
-    private HttpURLConnection mockConnection;
+    @MockBean
+    private FxPasswordClient fxPasswordClient;
 
-    @Mock
-    private URL mockUrl;
+    @Value("${cyberarc.url}")
+    private String cyberArcUrl;
 
-    @Mock
-    private FileUtils fileUtils;
-
-    private final String customDirectoryKeystorePath = "/custom/keystore/path";
+    private HikariConfig hikariConfig;
 
     @BeforeEach
-    void setUp() {
-        // Inject the customDirectoryKeystorePath into the FxPasswordSubscriber class
-        ReflectionTestUtils.setField(fxPasswordSubscriber, "customDirectoryKeystorePath", customDirectoryKeystorePath);
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        hikariConfig = new HikariConfig();
     }
 
     @Test
-    void testGetDbCredentials_Success() throws Exception {
-        Path mockPath = Paths.get("/mock/path");
-        when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
+    public void testDataSource() {
+        // Mock the behavior of fxPasswordClient to return an Optional with a password
+        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.of("testPassword"));
 
-        // Mock the URL creation and connection opening
-        PowerMockito.whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-        
-        when(mockConnection.getResponseCode()).thenReturn(200);
-        when(mockConnection.getInputStream()).thenReturn(new ByteArrayInputStream("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}".getBytes(StandardCharsets.UTF_8)));
+        // Call the dataSource method
+        DataSource dataSource = hikariDataSourceConfig.dataSource(fxPasswordClient, hikariConfig, cyberArcUrl);
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(mockConnection.getInputStream(), StandardCharsets.UTF_8));
-        when(br.readLine()).thenReturn("{\"UserName\":\"testUser\",\"Content\":\"testPass\"}");
+        // Verify the password was set in the HikariConfig
+        assertEquals("testPassword", hikariConfig.getPassword());
+        assertTrue(dataSource instanceof HikariDataSource);
 
-        DbCredentials credentials = fxPasswordSubscriber.getDbCredentials("http://test-url");
-
-        assertNotNull(credentials);
-        assertEquals("testUser", credentials.getUsername());
-        assertEquals("testPass", credentials.getPassword());
+        // Verify the password system property was set
+        assertEquals("testPassword", System.getProperty(HikariDataSourceConfig.DATABASE_PASSWORD));
     }
 
     @Test
-    void testGetDbCredentials_Failure() throws Exception {
-        Path mockPath = Paths.get("/mock/path");
-        when(fileUtils.getPathKeystore(customDirectoryKeystorePath)).thenReturn(mockPath);
+    public void testDataSourceWhenPasswordNotPresent() {
+        // Mock the behavior of fxPasswordClient to return an empty Optional
+        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.empty());
 
-        // Mock the URL creation and connection opening
-        PowerMockito.whenNew(URL.class).withArguments(anyString()).thenReturn(mockUrl);
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-        
-        when(mockConnection.getResponseCode()).thenReturn(500);
+        // Call the dataSource method
+        DataSource dataSource = hikariDataSourceConfig.dataSource(fxPasswordClient, hikariConfig, cyberArcUrl);
 
-        assertThrows(RuntimeException.class, () -> fxPasswordSubscriber.getDbCredentials("http://test-url"));
+        // Verify the password was not set in the HikariConfig
+        assertNull(hikariConfig.getPassword());
+        assertTrue(dataSource instanceof HikariDataSource);
+
+        // Verify the password system property was not set
+        assertNull(System.getProperty(HikariDataSourceConfig.DATABASE_PASSWORD));
     }
 }
