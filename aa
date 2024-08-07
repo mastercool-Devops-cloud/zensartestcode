@@ -1,9 +1,21 @@
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.util.Optional;
 
-import javax.sql.DataSource;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,66 +23,96 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.ResourceUtils;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest
-public class HikariDataSourceConfigTest {
+@ExtendWith(MockitoExtension.class)
+public class FxPasswordClientTest {
 
     @InjectMocks
-    private HikariDataSourceConfig hikariDataSourceConfig;
-
-    @MockBean
     private FxPasswordClient fxPasswordClient;
 
-    @Value("${cyberarc.url}")
-    private String cyberArcUrl;
+    @Mock
+    private HttpClient httpClient;
 
-    private HikariConfig hikariConfig;
+    @Mock
+    private HttpResponse<String> httpResponse;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @Mock
+    private File keystoreFile;
+
+    @Value("${keystore.path}")
+    private String keystorePath = "classpath:keystore.jks";
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
-        hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl("jdbc:h2:mem:testdb"); // Set a dummy JDBC URL
-        hikariConfig.setUsername("testUser"); // Set a dummy username
+        ReflectionTestUtils.setField(fxPasswordClient, "keystorePath", keystorePath);
     }
 
     @Test
-    public void testDataSource() {
-        // Mock the behavior of fxPasswordClient to return an Optional with a password
-        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.of("testPassword"));
+    public void testRequestCyberArcPasswordSuccess() throws Exception {
+        String cyberArcUrl = "http://example.com";
+        String responseJson = "{\"password\": \"testPassword\"}";
+        DbCredentials dbCredentials = new DbCredentials();
+        dbCredentials.setPassword("testPassword");
 
-        // Call the dataSource method
-        DataSource dataSource = hikariDataSourceConfig.dataSource(fxPasswordClient, hikariConfig, cyberArcUrl);
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenReturn(httpResponse);
+        when(httpResponse.body()).thenReturn(responseJson);
+        when(objectMapper.readValue(responseJson, DbCredentials.class))
+                .thenReturn(dbCredentials);
 
-        // Verify the password was set in the HikariConfig
-        assertEquals("testPassword", hikariConfig.getPassword());
-        assertTrue(dataSource instanceof HikariDataSource);
+        Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
 
-        // Verify the password system property was set
-        assertEquals("testPassword", System.getProperty(HikariDataSourceConfig.DATABASE_PASSWORD));
+        assertTrue(password.isPresent());
+        assertEquals("testPassword", password.get());
     }
 
     @Test
-    public void testDataSourceWhenPasswordNotPresent() {
-        // Mock the behavior of fxPasswordClient to return an empty Optional
-        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.empty());
+    public void testRequestCyberArcPasswordFailure() throws Exception {
+        String cyberArcUrl = "http://example.com";
 
-        // Call the dataSource method
-        DataSource dataSource = hikariDataSourceConfig.dataSource(fxPasswordClient, hikariConfig, cyberArcUrl);
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenThrow(IOException.class);
 
-        // Verify the password was not set in the HikariConfig
-        assertNull(hikariConfig.getPassword());
-        assertTrue(dataSource instanceof HikariDataSource);
+        Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
 
-        // Verify the password system property was not set
-        assertNull(System.getProperty(HikariDataSourceConfig.DATABASE_PASSWORD));
+        assertFalse(password.isPresent());
+    }
+
+    @Test
+    public void testCreateSslContext() throws Exception {
+        KeyStore truststore = KeyStore.getInstance("JKS");
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+
+        try (FileInputStream fileInputStream = new FileInputStream(keystoreFile)) {
+            truststore.load(fileInputStream, null);
+            trustManagerFactory.init(truststore);
+            sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
+        }
+
+        when(ResourceUtils.getFile(keystorePath)).thenReturn(keystoreFile);
+        SSLContext resultSslContext = fxPasswordClient.createSslContext();
+
+        assertNotNull(resultSslContext);
+    }
+
+    @Test
+    public void testGetKeystoreFile() throws Exception {
+        when(ResourceUtils.getFile(keystorePath)).thenReturn(keystoreFile);
+
+        File resultFile = fxPasswordClient.getKeystoreFile();
+
+        assertNotNull(resultFile);
+        assertEquals(keystoreFile, resultFile);
     }
 }
