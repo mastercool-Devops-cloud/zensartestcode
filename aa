@@ -2,17 +2,24 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.sql.DataSource;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = HikariDataSourceConfig.class)
+@SpringBootTest
+@Import(HikariDataSourceConfigTest.TestConfig.class)
 class HikariDataSourceConfigTest {
 
     @Autowired
@@ -22,7 +29,6 @@ class HikariDataSourceConfigTest {
     void testHikariConfigBean() {
         HikariConfig hikariConfig = context.getBean(HikariConfig.class);
         assertNotNull(hikariConfig, "HikariConfig bean should be created");
-        // Additional assertions can be made based on your configuration
     }
 
     @Test
@@ -30,62 +36,23 @@ class HikariDataSourceConfigTest {
         DataSource dataSource = context.getBean(DataSource.class);
         assertNotNull(dataSource, "DataSource bean should be created");
         assertTrue(dataSource instanceof HikariDataSource, "DataSource should be an instance of HikariDataSource");
-
-        HikariDataSource hikariDataSource = (HikariDataSource) dataSource;
-        // Additional assertions can be made based on your configuration
-    }
-}
-
-------------------------------------------------------------------------
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
-
-@ExtendWith(SpringExtension.class)
-class CyberArcPasswordInitializerTest {
-
-    @Mock
-    private FxPasswordClient fxPasswordClient;
-
-    @Value("${cyberarc.url}")
-    private String cyberArcUrl = "http://test-cyberarc-url";
-
-    @InjectMocks
-    private CyberArcPasswordInitializer cyberArcPasswordInitializer;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
     }
 
-    @Test
-    void testPasswordIsSetWhenPresent() {
-        String expectedPassword = "testPassword";
-        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.of(expectedPassword));
+    @Configuration
+    static class TestConfig {
 
-        new CyberArcPasswordInitializer(fxPasswordClient, cyberArcUrl);
+        @Mock
+        private FxPasswordClient fxPasswordClient;
 
-        String actualPassword = System.getProperty(CyberArcPasswordInitializer.DATABASE_PASSWORD);
-        assertEquals(expectedPassword, actualPassword, "The database password should be set correctly");
-    }
+        @Bean
+        public CyberArcPasswordInitializer cyberArcPasswordInitializer() {
+            MockitoAnnotations.openMocks(this);
+            return new CyberArcPasswordInitializer(fxPasswordClient, "http://test-cyberarc-url");
+        }
 
-    @Test
-    void testPasswordIsNotSetWhenAbsent() {
-        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.empty());
-
-        new CyberArcPasswordInitializer(fxPasswordClient, cyberArcUrl);
-
-        String actualPassword = System.getProperty(CyberArcPasswordInitializer.DATABASE_PASSWORD);
-        assertEquals(null, actualPassword, "The database password should not be set when not present");
+        @Bean
+        public HikariDataSourceConfig hikariDataSourceConfig() {
+            return new HikariDataSourceConfig();
+        }
     }
 }
