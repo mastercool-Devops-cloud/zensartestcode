@@ -1,147 +1,91 @@
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import javax.sql.DataSource;
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.util.Optional;
+@ExtendWith(SpringExtension.class)
+@SpringBootTest(classes = HikariDataSourceConfig.class)
+class HikariDataSourceConfigTest {
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
+    @Autowired
+    private ApplicationContext context;
 
+    @Test
+    void testHikariConfigBean() {
+        HikariConfig hikariConfig = context.getBean(HikariConfig.class);
+        assertNotNull(hikariConfig, "HikariConfig bean should be created");
+        // Additional assertions can be made based on your configuration
+    }
+
+    @Test
+    void testDataSourceBean() {
+        DataSource dataSource = context.getBean(DataSource.class);
+        assertNotNull(dataSource, "DataSource bean should be created");
+        assertTrue(dataSource instanceof HikariDataSource, "DataSource should be an instance of HikariDataSource");
+
+        HikariDataSource hikariDataSource = (HikariDataSource) dataSource;
+        // Additional assertions can be made based on your configuration
+    }
+}
+
+------------------------------------------------------------------------
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Optional;
 
-@ExtendWith(MockitoExtension.class)
-public class FxPasswordClientTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
 
-    @InjectMocks
+@ExtendWith(SpringExtension.class)
+class CyberArcPasswordInitializerTest {
+
+    @Mock
     private FxPasswordClient fxPasswordClient;
 
-    @Mock
-    private HttpClient httpClient;
+    @Value("${cyberarc.url}")
+    private String cyberArcUrl = "http://test-cyberarc-url";
 
-    @Mock
-    private HttpResponse<String> httpResponse;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
-    private File keystoreFile;
-
-    @Value("${keystore.path}")
-    private String keystorePath = "classpath:keystore.jks";
+    @InjectMocks
+    private CyberArcPasswordInitializer cyberArcPasswordInitializer;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
-        ReflectionTestUtils.setField(fxPasswordClient, "keystorePath", keystorePath);
     }
 
     @Test
-    public void testRequestCyberArcPasswordSuccess() throws Exception {
-        String cyberArcUrl = "http://example.com";
-        String responseJson = "{\"password\": \"testPassword\"}";
-        DbCredentials dbCredentials = new DbCredentials();
-        dbCredentials.setPassword("testPassword");
+    void testPasswordIsSetWhenPresent() {
+        String expectedPassword = "testPassword";
+        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.of(expectedPassword));
 
-        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
-                .thenReturn(httpResponse);
-        when(httpResponse.body()).thenReturn(responseJson);
-        when(objectMapper.readValue(responseJson, DbCredentials.class))
-                .thenReturn(dbCredentials);
+        new CyberArcPasswordInitializer(fxPasswordClient, cyberArcUrl);
 
-        // Injecting the mock HttpClient into the fxPasswordClient using Reflection
-        ReflectionTestUtils.setField(fxPasswordClient, "httpClient", httpClient);
-
-        Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
-
-        assertTrue(password.isPresent());
-        assertEquals("testPassword", password.get());
+        String actualPassword = System.getProperty(CyberArcPasswordInitializer.DATABASE_PASSWORD);
+        assertEquals(expectedPassword, actualPassword, "The database password should be set correctly");
     }
 
     @Test
-    public void testRequestCyberArcPasswordFailure() throws Exception {
-        String cyberArcUrl = "http://example.com";
+    void testPasswordIsNotSetWhenAbsent() {
+        when(fxPasswordClient.requestCyberArcPassword(cyberArcUrl)).thenReturn(Optional.empty());
 
-        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
-                .thenThrow(IOException.class);
+        new CyberArcPasswordInitializer(fxPasswordClient, cyberArcUrl);
 
-        // Injecting the mock HttpClient into the fxPasswordClient using Reflection
-        ReflectionTestUtils.setField(fxPasswordClient, "httpClient", httpClient);
-
-        Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
-
-        assertFalse(password.isPresent());
-    }
-
-    @Test
-    public void testCreateSslContext() throws Exception {
-        // Prepare the private method createSslContext
-        Method createSslContextMethod = FxPasswordClient.class.getDeclaredMethod("createSslContext");
-        createSslContextMethod.setAccessible(true);
-
-        // Mocking the file operations
-        when(keystoreFile.getPath()).thenReturn("dummyPath");
-        FileInputStream mockFileInputStream = mock(FileInputStream.class);
-        when(new FileInputStream(keystoreFile)).thenReturn(mockFileInputStream);
-
-        // Call the private method via reflection
-        SSLContext sslContext = (SSLContext) createSslContextMethod.invoke(fxPasswordClient);
-
-        assertNotNull(sslContext);
-    }
-
-    @Test
-    public void testGetKeystoreFile() throws Exception {
-        // Prepare the private method getKeystoreFile
-        Method getKeystoreFileMethod = FxPasswordClient.class.getDeclaredMethod("getKeystoreFile");
-        getKeystoreFileMethod.setAccessible(true);
-
-        when(new File(keystorePath)).thenReturn(keystoreFile);
-
-        // Call the private method via reflection
-        File resultFile = (File) getKeystoreFileMethod.invoke(fxPasswordClient);
-
-        assertNotNull(resultFile);
-        assertEquals(keystoreFile, resultFile);
-    }
-
-    @Test
-    public void testSetupHttpClient() throws Exception {
-        // Prepare the private method setupHttpClient
-        Method setupHttpClientMethod = FxPasswordClient.class.getDeclaredMethod("setupHttpClient");
-        setupHttpClientMethod.setAccessible(true);
-
-        // Mock the SSLContext creation
-        Method createSslContextMethod = FxPasswordClient.class.getDeclaredMethod("createSslContext");
-        createSslContextMethod.setAccessible(true);
-        SSLContext sslContext = mock(SSLContext.class);
-        when(createSslContextMethod.invoke(fxPasswordClient)).thenReturn(sslContext);
-
-        // Call the private method via reflection
-        HttpClient httpClient = (HttpClient) setupHttpClientMethod.invoke(fxPasswordClient);
-
-        assertNotNull(httpClient);
+        String actualPassword = System.getProperty(CyberArcPasswordInitializer.DATABASE_PASSWORD);
+        assertEquals(null, actualPassword, "The database password should not be set when not present");
     }
 }
