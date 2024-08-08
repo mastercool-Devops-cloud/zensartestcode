@@ -1,68 +1,110 @@
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.ResourceUtils;
 
-import javax.sql.DataSource;
+import javax.net.ssl.SSLContext;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.security.GeneralSecurityException;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest
-@Import(HikariDataSourceConfigTest.TestConfig.class)
-class HikariDataSourceConfigTest {
+@ExtendWith(MockitoExtension.class)
+class FxPasswordClientTest {
 
-    @Autowired
-    private ApplicationContext context;
+    @Mock
+    private HttpClient httpClient;
 
-    @Test
-    void testHikariConfigBean(@Qualifier("hikariConfig") HikariConfig hikariConfig) {
-        assertNotNull(hikariConfig, "HikariConfig bean should be created");
+    @Mock
+    private HttpResponse<String> httpResponse;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @InjectMocks
+    private FxPasswordClient fxPasswordClient;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        ReflectionTestUtils.setField(fxPasswordClient, "keystorePath", "classpath:keystore.jks");
     }
 
     @Test
-    void testDataSourceBean() {
-        DataSource dataSource = context.getBean(DataSource.class);
-        assertNotNull(dataSource, "DataSource bean should be created");
-        assertTrue(dataSource instanceof HikariDataSource, "DataSource should be an instance of HikariDataSource");
+    void testRequestCyberArcPassword_Success() throws Exception {
+        String cyberArcUrl = "https://cyberarc-url";
+        String responseJson = "{\"password\":\"secret\"}";
+        DbCredentials dbCredentials = new DbCredentials();
+        dbCredentials.setPassword("secret");
+
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenReturn(httpResponse);
+        when(httpResponse.body()).thenReturn(responseJson);
+        when(objectMapper.readValue(responseJson, DbCredentials.class)).thenReturn(dbCredentials);
+
+        Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
+
+        assertTrue(password.isPresent(), "Password should be present");
+        assertEquals("secret", password.get(), "The password should match the expected value");
     }
 
-    @Configuration
-    @EnableConfigurationProperties
-    static class TestConfig {
+    @Test
+    void testRequestCyberArcPassword_Exception() throws Exception {
+        String cyberArcUrl = "https://cyberarc-url";
 
-        @Mock
-        private FxPasswordClient fxPasswordClient;
+        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+            .thenThrow(IOException.class);
 
-        @Bean
-        public CyberArcPasswordInitializer cyberArcPasswordInitializer() {
-            MockitoAnnotations.openMocks(this);
-            return new CyberArcPasswordInitializer(fxPasswordClient, "http://test-cyberarc-url");
-        }
+        Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
 
-        @Bean
-        @DependsOn("cyberArcPasswordInitializer")
-        @ConfigurationProperties(prefix = "spring.datasource.hikari")
-        public HikariConfig hikariConfig() {
-            return new HikariConfig();
-        }
+        assertFalse(password.isPresent(), "Password should be empty when an exception occurs");
+    }
 
-        @Bean
-        @DependsOn("hikariConfig")
-        public DataSource dataSource(@Qualifier("hikariConfig") HikariConfig hikariConfig) {
-            return new HikariDataSource(hikariConfig);
-        }
+    @Test
+    void testCreateSslContext_Success() throws Exception {
+        SSLContext sslContext = fxPasswordClient.createSslContext();
+
+        assertNotNull(sslContext, "SSLContext should be created successfully");
+    }
+
+    @Test
+    void testGetKeystoreFile_Success() {
+        File keystoreFile = fxPasswordClient.getKeystoreFile();
+
+        assertNotNull(keystoreFile, "Keystore file should be retrieved successfully");
+        assertTrue(keystoreFile.exists(), "Keystore file should exist");
+    }
+
+    @Test
+    void testGetKeystoreFile_FileNotFound() {
+        ReflectionTestUtils.setField(fxPasswordClient, "keystorePath", "classpath:nonexistent.jks");
+
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            fxPasswordClient.getKeystoreFile();
+        });
+
+        assertEquals(FileNotFoundException.class, exception.getCause().getClass(), "Cause should be FileNotFoundException");
+    }
+
+    @Test
+    void testSetupHttpClient_Success() throws Exception {
+        HttpClient client = fxPasswordClient.setupHttpClient();
+
+        assertNotNull(client, "HttpClient should be created successfully");
     }
 }
