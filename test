@@ -1,9 +1,15 @@
-java.lang.IllegalArgumentException: Could not find field 'objectMapper' of type [null] on target object [com.sb.fedssimplification.cashflowprocessor.client.FxPasswordClient@75e09567] or target class [class com.sb.fedssimplification.cashflowprocessor.client.FxPasswordClient]
+org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
+HttpResponse$MockitoMock$192030235 cannot be returned by toString()
+toString() should return String
+***
+If you're unsure why you're getting above error read on.
+Due to the nature of the syntax above problem might occur because:
+1. This exception *might* occur in wrongly written multi-threaded tests.
+   Please refer to Mockito FAQ on limitations of concurrency testing.
+2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
+   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
 
-	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:190)
-	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:107)
-	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:91)
-	at com.sb.fedssimplification.cashflowprocessor.client.FxPasswordClientTest.testRequestCyberArcPassword_Success(FxPasswordClientTest.java:65)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+
+	at com.sb.fedssimplification.cashflowprocessor.client.FxPasswordClientTest.testRequestCyberArcPassword_Success(FxPasswordClientTest.java:60)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
