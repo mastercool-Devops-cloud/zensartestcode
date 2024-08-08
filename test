@@ -1,11 +1,18 @@
-org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'com.zaxxer.hikari.HikariConfig' available: expected single matching bean but found 2: hikariConfig,dataSource
+java.util.NoSuchElementException: No value present
 
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveNamedBean(DefaultListableBeanFactory.java:1312)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveBean(DefaultListableBeanFactory.java:486)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.getBean(DefaultListableBeanFactory.java:341)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.getBean(DefaultListableBeanFactory.java:334)
-	at org.springframework.context.support.AbstractApplicationContext.getBean(AbstractApplicationContext.java:1261)
-	at com.sb.fedssimplification.cashflowprocessor.config.HikariDataSourceConfigTest.testHikariConfigBean(HikariDataSourceConfigTest.java:37)
+	at java.base/java.util.Optional.get(Optional.java:143)
+	at com.sb.fedssimplification.cashflowprocessor.client.FxPasswordClientTest.testRequestCyberArcPassword_Success(FxPasswordClientTest.java:67)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.sb.fedssimplification.cashflowprocessor.client.FxPasswordClientTest.testRequestCyberArcPassword_Exception(FxPasswordClientTest.java:74)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:186)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
