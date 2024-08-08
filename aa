@@ -12,12 +12,16 @@ import org.springframework.util.ResourceUtils;
 import javax.net.ssl.SSLContext;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,9 +36,6 @@ class FxPasswordClientTest {
 
     @Mock
     private HttpResponse<String> httpResponse;
-
-    @Mock
-    private ObjectMapper objectMapper;
 
     @InjectMocks
     private FxPasswordClient fxPasswordClient;
@@ -55,6 +56,7 @@ class FxPasswordClientTest {
         when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
             .thenReturn(httpResponse);
         when(httpResponse.body()).thenReturn(responseJson);
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
         when(objectMapper.readValue(responseJson, DbCredentials.class)).thenReturn(dbCredentials);
 
         Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
@@ -77,13 +79,20 @@ class FxPasswordClientTest {
 
     @Test
     void testCreateSslContext_Success() throws Exception {
+        // Mock the keystore file
+        File mockKeystoreFile = mock(File.class);
+        when(mockKeystoreFile.getPath()).thenReturn("mockKeystorePath");
+        ReflectionTestUtils.setField(fxPasswordClient, "keystorePath", "mockKeystorePath");
+        when(mockKeystoreFile.exists()).thenReturn(true);
+        doReturn(mockKeystoreFile).when(fxPasswordClient).getKeystoreFile();
+
         SSLContext sslContext = fxPasswordClient.createSslContext();
 
         assertNotNull(sslContext, "SSLContext should be created successfully");
     }
 
     @Test
-    void testGetKeystoreFile_Success() {
+    void testGetKeystoreFile_Success() throws Exception {
         File keystoreFile = fxPasswordClient.getKeystoreFile();
 
         assertNotNull(keystoreFile, "Keystore file should be retrieved successfully");
@@ -103,6 +112,9 @@ class FxPasswordClientTest {
 
     @Test
     void testSetupHttpClient_Success() throws Exception {
+        SSLContext mockSslContext = mock(SSLContext.class);
+        doReturn(mockSslContext).when(fxPasswordClient).createSslContext();
+
         HttpClient client = fxPasswordClient.setupHttpClient();
 
         assertNotNull(client, "HttpClient should be created successfully");
