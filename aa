@@ -1,20 +1,5 @@
-    @Test
-    void testRequestCyberArcPassword_Success() throws Exception {
-        String cyberArcUrl = "https://cyberarc-url";
-        String responseJson = "{\"password\":\"secret\"}";
+Install Podman Desktop.
 
-        // Mocking the behavior of HttpClient and HttpResponse
-        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
-            .thenReturn(httpResponse);
-        when(httpResponse.body()).thenReturn(responseJson); // Returning a String as expected
+Enable the Windows Subsystem for Linux (WSL) to launch our containers.
 
-        // Mock ObjectMapper behavior directly
-        DbCredentials dbCredentials = new DbCredentials();
-        dbCredentials.setPassword("secret");
-        when(objectMapper.readValue(responseJson, DbCredentials.class)).thenReturn(dbCredentials);
-
-        Optional<String> password = fxPasswordClient.requestCyberArcPassword(cyberArcUrl);
-
-        assertTrue(password.isPresent(), "Password should be present");
-        assertEquals("secret", password.get(), "The password should match the expected value");
-    }
+Install Podman as a container engine on Windows.
