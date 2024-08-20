@@ -1,14 +1,11 @@
-Expected :true
-Actual   :false
-<Click to see difference>
+Method 4: Install Podman Using a Pre-built VM (Podman Desktop)
+Download Podman Desktop:
 
+Visit Podman Desktop and download the latest version for Windows.
+Install and Configure:
 
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
-	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
-	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:214)
-	at com.sb.fedssimplification.cashflowprocessor.client.FxPasswordClientTest.testRequestCyberArcPassword_Success(FxPasswordClientTest.java:69)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Run the installer and follow the setup instructions.
+Podman Desktop will automatically configure a VM and provide a user interface for managing containers.
+Use Podman via the GUI:
+
+You can manage containers directly through the Podman Desktop GUI, similar to how you would with Docker Desktop.
