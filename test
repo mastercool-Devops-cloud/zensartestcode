@@ -1,11 +1,2 @@
-Method 4: Install Podman Using a Pre-built VM (Podman Desktop)
-Download Podman Desktop:
 
-Visit Podman Desktop and download the latest version for Windows.
-Install and Configure:
-
-Run the installer and follow the setup instructions.
-Podman Desktop will automatically configure a VM and provide a user interface for managing containers.
-Use Podman via the GUI:
-
-You can manage containers directly through the Podman Desktop GUI, similar to how you would with Docker Desktop.
+Error: image used by 8f1ecb593817f4984d9d0ff9be29f8618212cf6287bc1393cf0494806d1fa0e9: image is in use by a container: consider listing external containers and force-removing image
