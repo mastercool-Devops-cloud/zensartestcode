@@ -1,0 +1,84 @@
+app1.war and app2.war -deployment in apache tomcat using different different port number and different webapp like below url
+http:\\ufedUat1:8090\app1 and http:\\ufedUat1:8070\app2?
+
+To deploy app1.war and app2.war in Apache Tomcat so that they are accessible on different port numbers (e.g., http://ufedUat1:8090/app1 and http://ufedUat1:8070/app2) using different webapps directories, you will need to configure Tomcat to run two separate services within the same Tomcat instance. Each service will handle one of the applications.
+
+Steps to Configure Tomcat:
+Deploy the WAR Files:
+
+Place app1.war and app2.war in separate directories. For example:
+app1.war in C:\path\to\tomcat\webapps1\
+app2.war in C:\path\to\tomcat\webapps2\
+Edit server.xml:
+
+Open the server.xml file located in the conf directory of your Tomcat installation.
+
+Define two separate <Service> elements in the server.xml file, each with its own <Connector>, <Engine>, and <Host> elements.
+
+Example configuration:
+
+xml
+Copy code
+<!-- Service for app1 on port 8090 -->
+<Service name="Catalina1">
+    <Connector port="8090" protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443" />
+    <Engine name="Catalina1" defaultHost="localhost">
+        <Host name="localhost" appBase="webapps1"
+              unpackWARs="true" autoDeploy="true">
+            <Context path="/app1" docBase="app1" />
+        </Host>
+    </Engine>
+</Service>
+
+<!-- Service for app2 on port 8070 -->
+<Service name="Catalina2">
+    <Connector port="8070" protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443" />
+    <Engine name="Catalina2" defaultHost="localhost">
+        <Host name="localhost" appBase="webapps2"
+              unpackWARs="true" autoDeploy="true">
+            <Context path="/app2" docBase="app2" />
+        </Host>
+    </Engine>
+</Service>
+Explanation:
+Catalina1:
+Listens on port 8090.
+Deploys app1.war located in the webapps1 directory.
+The application will be accessible via http://ufedUat1:8090/app1.
+Catalina2:
+Listens on port 8070.
+Deploys app2.war located in the webapps2 directory.
+The application will be accessible via http://ufedUat1:8070/app2.
+Directory Structure:
+
+Ensure your directory structure looks something like this:
+vbnet
+Copy code
+C:\path\to\tomcat\
+  ├── conf\
+  ├── logs\
+  ├── temp\
+  ├── webapps1\
+  │    └── app1.war
+  ├── webapps2\
+  │    └── app2.war
+  ├── work\
+  └── bin\
+Restart Tomcat:
+
+After making these changes, restart the Tomcat server to apply the new configurations.
+Accessing the Applications:
+Once Tomcat is running, you can access the applications via:
+http://ufedUat1:8090/app1
+http://ufedUat1:8070/app2
+This setup allows each application to run independently on different ports and different webapps directories, providing isolation and flexibility.
+
+
+
+
+
+
