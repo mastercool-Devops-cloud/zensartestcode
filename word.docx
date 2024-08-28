@@ -1,3 +1,37 @@
+Dev Podman machine
+	pod->(fed-deam_management)
+		-container
+			-appication
+				-port
+		-container
+			-appication
+				-port
+				
+	pod->(fed-trade)
+		-container
+			-appication
+				-port
+		-container
+			-appication
+				-port
+--------------------------------------------
+UAT Podman machine
+	pod->(fed-deam_management)
+		-container
+			-appication
+				-port
+		-container
+			-appication
+				-port
+				
+	pod->(fed-trade)
+		-container
+			-appication
+				-port
+		-container
+			-appication
+				-port
+
 how to crate different podman machine for dev and uat environment
 ChatGPT said:
 ChatGPT
