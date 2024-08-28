@@ -1,33 +1,4 @@
-Dev Podman machine
-	pod->(fed-deam_management)
-		-container
-			-appication
-				-port
-		-container
-			-appication
-				-port
-				
-	pod->(fed-trade)
-		-container
-			-appication
-				-port
-		-container
-			-appication
-				-port
---------------------------------------------
-UAT Podman machine
-	pod->(fed-deam_management)
-		-container
-			-appication
-				-port
-		-container
-			-appication
-				-port
-				
-	pod->(fed-trade)
-		-container
-			-appication
-				-port
-		-container
-			-appication
-				-port
+Process cashflows in XML to PRISM via MQ
+Related to the queue integration and creating a producer with a message that can be sent to the queue for PRISM to process. 
+
+Ack/Nack validations - whether or not an entry has passed validation and moved on to processing
