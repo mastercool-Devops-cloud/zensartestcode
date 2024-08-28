@@ -2,3 +2,215 @@ Process cashflows in XML to PRISM via MQ
 Related to the queue integration and creating a producer with a message that can be sent to the queue for PRISM to process. 
 
 Ack/Nack validations - whether or not an entry has passed validation and moved on to processing
+-----------------------------------------------------------------
+<dependencies>
+    <!-- Spring Boot Starter for RabbitMQ -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-amqp</artifactId>
+    </dependency>
+
+    <!-- Jackson Dataformat for XML -->
+    <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-xml</artifactId>
+    </dependency>
+
+    <!-- Other dependencies -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+
+---------------------------------------------------------------------
+package com.example.rabbitmqprism.config;
+
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitMQConfig {
+
+    public static final String QUEUE_NAME = "prism.queue";
+    public static final String EXCHANGE_NAME = "prism.exchange";
+    public static final String ROUTING_KEY = "prism.routingkey";
+
+    @Bean
+    public Queue queue() {
+        return new Queue(QUEUE_NAME, false);
+    }
+
+    @Bean
+    public TopicExchange exchange() {
+        return new TopicExchange(EXCHANGE_NAME);
+    }
+
+    @Bean
+    public Binding binding(Queue queue, TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+    }
+}
+----------------------------------------------------------------------
+package com.example.rabbitmqprism.model;
+
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
+@JacksonXmlRootElement(localName = "PRISMData")
+public class PRISMData {
+
+    private String id;
+    private String name;
+    private String value;
+
+    public PRISMData() {}
+
+    public PRISMData(String id, String name, String value) {
+        this.id = id;
+        this.name = name;
+        this.value = value;
+    }
+
+    // Getters and Setters
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+}
+-------------------------------------------------
+package com.example.rabbitmqprism.producer;
+
+import com.example.rabbitmqprism.config.RabbitMQConfig;
+import com.example.rabbitmqprism.model.PRISMData;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MessageProducer {
+
+    private final RabbitTemplate rabbitTemplate;
+    private final XmlMapper xmlMapper;
+
+    @Autowired
+    public MessageProducer(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
+        this.xmlMapper = new XmlMapper();
+    }
+
+    public void sendXmlMessage(PRISMData data) {
+        try {
+            String xmlMessage = xmlMapper.writeValueAsString(data);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, xmlMessage);
+            System.out.println("XML Message sent to RabbitMQ: " + xmlMessage);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
+}
+--------------------------------------------------
+package com.example.rabbitmqprism.controller;
+
+import com.example.rabbitmqprism.model.PRISMData;
+import com.example.rabbitmqprism.producer.MessageProducer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class MessageController {
+
+    private final MessageProducer messageProducer;
+
+    @Autowired
+    public MessageController(MessageProducer messageProducer) {
+        this.messageProducer = messageProducer;
+    }
+
+    @GetMapping("/sendXml")
+    public String sendXmlMessage(@RequestParam("id") String id,
+                                 @RequestParam("name") String name,
+                                 @RequestParam("value") String value) {
+        PRISMData data = new PRISMData(id, name, value);
+        messageProducer.sendXmlMessage(data);
+        return "XML Message sent: " + data.toString();
+    }
+}
+------------------------------------------
+package com.example.rabbitmqprism.producer;
+
+import com.example.rabbitmqprism.config.RabbitMQConfig;
+import com.example.rabbitmqprism.model.PRISMData;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+
+import static org.mockito.Mockito.verify;
+
+public class MessageProducerTest {
+
+    @Mock
+    private RabbitTemplate rabbitTemplate;
+
+    @InjectMocks
+    private MessageProducer messageProducer;
+
+    public MessageProducerTest() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testSendXmlMessage() throws JsonProcessingException {
+        PRISMData data = new PRISMData("123", "test", "HelloPRISM");
+        XmlMapper xmlMapper = new XmlMapper();
+        String xmlMessage = xmlMapper.writeValueAsString(data);
+
+        messageProducer.sendXmlMessage(data);
+
+        verify(rabbitTemplate).convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, xmlMessage);
+    }
+}
+------------------------------------------------------------
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+------------------------------------------------------------
+http://localhost:8080/sendXml?id=123&name=test&value=HelloPRISM
+
