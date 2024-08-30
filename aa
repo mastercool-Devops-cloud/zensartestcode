@@ -7,3 +7,9 @@ A more advanced set of steps that explored how to structure Spring Boot projects
 
 org.springframework.jms.IllegalStateException: JMSWMQ0018: Failed to connect to queue manager 'QM1' with connection mode 'Client' and host name 'localhost(1414)'.; nested exception is com.ibm.mq.MQException: JMSCMQ0001: IBM MQ call failed with compcode '2' ('MQCC_FAILED') reason '2538' ('MQRC_HOST_NOT_AVAILABLE').
 	at org.springframework.jms.support.JmsUtils.convertJmsAccessException(JmsUtils.java:274)
+
+Channel Name = FEDSCF.SVRCONN
+Channel Type = Client Connection
+Transport Type = TCP/IP
+Connection Name = tgate_qmgr.scmb.co.za[1430]
+Queue manager = tgate_qmgr
