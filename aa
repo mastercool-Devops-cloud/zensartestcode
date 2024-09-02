@@ -17,3 +17,9 @@ Queue manager = tgate_qmgr
 ibm.msg.client.jakarta.jms.DetailedIllegalStateException: JMSWMQ0018: Failed to connect to queue manager 'tgate_qmgr' with connection mode 'Client' and host name 'tgate_qmgr.scmb.co.za[1430](1414)'.
 Check the queue manager is started and if running in client mode, check there is a listener running. Please see the linked exception for more information.
 	at com.ibm.msg.client.jakarta.wmq.common.internal.Reason.reasonToException(Reason.java:489)
+
+podman pull ibmcom/mq:latest
+Resolving "ibmcom/mq" using unqualified-search registries (/etc/containers/registries.conf.d/999-podman-machine.conf)
+Trying to pull docker.io/ibmcom/mq:latest...
+Error: initializing source docker://ibmcom/mq:latest: pinging container registry registry-1.docker.io: Get "https://registry-1.docker.io/v2/": dial tcp: lookup registry-1.docker.io: Temporary failure in name resolution
+
