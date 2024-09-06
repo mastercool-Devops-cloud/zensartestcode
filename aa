@@ -1,25 +1,6 @@
-IBM MQ Spring Starter makes it easy to send and receive messages from an MQ Service using Spring's JmsTemplate API, with Spring auto configuration.
+Caused by: com.ibm.mq.MQException: JMSCMQ0001: IBM MQ call failed with compcode '2' ('MQCC_FAILED') reason '2058' ('MQRC_Q_MGR_NAME_ERROR').
+	at com.ibm.msg.client.jakarta.wmq.common.internal.Reason.createException(Reason.java:203)
 
-In this tutorial, you learned how to develop MQ JMS applications with Spring Boot. You could follow one of two sets of steps:
-
-A simpler set of steps that provide a minimal code base where you initiated sending and receiving messages from an MQ service using Spring's JmsTemplate API, leveraging Spring's auto-configuration feature.
-A more advanced set of steps that explored how to structure Spring Boot projects using the MVC design pattern, offering valuable insights into building robust messaging applications with Spring Boot and IBM MQ.
-
-org.springframework.jms.IllegalStateException: JMSWMQ0018: Failed to connect to queue manager 'QM1' with connection mode 'Client' and host name 'localhost(1414)'.; nested exception is com.ibm.mq.MQException: JMSCMQ0001: IBM MQ call failed with compcode '2' ('MQCC_FAILED') reason '2538' ('MQRC_HOST_NOT_AVAILABLE').
-	at org.springframework.jms.support.JmsUtils.convertJmsAccessException(JmsUtils.java:274)
-
-Channel Name = FEDSCF.SVRCONN
-Channel Type = Client Connection
-Transport Type = TCP/IP
-Connection Name = tgate_qmgr.scmb.co.za[1430]
-Queue manager = tgate_qmgr
-
-ibm.msg.client.jakarta.jms.DetailedIllegalStateException: JMSWMQ0018: Failed to connect to queue manager 'tgate_qmgr' with connection mode 'Client' and host name 'tgate_qmgr.scmb.co.za[1430](1414)'.
+Caused by: com.ibm.msg.client.jakarta.jms.DetailedJMSException: JMSWMQ0018: Failed to connect to queue manager 'QM!' with connection mode 'Client' and host name 'localhost(1414)'.
 Check the queue manager is started and if running in client mode, check there is a listener running. Please see the linked exception for more information.
-	at com.ibm.msg.client.jakarta.wmq.common.internal.Reason.reasonToException(Reason.java:489)
-
-podman pull ibmcom/mq:latest
-Resolving "ibmcom/mq" using unqualified-search registries (/etc/containers/registries.conf.d/999-podman-machine.conf)
-Trying to pull docker.io/ibmcom/mq:latest...
-Error: initializing source docker://ibmcom/mq:latest: pinging container registry registry-1.docker.io: Get "https://registry-1.docker.io/v2/": dial tcp: lookup registry-1.docker.io: Temporary failure in name resolution
-
+	at com.ibm.msg.client.jakarta.wmq.common.internal.Reason.reasonToException(Reason.java:595)
