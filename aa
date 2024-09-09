@@ -1,6 +1,7 @@
-Parameter 0 of constructor in com.sb.fedssimplification.cashflowprocessor.producer.MqService required a bean of type 'org.springframework.jms.core.JmsTemplate' that could not be found.
 
-
-Action:
-
-Consider defining a bean of type 'org.springframework.jms.core.JmsTemplate' in your configuration.
+    queueManager: QM1
+    channel: DEV.ADMIN.SVRCONN
+    connName: localhost(1414)
+    queue: DEV.QUEUE.1
+    user: admin
+    password: passw0rd
