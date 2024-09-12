@@ -1,1 +1,23 @@
-Caused by: com.ibm.mq.jmqi.JmqiException: CC=2;RC=2538;AMQ9204: Connection to host 'tgate_qmgr.scmb.co.za[1430](1414)' rejected. [1=com.ibm.mq.jmqi.JmqiException[CC=2;RC=2538;AMQ9205: The host name supplied is not valid. [3=tgate_qmgr.scmb.co.za[1430],4=TCP]],3=tgate_qmgr.scmb.co.za[1430](1414),4=,5=RemoteTCPConnection.resolveHostname]
+# Base image that includes IBM MQ Client, or you can install it from scratch
+FROM icr.io/ibm-messaging/mq:9.3.0.1  # Use the official IBM MQ image or a custom one for MQ client
+
+# Set environment variables for IBM MQ Client
+ENV MQ_SERVER_NAME=tgate_qmgr   # Queue Manager Name
+ENV MQ_CHANNEL=FEDSCF.SVRCONN   # MQ Channel Name
+ENV MQ_CONN_NAME=tgate_qmgr.scmb.co.za(1430)  # Hostname and port of the Queue Manager
+ENV MQ_QUEUE_NAME=FEDSCF_TO_PRISM  # Default Queue Name
+ENV MQ_USER=your_username       # MQ User ID
+ENV MQ_PASSWORD=your_password   # MQ User Password
+ENV MQCCSID=1208                # Code page (optional, set for UTF-8)
+
+# Optional: If MQSERVER needs to be set for default connection information
+# MQSERVER format is "ChannelName/TransportType/ConnectionName"
+ENV MQSERVER="${MQ_CHANNEL}/TCP/${MQ_CONN_NAME}"
+
+# Copy any necessary local files into the container, such as scripts or configurations
+# COPY ./local/path/to/config /container/path/to/config
+
+# Set up entrypoint or command to run the MQ Client commands
+# (e.g., a script to connect to the MQ queue manager)
+CMD ["bash"]  # Replace with your command/script to interact with IBM MQ
+
