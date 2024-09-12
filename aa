@@ -1,23 +1,12 @@
-# Base image that includes IBM MQ Client, or you can install it from scratch
-FROM icr.io/ibm-messaging/mq:9.3.0.1  # Use the official IBM MQ image or a custom one for MQ client
+build_directory: ibm-mq-client
+push:            1
+group_name:      lvhvt
+building... lvhvt/ibm-mq-client:0.14
+Error: parsing main Dockerfile: /var/tmp/libpod_builder2446375203/build/ibm-mq-client/Dockerfile: Syntax error - can't find = in "#". Must be of the form: name=value
 
-# Set environment variables for IBM MQ Client
-ENV MQ_SERVER_NAME=tgate_qmgr   # Queue Manager Name
-ENV MQ_CHANNEL=FEDSCF.SVRCONN   # MQ Channel Name
-ENV MQ_CONN_NAME=tgate_qmgr.scmb.co.za(1430)  # Hostname and port of the Queue Manager
-ENV MQ_QUEUE_NAME=FEDSCF_TO_PRISM  # Default Queue Name
-ENV MQ_USER=your_username       # MQ User ID
-ENV MQ_PASSWORD=your_password   # MQ User Password
-ENV MQCCSID=1208                # Code page (optional, set for UTF-8)
+tagging...
+Error: failed to find image lvhvt/ibm-mq-client:0.14: lvhvt/ibm-mq-client:0.14: image not known
+log in to repo...
+bash: warning: command substitution: ignored null byte in input
 
-# Optional: If MQSERVER needs to be set for default connection information
-# MQSERVER format is "ChannelName/TransportType/ConnectionName"
-ENV MQSERVER="${MQ_CHANNEL}/TCP/${MQ_CONN_NAME}"
-
-# Copy any necessary local files into the container, such as scripts or configurations
-# COPY ./local/path/to/config /container/path/to/config
-
-# Set up entrypoint or command to run the MQ Client commands
-# (e.g., a script to connect to the MQ queue manager)
-CMD ["bash"]  # Replace with your command/script to interact with IBM MQ
 
