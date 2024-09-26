@@ -15,3 +15,9 @@ Solution:
 3. Create a consumer group having 3 consumers each one is consuming messages from the respective partition. You need to log all orders on console to prove that every consumer is consuming orders from respective order type only.
 4. Write a Kafka Streams program that continuously reads orders & displays report of number of orders & total transaction amount against every order type. i.e. “Books_order_count”: 230, “Books_total_transaction_amount”: 2500000, “Mobiles_order_count”: 410, “Mobiles_total_transaction_amount”: 9000000,
 “Cars_order_count”: 57, “Cars_total_transaction_amount”: 65400000,
+
+----------------------------------------------------------------
+//create 3 threads for each order type. Every thread dynamically creates random order & pushes to the topic.
+		//Every type of order is having different message key (flipkart.car.order, flipkart.mobile.order, flipkart.book.order)
+		
+		//Use ExecutorService to create thread pool having at least 3 threads.
