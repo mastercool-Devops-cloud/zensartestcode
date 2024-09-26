@@ -1,3 +1,4 @@
+
 Flipkart is one of the most popular web portals that allows users to place online purchase order for books, mobiles & cars. Please find below the purchase order details:
 Order Type
 Order Details
@@ -21,3 +22,5 @@ Solution:
 		//Every type of order is having different message key (flipkart.car.order, flipkart.mobile.order, flipkart.book.order)
 		
 		//Use ExecutorService to create thread pool having at least 3 threads.
+
+//write a code that generates car orders & send to the 'OrderTopic'
