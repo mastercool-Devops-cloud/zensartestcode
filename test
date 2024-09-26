@@ -148,9 +148,8 @@ org.opentest4j.AssertionFailedError: expected: <My Application> but was: <null>
 -------------------------------------------------------------------
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.boot.actuate.info.Info;
 
 import java.lang.management.ManagementFactory;
@@ -160,54 +159,47 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
 
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mockStatic;
 
 class ApplicationInfoContributorTest {
 
-    @InjectMocks
     private ApplicationInfoContributor applicationInfoContributor;
-
-    @Mock
-    private Info.Builder builder;
-
-    @Mock
     private RuntimeMXBean runtimeMXBean;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        // Mocking ManagementFactory's RuntimeMXBean
-        mockStatic(ManagementFactory.class);
-        when(ManagementFactory.getRuntimeMXBean()).thenReturn(runtimeMXBean);
+        applicationInfoContributor = new ApplicationInfoContributor();
+        runtimeMXBean = Mockito.mock(RuntimeMXBean.class);
+        
+        // Mocking the start time and uptime values
+        Mockito.when(runtimeMXBean.getStartTime()).thenReturn(Instant.now().minusSeconds(3600).toEpochMilli());
+        Mockito.when(runtimeMXBean.getUptime()).thenReturn(3600000L);
     }
 
     @Test
     void contributeTest() {
-        // Given
-        long mockStartTimeMillis = System.currentTimeMillis() - 10000L; // Simulate start time 10 seconds ago
-        long mockUptimeMillis = 10000L; // Simulate uptime 10 seconds
-        LocalDateTime expectedStartTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(mockStartTimeMillis), ZoneId.systemDefault());
+        // Mocking the static ManagementFactory.getRuntimeMXBean() method
+        try (MockedStatic<ManagementFactory> managementFactoryMockedStatic = mockStatic(ManagementFactory.class)) {
+            // Return the mocked RuntimeMXBean when getRuntimeMXBean() is called
+            managementFactoryMockedStatic.when(ManagementFactory::getRuntimeMXBean).thenReturn(runtimeMXBean);
 
-        when(runtimeMXBean.getStartTime()).thenReturn(mockStartTimeMillis);
-        when(runtimeMXBean.getUptime()).thenReturn(mockUptimeMillis);
+            Info.Builder builder = new Info.Builder();
 
-        // Use ArgumentCaptor to capture the argument passed to withDetail
-        var captor = ArgumentCaptor.forClass(Map.class);
+            // Calling the method
+            applicationInfoContributor.contribute(builder);
 
-        // When
-        applicationInfoContributor.contribute(builder);
+            Info info = builder.build();
+            Map<String, Object> appDetails = (Map<String, Object>) info.getDetails().get("appDetails");
 
-        // Then
-        // Capture the map that was passed to withDetail
-        verify(builder).withDetail(eq("appDetails"), captor.capture());
-        Map<String, Object> capturedAppDetails = captor.getValue();
+            // Asserting the details added to the Info object
+            assertEquals("My Application", appDetails.get("appName"));
+            assertEquals("1.0.0", appDetails.get("appVersion"));
+            assertEquals(3600000L, appDetails.get("uptimeMillis"));
 
-        // Assert values in the captured map
-        assertEquals("My Application", capturedAppDetails.get("appName"));
-        assertEquals("1.0.0", capturedAppDetails.get("appVersion"));
-        assertEquals(expectedStartTime, capturedAppDetails.get("startTime"));
-        assertEquals(mockUptimeMillis, capturedAppDetails.get("uptimeMillis"));
+            // Check the start time
+            LocalDateTime expectedStartTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(runtimeMXBean.getStartTime()), ZoneId.systemDefault());
+            assertEquals(expectedStartTime, appDetails.get("startTime"));
+        }
     }
 }
-
