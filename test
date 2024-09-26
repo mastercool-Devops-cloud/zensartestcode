@@ -26,3 +26,109 @@ public class ApplicationInfoContributor implements InfoContributor {
     }
 }
 
+---------------------------------------------------------------------
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.actuate.info.Info;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
+import static org.mockito.Mockito.*;
+
+class ApplicationInfoContributorTest {
+
+    @InjectMocks
+    private ApplicationInfoContributor applicationInfoContributor;
+
+    @Mock
+    private Info.Builder builder;
+
+    @Mock
+    private RuntimeMXBean runtimeMXBean;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        // Mocking ManagementFactory's RuntimeMXBean
+        mockStatic(ManagementFactory.class);
+        when(ManagementFactory.getRuntimeMXBean()).thenReturn(runtimeMXBean);
+    }
+
+    @Test
+    void testContribute() {
+        // Given
+        long mockStartTimeMillis = System.currentTimeMillis() - 10000L; // Simulate start time 10 seconds ago
+        long mockUptimeMillis = 10000L; // Simulate uptime 10 seconds
+        LocalDateTime expectedStartTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(mockStartTimeMillis), ZoneId.systemDefault());
+
+        when(runtimeMXBean.getStartTime()).thenReturn(mockStartTimeMillis);
+        when(runtimeMXBean.getUptime()).thenReturn(mockUptimeMillis);
+
+        // When
+        applicationInfoContributor.contribute(builder);
+
+        // Then
+        verify(builder).withDetail(eq("appDetails"), argThat(map -> {
+            Map<String, Object> appDetails = (Map<String, Object>) map;
+            return "My Application".equals(appDetails.get("appName")) &&
+                    "1.0.0".equals(appDetails.get("appVersion")) &&
+                    expectedStartTime.equals(appDetails.get("startTime")) &&
+                    mockUptimeMillis == (long) appDetails.get("uptimeMillis");
+        }));
+    }
+}
+-----------------------------------------------------------------
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.boot.actuate.info.Info;
+import java.lang.management.RuntimeMXBean;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class ApplicationInfoContributorTest {
+
+    private ApplicationInfoContributor applicationInfoContributor;
+    private RuntimeMXBean runtimeMXBean;
+
+    @BeforeEach
+    void setUp() {
+        applicationInfoContributor = new ApplicationInfoContributor();
+        runtimeMXBean = Mockito.mock(RuntimeMXBean.class);
+        
+        // Mocking the start time and uptime values
+        Mockito.when(runtimeMXBean.getStartTime()).thenReturn(Instant.now().minusSeconds(3600).toEpochMilli());
+        Mockito.when(runtimeMXBean.getUptime()).thenReturn(3600000L);
+    }
+
+    @Test
+    void contributeTest() {
+        Info.Builder builder = new Info.Builder();
+        
+        // Calling the method
+        applicationInfoContributor.contribute(builder);
+
+        Info info = builder.build();
+        Map<String, Object> appDetails = (Map<String, Object>) info.getDetails().get("appDetails");
+
+        // Asserting the details added to the Info object
+        assertEquals("My Application", appDetails.get("appName"));
+        assertEquals("1.0.0", appDetails.get("appVersion"));
+        assertEquals(3600000L, appDetails.get("uptimeMillis"));
+        
+        // Check the start time
+        LocalDateTime expectedStartTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(runtimeMXBean.getStartTime()), ZoneId.systemDefault());
+        assertEquals(expectedStartTime, appDetails.get("startTime"));
+    }
+}
