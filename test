@@ -145,3 +145,69 @@ org.opentest4j.AssertionFailedError: expected: <My Application> but was: <null>
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+-------------------------------------------------------------------
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.boot.actuate.info.Info;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Map;
+
+import static org.mockito.Mockito.*;
+
+class ApplicationInfoContributorTest {
+
+    @InjectMocks
+    private ApplicationInfoContributor applicationInfoContributor;
+
+    @Mock
+    private Info.Builder builder;
+
+    @Mock
+    private RuntimeMXBean runtimeMXBean;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        // Mocking ManagementFactory's RuntimeMXBean
+        mockStatic(ManagementFactory.class);
+        when(ManagementFactory.getRuntimeMXBean()).thenReturn(runtimeMXBean);
+    }
+
+    @Test
+    void contributeTest() {
+        // Given
+        long mockStartTimeMillis = System.currentTimeMillis() - 10000L; // Simulate start time 10 seconds ago
+        long mockUptimeMillis = 10000L; // Simulate uptime 10 seconds
+        LocalDateTime expectedStartTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(mockStartTimeMillis), ZoneId.systemDefault());
+
+        when(runtimeMXBean.getStartTime()).thenReturn(mockStartTimeMillis);
+        when(runtimeMXBean.getUptime()).thenReturn(mockUptimeMillis);
+
+        // Use ArgumentCaptor to capture the argument passed to withDetail
+        var captor = ArgumentCaptor.forClass(Map.class);
+
+        // When
+        applicationInfoContributor.contribute(builder);
+
+        // Then
+        // Capture the map that was passed to withDetail
+        verify(builder).withDetail(eq("appDetails"), captor.capture());
+        Map<String, Object> capturedAppDetails = captor.getValue();
+
+        // Assert values in the captured map
+        assertEquals("My Application", capturedAppDetails.get("appName"));
+        assertEquals("1.0.0", capturedAppDetails.get("appVersion"));
+        assertEquals(expectedStartTime, capturedAppDetails.get("startTime"));
+        assertEquals(mockUptimeMillis, capturedAppDetails.get("uptimeMillis"));
+    }
+}
+
