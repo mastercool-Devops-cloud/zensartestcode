@@ -203,3 +203,67 @@ class ApplicationInfoContributorTest {
         }
     }
 }
+-------------------------------------------------------------------------------------------
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.springframework.boot.actuate.info.Info;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mockStatic;
+
+class ApplicationInfoContributorTest {
+
+    private ApplicationInfoContributor applicationInfoContributor;
+    private RuntimeMXBean runtimeMXBean;
+
+    @BeforeEach
+    void setUp() {
+        applicationInfoContributor = new ApplicationInfoContributor();
+        runtimeMXBean = Mockito.mock(RuntimeMXBean.class);
+
+        // Inject the values for @Value fields using ReflectionTestUtils
+        ReflectionTestUtils.setField(applicationInfoContributor, "appName", "MyApp");
+        ReflectionTestUtils.setField(applicationInfoContributor, "timeZone", "UTC");
+
+        // Mock the start time and uptime values
+        Mockito.when(runtimeMXBean.getStartTime()).thenReturn(Instant.now().minusSeconds(3600).toEpochMilli());
+        Mockito.when(runtimeMXBean.getUptime()).thenReturn(3600000L);
+    }
+
+    @Test
+    void contributeTest() {
+        // Mocking the static ManagementFactory.getRuntimeMXBean() method
+        try (MockedStatic<ManagementFactory> managementFactoryMockedStatic = mockStatic(ManagementFactory.class)) {
+            // Return the mocked RuntimeMXBean when getRuntimeMXBean() is called
+            managementFactoryMockedStatic.when(ManagementFactory::getRuntimeMXBean).thenReturn(runtimeMXBean);
+
+            Info.Builder builder = new Info.Builder();
+
+            // Call the method to contribute details to Info.Builder
+            applicationInfoContributor.contribute(builder);
+
+            Info info = builder.build();
+            Map<String, Object> appDetails = (Map<String, Object>) info.getDetails().get("appDetails");
+
+            // Asserting the details added to the Info object
+            assertEquals("MyApp", appDetails.get("appName"));
+            assertEquals("0.0.1-SNAPSHOT", appDetails.get("version"));
+            assertEquals(3600000L, appDetails.get("uptimeMillis"));
+
+            // Check the start time
+            LocalDateTime expectedStartTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(runtimeMXBean.getStartTime()), ZoneId.of("UTC"));
+            assertEquals(expectedStartTime, appDetails.get("startTime"));
+        }
+    }
+}
+
