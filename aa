@@ -108,4 +108,6 @@ public class OrderProducer {
     }
 }
 
-
+----------------------------------------------------------------
+Order producer produces orders. Write the processor that filters orders having price>=100.
+Note: create 2 topics OrderPriceTopic & HighPriceOrdersTopic. Producer & Consumer code already attached. You need to write only processor. Please use kstream.filter(xx) method.
