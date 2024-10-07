@@ -111,3 +111,134 @@ public class OrderProducer {
 ----------------------------------------------------------------
 Order producer produces orders. Write the processor that filters orders having price>=100.
 Note: create 2 topics OrderPriceTopic & HighPriceOrdersTopic. Producer & Consumer code already attached. You need to write only processor. Please use kstream.filter(xx) method.
+
+-------------------------------------------------------------------
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.StringSerializer;
+
+import java.util.Properties;
+import java.util.Random;
+import java.util.concurrent.*;
+
+public class MultiProducerOrderApp {
+
+    // Kafka Producer creation method for each order type
+    private static Producer<String, String> createProducer() {
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "localhost:9092");
+        props.put("key.serializer", StringSerializer.class.getName());
+        props.put("value.serializer", StringSerializer.class.getName());
+        return new KafkaProducer<>(props);
+    }
+
+    // Callable task to generate car orders
+    static class GenerateCarOrdersTask implements Callable<String> {
+        private final Producer<String, String> carProducer;
+
+        public GenerateCarOrdersTask(Producer<String, String> carProducer) {
+            this.carProducer = carProducer;
+        }
+
+        @Override
+        public String call() {
+            Random random = new Random();
+            try {
+                String carOrder = "CarOrderID-" + random.nextInt(1000) + ", Model-" +
+                        random.nextInt(10) + ", Price-" + random.nextInt(50000);
+                ProducerRecord<String, String> record = new ProducerRecord<>("OrderTopic", "flipkart.car.order", carOrder);
+                RecordMetadata metadata = carProducer.send(record).get();
+                return "Car order sent to partition " + metadata.partition() + " with offset " + metadata.offset();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "Failed to send car order";
+            }
+        }
+    }
+
+    // Callable task to generate mobile orders
+    static class GenerateMobileOrdersTask implements Callable<String> {
+        private final Producer<String, String> mobileProducer;
+
+        public GenerateMobileOrdersTask(Producer<String, String> mobileProducer) {
+            this.mobileProducer = mobileProducer;
+        }
+
+        @Override
+        public String call() {
+            Random random = new Random();
+            try {
+                String mobileOrder = "MobileOrderID-" + random.nextInt(1000) + ", Model-" +
+                        random.nextInt(10) + ", Price-" + random.nextInt(10000);
+                ProducerRecord<String, String> record = new ProducerRecord<>("OrderTopic", "flipkart.mobile.order", mobileOrder);
+                RecordMetadata metadata = mobileProducer.send(record).get();
+                return "Mobile order sent to partition " + metadata.partition() + " with offset " + metadata.offset();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "Failed to send mobile order";
+            }
+        }
+    }
+
+    // Callable task to generate book orders
+    static class GenerateBookOrdersTask implements Callable<String> {
+        private final Producer<String, String> bookProducer;
+
+        public GenerateBookOrdersTask(Producer<String, String> bookProducer) {
+            this.bookProducer = bookProducer;
+        }
+
+        @Override
+        public String call() {
+            Random random = new Random();
+            try {
+                String bookOrder = "BookOrderID-" + random.nextInt(1000) + ", Title-" +
+                        "Book " + random.nextInt(50) + ", Price-" + random.nextInt(500);
+                ProducerRecord<String, String> record = new ProducerRecord<>("OrderTopic", "flipkart.book.order", bookOrder);
+                RecordMetadata metadata = bookProducer.send(record).get();
+                return "Book order sent to partition " + metadata.partition() + " with offset " + metadata.offset();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "Failed to send book order";
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        // Create producers for each order type
+        Producer<String, String> carProducer = createProducer();
+        Producer<String, String> mobileProducer = createProducer();
+        Producer<String, String> bookProducer = createProducer();
+
+        // Create a thread pool with at least 3 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        // Create tasks for each order type
+        GenerateCarOrdersTask generateCarOrdersTask = new GenerateCarOrdersTask(carProducer);
+        GenerateMobileOrdersTask generateMobileOrdersTask = new GenerateMobileOrdersTask(mobileProducer);
+        GenerateBookOrdersTask generateBookOrdersTask = new GenerateBookOrdersTask(bookProducer);
+
+        // Submit tasks to the executor service
+        Future<String> carOrderResult = executorService.submit(generateCarOrdersTask);
+        Future<String> mobileOrderResult = executorService.submit(generateMobileOrdersTask);
+        Future<String> bookOrderResult = executorService.submit(generateBookOrdersTask);
+
+        try {
+            // Retrieve and print results of the tasks
+            System.out.println(carOrderResult.get());
+            System.out.println(mobileOrderResult.get());
+            System.out.println(bookOrderResult.get());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        } finally {
+            // Shutdown the executor service and close producers
+            executorService.shutdown();
+            carProducer.close();
+            mobileProducer.close();
+            bookProducer.close();
+        }
+    }
+}
+
