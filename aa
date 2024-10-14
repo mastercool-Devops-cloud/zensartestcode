@@ -380,3 +380,126 @@ public class OrderConsumerGroupUsingCallable {
         // This code will block, and consumers will keep consuming messages until manually terminated
     }
 }
+------------------------------------------------------
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.Aggregator;
+import org.apache.kafka.streams.kstream.Initializer;
+
+import java.util.Properties;
+
+public class OrderAggregator {
+
+    public static void main(String[] args) {
+        // Kafka Streams Configuration
+        Properties props = new Properties();
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "order-aggregator-app");
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+
+        StreamsBuilder builder = new StreamsBuilder();
+
+        // Stream from the OrderTopic
+        KStream<String, String> orderStream = builder.stream("OrderTopic");
+
+        // Aggregating the results for each order type
+        KTable<String, OrderAggregate> aggregateTable = orderStream
+            .groupByKey() // Group by the key (order type: car, mobile, book)
+            .aggregate(
+                // Initialize aggregator
+                OrderAggregator::newOrderAggregate,
+                // Aggregation logic (order count and total transaction amount)
+                (key, value, aggregate) -> {
+                    OrderDto orderDto = parseOrder(value); // Convert the message to OrderDto object
+                    if (key.equals("flipkart.car.order")) {
+                        aggregate.carOrderCount++;
+                        aggregate.carTotalTransactionAmount += orderDto.getPrice();
+                    } else if (key.equals("flipkart.mobile.order")) {
+                        aggregate.mobileOrderCount++;
+                        aggregate.mobileTotalTransactionAmount += orderDto.getPrice();
+                    } else if (key.equals("flipkart.book.order")) {
+                        aggregate.bookOrderCount++;
+                        aggregate.bookTotalTransactionAmount += orderDto.getPrice();
+                    }
+                    return aggregate;
+                },
+                Materialized.with(Serdes.String(), OrderAggregateSerde())
+            );
+
+        // Send aggregated result to ReportTopic
+        aggregateTable.toStream()
+                .to("ReportTopic", Produced.with(Serdes.String(), OrderAggregateSerde()));
+
+        // Build and start the Kafka Streams application
+        KafkaStreams streams = new KafkaStreams(builder.build(), props);
+        streams.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+    }
+
+    // Initializer for the aggregate (starting with 0 counts and totals)
+    private static OrderAggregate newOrderAggregate() {
+        return new OrderAggregate(0, 0, 0, 0, 0, 0);
+    }
+
+    // Function to parse incoming order message into DTO
+    private static OrderDto parseOrder(String message) {
+        // Assume message is a JSON string, convert it to OrderDto object
+        // This could vary based on your message structure
+        return new OrderDto(); // Simplified for this example
+    }
+}
+// Aggregated values for the orders
+public class OrderAggregate {
+    public int carOrderCount;
+    public long carTotalTransactionAmount;
+    public int mobileOrderCount;
+    public long mobileTotalTransactionAmount;
+    public int bookOrderCount;
+    public long bookTotalTransactionAmount;
+
+    public OrderAggregate(int carOrderCount, long carTotalTransactionAmount, int mobileOrderCount,
+                          long mobileTotalTransactionAmount, int bookOrderCount, long bookTotalTransactionAmount) {
+        this.carOrderCount = carOrderCount;
+        this.carTotalTransactionAmount = carTotalTransactionAmount;
+        this.mobileOrderCount = mobileOrderCount;
+        this.mobileTotalTransactionAmount = mobileTotalTransactionAmount;
+        this.bookOrderCount = bookOrderCount;
+        this.bookTotalTransactionAmount = bookTotalTransactionAmount;
+    }
+
+    @Override
+    public String toString() {
+        return "Car Orders: " + carOrderCount + " | Car Total: " + carTotalTransactionAmount +
+               ", Mobile Orders: " + mobileOrderCount + " | Mobile Total: " + mobileTotalTransactionAmount +
+               ", Book Orders: " + bookOrderCount + " | Book Total: " + bookTotalTransactionAmount;
+    }
+}
+
+// DTO for the Order
+public class OrderDto {
+    private int id;
+    private String model;
+    private long price;
+
+    public OrderDto() {}
+
+    public OrderDto(int id, String model, long price) {
+        this.id = id;
+        this.model = model;
+        this.price = price;
+    }
+
+    public long getPrice() {
+        return price;
+    }
+
+    // Getters and setters...
+}
