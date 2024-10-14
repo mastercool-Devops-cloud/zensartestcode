@@ -242,3 +242,141 @@ public class MultiProducerOrderApp {
     }
 }
 
+-----------------------------------------------------------------------------
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.StringDeserializer;
+
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+public class OrderConsumerGroupUsingCallable {
+
+    private static final String TOPIC = "OrderTopic";
+    private static final String GROUP_ID = "orderConsumerGroup";
+    private static final String BOOTSTRAP_SERVERS = "localhost:9092";
+
+    // Create Kafka Consumer configuration
+    private static KafkaConsumer<String, String> createConsumer(String groupId) {
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        return new KafkaConsumer<>(props);
+    }
+
+    // Callable task to consume Car orders
+    static class CarOrderConsumerTask implements Callable<String> {
+        private final KafkaConsumer<String, String> consumer;
+
+        public CarOrderConsumerTask(KafkaConsumer<String, String> consumer) {
+            this.consumer = consumer;
+        }
+
+        @Override
+        public String call() {
+            try {
+                // Assign the consumer to partition 0 for car orders
+                TopicPartition carOrderPartition = new TopicPartition(TOPIC, 0);
+                consumer.assign(Collections.singletonList(carOrderPartition));
+
+                while (true) {
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+                    for (ConsumerRecord<String, String> record : records) {
+                        System.out.println("Car Order: " + record.value());
+                    }
+                }
+            } finally {
+                consumer.close();
+            }
+        }
+    }
+
+    // Callable task to consume Mobile orders
+    static class MobileOrderConsumerTask implements Callable<String> {
+        private final KafkaConsumer<String, String> consumer;
+
+        public MobileOrderConsumerTask(KafkaConsumer<String, String> consumer) {
+            this.consumer = consumer;
+        }
+
+        @Override
+        public String call() {
+            try {
+                // Assign the consumer to partition 1 for mobile orders
+                TopicPartition mobileOrderPartition = new TopicPartition(TOPIC, 1);
+                consumer.assign(Collections.singletonList(mobileOrderPartition));
+
+                while (true) {
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+                    for (ConsumerRecord<String, String> record : records) {
+                        System.out.println("Mobile Order: " + record.value());
+                    }
+                }
+            } finally {
+                consumer.close();
+            }
+        }
+    }
+
+    // Callable task to consume Book orders
+    static class BookOrderConsumerTask implements Callable<String> {
+        private final KafkaConsumer<String, String> consumer;
+
+        public BookOrderConsumerTask(KafkaConsumer<String, String> consumer) {
+            this.consumer = consumer;
+        }
+
+        @Override
+        public String call() {
+            try {
+                // Assign the consumer to partition 2 for book orders
+                TopicPartition bookOrderPartition = new TopicPartition(TOPIC, 2);
+                consumer.assign(Collections.singletonList(bookOrderPartition));
+
+                while (true) {
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+                    for (ConsumerRecord<String, String> record : records) {
+                        System.out.println("Book Order: " + record.value());
+                    }
+                }
+            } finally {
+                consumer.close();
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        // Create a thread pool with 3 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        // Create consumers for each order type
+        KafkaConsumer<String, String> carConsumer = createConsumer(GROUP_ID);
+        KafkaConsumer<String, String> mobileConsumer = createConsumer(GROUP_ID);
+        KafkaConsumer<String, String> bookConsumer = createConsumer(GROUP_ID);
+
+        // Create Callable tasks for each order type
+        CarOrderConsumerTask carTask = new CarOrderConsumerTask(carConsumer);
+        MobileOrderConsumerTask mobileTask = new MobileOrderConsumerTask(mobileConsumer);
+        BookOrderConsumerTask bookTask = new BookOrderConsumerTask(bookConsumer);
+
+        // Submit the tasks to the ExecutorService
+        Future<String> carResult = executorService.submit(carTask);
+        Future<String> mobileResult = executorService.submit(mobileTask);
+        Future<String> bookResult = executorService.submit(bookTask);
+
+        // Keep the executor service running indefinitely (or handle future results if needed)
+        // This code will block, and consumers will keep consuming messages until manually terminated
+    }
+}
