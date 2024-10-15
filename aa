@@ -503,3 +503,105 @@ public class OrderDto {
 
     // Getters and setters...
 }
+
+---------------------------------------
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.kafka.common.serialization.Serializer;
+
+import java.util.Map;
+
+public class OrderAggregateSerializer implements Serializer<OrderAggregate> {
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public void configure(Map<String, ?> configs, boolean isKey) {
+        // No configuration needed
+    }
+
+    @Override
+    public byte[] serialize(String topic, OrderAggregate data) {
+        try {
+            return objectMapper.writeValueAsBytes(data);
+        } catch (Exception e) {
+            throw new RuntimeException("Error serializing OrderAggregate", e);
+        }
+    }
+
+    @Override
+    public void close() {
+        // Nothing to do
+    }
+}
+----------------------------------
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.kafka.common.serialization.Deserializer;
+
+import java.util.Map;
+
+public class OrderAggregateDeserializer implements Deserializer<OrderAggregate> {
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public void configure(Map<String, ?> configs, boolean isKey) {
+        // No configuration needed
+    }
+
+    @Override
+    public OrderAggregate deserialize(String topic, byte[] data) {
+        try {
+            return objectMapper.readValue(data, OrderAggregate.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Error deserializing OrderAggregate", e);
+        }
+    }
+
+    @Override
+    public void close() {
+        // Nothing to do
+    }
+}
+--------------------------
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
+
+public class OrderAggregateSerde implements Serde<OrderAggregate> {
+
+    private final OrderAggregateSerializer serializer = new OrderAggregateSerializer();
+    private final OrderAggregateDeserializer deserializer = new OrderAggregateDeserializer();
+
+    @Override
+    public Serializer<OrderAggregate> serializer() {
+        return serializer;
+    }
+
+    @Override
+    public Deserializer<OrderAggregate> deserializer() {
+        return deserializer;
+    }
+
+    @Override
+    public void close() {
+        // Nothing to do
+    }
+}
+------------------------------
+KTable<String, OrderAggregate> aggregateTable = orderStream
+    .groupByKey()
+    .aggregate(
+        OrderAggregator::newOrderAggregate,
+        (key, value, aggregate) -> {
+            OrderDto orderDto = parseOrder(value);
+            if (key.equals("flipkart.car.order")) {
+                aggregate.carOrderCount++;
+                aggregate.carTotalTransactionAmount += orderDto.getPrice();
+            } else if (key.equals("flipkart.mobile.order")) {
+                aggregate.mobileOrderCount++;
+                aggregate.mobileTotalTransactionAmount += orderDto.getPrice();
+            } else if (key.equals("flipkart.book.order")) {
+                aggregate.bookOrderCount++;
+                aggregate.bookTotalTransactionAmount += orderDto.getPrice();
+            }
+            return aggregate;
+        },
+        Materialized.with(Serdes.String(), new OrderAggregateSerde())
+    );
