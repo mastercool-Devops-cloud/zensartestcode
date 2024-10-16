@@ -605,3 +605,15 @@ KTable<String, OrderAggregate> aggregateTable = orderStream
         },
         Materialized.with(Serdes.String(), new OrderAggregateSerde())
     );
+----------------------------------------------------
+// Method to parse JSON string into CarOrderDTO object
+    public static CarOrderDTO parseOrder(String value) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            // Convert JSON string to CarOrderDTO object
+            return objectMapper.readValue(value, CarOrderDTO.class);
+        } catch (Exception e) {
+            e.printStackTrace(); // You can log the error for further handling
+            return null;
+        }
+    }
