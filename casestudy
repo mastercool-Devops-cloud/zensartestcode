@@ -12,3 +12,4 @@ aggregated values of all types of orders i.e. "Books_order_count": 230,
 "Mobiles_total_transaction_amount": 9000000, "Cars_order_count": 57,
 "Cars_total_transaction_amount": 65400000. Push these values into “ReportTopic”.
 5. Write Report Consumer that prints aggregated values of all types of orders.
+ int id String bookTitle String bookAuthor long price String orderPlacementDate String custName String custEmail long custMobile;
