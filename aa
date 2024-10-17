@@ -617,3 +617,74 @@ KTable<String, OrderAggregate> aggregateTable = orderStream
             return null;
         }
     }
+-------------------------------------------------------------
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Produced;
+
+public class OrderStreamProcessingApp {
+
+    public static void main(String[] args) {
+        StreamsBuilder builder = new StreamsBuilder();
+
+        // Input streams for each type of order (books and mobiles in this case)
+        KStream<String, BookOrderDto> bookOrderStream = builder.stream("flipkart.book.order");
+        KStream<String, MobileOrderDto> mobileOrderStream = builder.stream("flipkart.mobile.order");
+
+        // Aggregation for book orders
+        KTable<String, OrderAggregate> bookOrderAggregate = bookOrderStream
+            .groupByKey()
+            .aggregate(
+                OrderAggregate::new,  // Initializer
+                (key, bookOrder, aggregate) -> {
+                    aggregate.setBooksOrderCount(aggregate.getBooksOrderCount() + 1);
+                    aggregate.setBooksTotalTransactionAmount(
+                        aggregate.getBooksTotalTransactionAmount() + bookOrder.getPrice());
+                    return aggregate;
+                },
+                Materialized.with(Serdes.String(), new OrderAggregateSerde()) // Serde for serialization
+            );
+
+        // Aggregation for mobile orders
+        KTable<String, OrderAggregate> mobileOrderAggregate = mobileOrderStream
+            .groupByKey()
+            .aggregate(
+                OrderAggregate::new,  // Initializer
+                (key, mobileOrder, aggregate) -> {
+                    aggregate.setMobilesOrderCount(aggregate.getMobilesOrderCount() + 1);
+                    aggregate.setMobilesTotalTransactionAmount(
+                        aggregate.getMobilesTotalTransactionAmount() + mobileOrder.getPrice());
+                    return aggregate;
+                },
+                Materialized.with(Serdes.String(), new OrderAggregateSerde())
+            );
+
+        // Merging both aggregates and pushing to "ReportTopic"
+        KStream<String, OrderAggregate> mergedAggregates = bookOrderAggregate
+            .toStream()
+            .merge(mobileOrderAggregate.toStream());
+
+        mergedAggregates.to("ReportTopic", Produced.with(Serdes.String(), new OrderAggregateSerde()));
+
+        // Build topology
+        Topology topology = builder.build();
+
+        // Configure and start Kafka Streams application
+        Properties props = new Properties();
+        props.put("application.id", "order-aggregation-app");
+        props.put("bootstrap.servers", "localhost:9092");
+        props.put("default.key.serde", Serdes.String().getClass().getName());
+        props.put("default.value.serde", OrderAggregateSerde.class.getName());
+
+        KafkaStreams streams = new KafkaStreams(topology, props);
+        streams.start();
+
+        // Attach shutdown handler to catch control-c
+        Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+    }
+}
