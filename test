@@ -4,3 +4,26 @@ Why use it?
 Provides a simple UI for manual tests.
 Newman CLI allows running Postman collections in CI/CD pipelines.
 Use case: API-specific testing, especially for initial integration testing.
+
+
+<dependencies>
+    <dependency>
+        <groupId>com.intuit.karate</groupId>
+        <artifactId>karate-apache</artifactId>
+        <version>1.4.0</version> <!-- Use the latest version -->
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>com.intuit.karate</groupId>
+        <artifactId>karate-junit5</artifactId>
+        <version>1.4.0</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+Advanced Reporting with Allure
+<dependency>
+    <groupId>io.qameta.allure</groupId>
+    <artifactId>allure-karate</artifactId>
+    <version>2.18.1</version>
+    <scope>test</scope>
+</dependency>
