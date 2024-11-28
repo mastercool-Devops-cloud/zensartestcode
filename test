@@ -1,29 +1,6 @@
-8. Postman/Newman
-Best for: Manual or automated API testing.
-Why use it?
-Provides a simple UI for manual tests.
-Newman CLI allows running Postman collections in CI/CD pipelines.
-Use case: API-specific testing, especially for initial integration testing.
-
-
-<dependencies>
-    <dependency>
-        <groupId>com.intuit.karate</groupId>
-        <artifactId>karate-apache</artifactId>
-        <version>1.4.0</version> <!-- Use the latest version -->
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>com.intuit.karate</groupId>
-        <artifactId>karate-junit5</artifactId>
-        <version>1.4.0</version>
-        <scope>test</scope>
-    </dependency>
-</dependencies>
-Advanced Reporting with Allure
-<dependency>
-    <groupId>io.qameta.allure</groupId>
-    <artifactId>allure-karate</artifactId>
-    <version>2.18.1</version>
-    <scope>test</scope>
-</dependency>
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=create
