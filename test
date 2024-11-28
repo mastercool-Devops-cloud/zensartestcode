@@ -1,6 +1,178 @@
-spring.datasource.url=jdbc:h2:mem:testdb
-spring.datasource.driver-class-name=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=password
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto=create
+spring:
+  profiles: test
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521:xe
+    username: testuser
+    password: testpassword
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.Oracle12cDialect
+
+--------------------------------------
+package com.example.utils;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+
+public class DbUtils {
+
+    private static final String JDBC_URL = "jdbc:oracle:thin:@localhost:1521:xe";
+    private static final String USER = "testuser";
+    private static final String PASSWORD = "testpassword";
+
+    public static void execute(String sql) {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, USER, PASSWORD);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to execute SQL: " + sql, e);
+        }
+    }
+}
+------------------------------
+schema.sql
+CREATE TABLE users (
+    id NUMBER PRIMARY KEY,
+    name VARCHAR2(100),
+    email VARCHAR2(100)
+);
+data.sql:
+
+To mock an Oracle database and add dummy data using Karate while configuring database properties in the application.yml file, you can follow these steps:
+
+Step 1: Add Dependencies
+Add the necessary dependencies to your pom.xml:
+
+xml
+Copy code
+<dependencies>
+    <!-- Oracle JDBC Driver -->
+    <dependency>
+        <groupId>com.oracle.database.jdbc</groupId>
+        <artifactId>ojdbc8</artifactId>
+        <version>21.9.0.0</version> <!-- Use the correct version for your Oracle DB -->
+        <scope>test</scope>
+    </dependency>
+
+    <!-- Spring Boot Test Starter -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+Step 2: Configure Oracle Database in application.yml
+Define Oracle database properties for the test profile in application.yml:
+
+yaml
+Copy code
+spring:
+  profiles: test
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521:xe
+    username: testuser
+    password: testpassword
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.Oracle12cDialect
+Step 3: Create a Utility Class for Database Operations
+Write a utility class to execute SQL commands using the configured Oracle database connection:
+
+DbUtils.java:
+
+java
+Copy code
+package com.example.utils;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+
+public class DbUtils {
+
+    private static final String JDBC_URL = "jdbc:oracle:thin:@localhost:1521:xe";
+    private static final String USER = "testuser";
+    private static final String PASSWORD = "testpassword";
+
+    public static void execute(String sql) {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, USER, PASSWORD);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to execute SQL: " + sql, e);
+        }
+    }
+}
+Step 4: Define Dummy Data in SQL Scripts
+Create SQL scripts to initialize tables and insert dummy data.
+
+schema.sql:
+
+sql
+Copy code
+CREATE TABLE users (
+    id NUMBER PRIMARY KEY,
+    name VARCHAR2(100),
+    email VARCHAR2(100)
+);
+data.sql:
+
+sql
+Copy code
+INSERT INTO users (id, name, email) VALUES (1, 'John Doe', 'john.doe@example.com');
+INSERT INTO users (id, name, email) VALUES (2, 'Jane Smith', 'jane.smith@example.com');
+
+mock-db.feature:
+Feature: Mock Oracle DB and add dummy data
+
+  Background:
+    * def DbUtils = Java.type('com.example.utils.DbUtils')
+
+  Scenario: Initialize database and add dummy data
+    * def schema = 
+    """
+    CREATE TABLE users (
+        id NUMBER PRIMARY KEY,
+        name VARCHAR2(100),
+        email VARCHAR2(100)
+    )
+    """
+    * DbUtils.execute(schema)
+
+    * def insertData = 
+    """
+    INSERT INTO users (id, name, email) VALUES (1, 'John Doe', 'john.doe@example.com');
+    INSERT INTO users (id, name, email) VALUES (2, 'Jane Smith', 'jane.smith@example.com');
+    """
+    * DbUtils.execute(insertData)
+
+  Scenario: Verify data through API
+    Given url baseUrl + '/api/users'
+    When method GET
+    Then status 200
+    And match response == 
+    """
+    [
+      { id: 1, name: 'John Doe', email: 'john.doe@example.com' },
+      { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com' }
+    ]
+    """
+
+package com.example.runner;
+
+import com.intuit.karate.junit5.Karate;
+
+public class ApiTestRunner {
+
+    @Karate.Test
+    Karate testAll() {
+        return Karate.run("classpath:mock-db.feature");
+    }
+}
+
+
