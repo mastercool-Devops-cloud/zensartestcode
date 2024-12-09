@@ -1,9 +1,3 @@
-https://medium.com/@caner.ergen/how-to-log-http-requests-responses-in-spring-boot-applications-using-aop-55831c5b95c7
-
-[ERROR] Medium: Possible null pointer dereference in com.sb.fedssimplification.cashflowprocessor.config.RequestResponseLogger.logHttpRequestResponse(ProceedingJoinPoint) due to return value of called method [com.sb.fedssimplification.cashflowprocessor.config.RequestResponseLogger, com.sb.fedssimplification.cashflowprocessor.config.RequestResponseLogger] Dereferenced at RequestResponseLogger.java:[line 34]Known null at RequestResponseLogger.java:[line 34] NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE
-[INFO] 
-
----------------------------------------------------
 @Slf4j
 @AllArgsConstructor
 @Component
@@ -15,7 +9,7 @@ public class RequestResponseLogger {
     @Around("@annotation(org.springframework.web.bind.annotation.RequestMapping) || " +
             "@annotation(org.springframework.web.bind.annotation.PostMapping) || " +
             "@annotation(org.springframework.web.bind.annotation.GetMapping)")
-    public Object logHttpRequestResponse(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object logHttpRequestResponse(ProceedingJoinPoint joinPoint) throws Exception {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
         if (attributes == null) {
@@ -25,11 +19,6 @@ public class RequestResponseLogger {
 
         HttpServletRequest request = attributes.getRequest();
         HttpServletResponse response = attributes.getResponse();
-
-        if (request == null) {
-            log.warn("HttpServletRequest is null. Skipping request logging.");
-            return joinPoint.proceed();
-        }
 
         String requestBody = getRequestBody(joinPoint);
         log.info("Request: Method: {}, URI: {}, Body: {}",
@@ -42,12 +31,12 @@ public class RequestResponseLogger {
         long startTime = System.currentTimeMillis();
         try {
             result = joinPoint.proceed();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("Exception: Method: {}, URI: {} failed with exception",
                     request.getMethod(),
                     request.getRequestURI(),
                     e);
-            throw e;
+            throw e; // Rethrow the exception
         }
         long duration = System.currentTimeMillis() - startTime;
 
@@ -92,5 +81,3 @@ public class RequestResponseLogger {
         }
     }
 }
-
-
