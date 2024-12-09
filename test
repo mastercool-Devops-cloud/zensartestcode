@@ -3,3 +3,94 @@ https://medium.com/@caner.ergen/how-to-log-http-requests-responses-in-spring-boo
 [ERROR] Medium: Possible null pointer dereference in com.sb.fedssimplification.cashflowprocessor.config.RequestResponseLogger.logHttpRequestResponse(ProceedingJoinPoint) due to return value of called method [com.sb.fedssimplification.cashflowprocessor.config.RequestResponseLogger, com.sb.fedssimplification.cashflowprocessor.config.RequestResponseLogger] Dereferenced at RequestResponseLogger.java:[line 34]Known null at RequestResponseLogger.java:[line 34] NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE
 [INFO] 
 
+---------------------------------------------------
+@Slf4j
+@AllArgsConstructor
+@Component
+@Aspect
+public class RequestResponseLogger {
+
+    private final ObjectMapper objectMapper;
+
+    @Around("@annotation(org.springframework.web.bind.annotation.RequestMapping) || " +
+            "@annotation(org.springframework.web.bind.annotation.PostMapping) || " +
+            "@annotation(org.springframework.web.bind.annotation.GetMapping)")
+    public Object logHttpRequestResponse(ProceedingJoinPoint joinPoint) throws Throwable {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (attributes == null) {
+            log.warn("RequestContextHolder does not contain any request attributes. Skipping logging.");
+            return joinPoint.proceed();
+        }
+
+        HttpServletRequest request = attributes.getRequest();
+        HttpServletResponse response = attributes.getResponse();
+
+        if (request == null) {
+            log.warn("HttpServletRequest is null. Skipping request logging.");
+            return joinPoint.proceed();
+        }
+
+        String requestBody = getRequestBody(joinPoint);
+        log.info("Request: Method: {}, URI: {}, Body: {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                requestBody
+        );
+
+        Object result;
+        long startTime = System.currentTimeMillis();
+        try {
+            result = joinPoint.proceed();
+        } catch (Throwable e) {
+            log.error("Exception: Method: {}, URI: {} failed with exception",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    e);
+            throw e;
+        }
+        long duration = System.currentTimeMillis() - startTime;
+
+        if (response != null) {
+            String responseBody = convertObjectToJson(result);
+            log.info("Response: Method: {}, URI: {}, Status: {} - Body: {}, Time Taken: {} ms",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    response.getStatus(),
+                    responseBody,
+                    duration
+            );
+        } else {
+            log.warn("HttpServletResponse is null. Skipping response logging.");
+        }
+
+        return result;
+    }
+
+    private String getRequestBody(ProceedingJoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        if (args.length > 0) {
+            try {
+                return Arrays.stream(args)
+                        .map(this::convertObjectToJson)
+                        .reduce((arg1, arg2) -> arg1 + ", " + arg2)
+                        .orElse("");
+            } catch (Exception e) {
+                log.error("Error serializing request body", e);
+            }
+        }
+        return "";
+    }
+
+    private String convertObjectToJson(Object object) {
+        if (object == null) return "";
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing object to JSON", e);
+            return "Error serializing object to JSON";
+        }
+    }
+}
+
+
