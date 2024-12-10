@@ -1,2 +1,96 @@
-<error line="30" column="86" severity="error" message="Throwing &apos;Throwable&apos; is not allowed."
-               source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalThrowsCheck"/>
+@Slf4j
+@AllArgsConstructor
+@Component
+@Aspect
+public class RequestResponseLogger {
+
+    private final ObjectMapper objectMapper;
+
+    @Around("@annotation(org.springframework.web.bind.annotation.RequestMapping) || " +
+            "@annotation(org.springframework.web.bind.annotation.PostMapping) || " +
+            "@annotation(org.springframework.web.bind.annotation.GetMapping)")
+    public Object logHttpRequestResponse(ProceedingJoinPoint joinPoint) throws Exception {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (attributes == null) {
+            log.warn("RequestContextHolder does not contain any request attributes. Skipping logging.");
+            return proceedSafely(joinPoint);
+        }
+
+        HttpServletRequest request = attributes.getRequest();
+        HttpServletResponse response = attributes.getResponse();
+
+        String requestBody = getRequestBody(joinPoint);
+        log.info("Request: Method: {}, URI: {}, Body: {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                requestBody
+        );
+
+        Object result;
+        long startTime = System.currentTimeMillis();
+        try {
+            result = proceedSafely(joinPoint);
+        } catch (Exception e) {
+            log.error("Exception: Method: {}, URI: {} failed with exception",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    e);
+            throw e; // Rethrow the exception
+        }
+        long duration = System.currentTimeMillis() - startTime;
+
+        if (response != null) {
+            String responseBody = convertObjectToJson(result);
+            log.info("Response: Method: {}, URI: {}, Status: {} - Body: {}, Time Taken: {} ms",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    response.getStatus(),
+                    responseBody,
+                    duration
+            );
+        } else {
+            log.warn("HttpServletResponse is null. Skipping response logging.");
+        }
+
+        return result;
+    }
+
+    private Object proceedSafely(ProceedingJoinPoint joinPoint) throws Exception {
+        try {
+            return joinPoint.proceed();
+        } catch (Throwable t) {
+            // Wrap or rethrow Throwable as Exception
+            if (t instanceof Exception) {
+                throw (Exception) t;
+            } else {
+                throw new RuntimeException("Unexpected error occurred", t);
+            }
+        }
+    }
+
+    private String getRequestBody(ProceedingJoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        if (args.length > 0) {
+            try {
+                return Arrays.stream(args)
+                        .map(this::convertObjectToJson)
+                        .reduce((arg1, arg2) -> arg1 + ", " + arg2)
+                        .orElse("");
+            } catch (Exception e) {
+                log.error("Error serializing request body", e);
+            }
+        }
+        return "";
+    }
+
+    private String convertObjectToJson(Object object) {
+        if (object == null) return "";
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing object to JSON", e);
+            return "Error serializing object to JSON";
+        }
+    }
+}
