@@ -94,3 +94,12 @@ public class RequestResponseLogger {
         }
     }
 }
+else {
+            log.warn("HTTP RESPONSE: [Method: {}, URI: {}, Status: {}, Time: {} ms, Body: {}] - Response object is null",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    0,
+                    duration,
+                    "N/A");
+        }
+
