@@ -185,3 +185,11 @@ class RequestResponseLoggerTest {
     }
 }
 
+
+<dependency>
+    <groupId>nl.altindag</groupId>
+    <artifactId>log-captor</artifactId>
+    <version>3.0.1</version>
+    <scope>test</scope>
+</dependency>
+
