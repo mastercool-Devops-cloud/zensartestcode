@@ -102,4 +102,86 @@ else {
                     duration,
                     "N/A");
         }
+-------------------------------------------
+@ExtendWith(MockitoExtension.class)
+class RequestResponseLoggerTest {
+
+    @InjectMocks
+    private RequestResponseLogger requestResponseLogger;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @Mock
+    private ProceedingJoinPoint joinPoint;
+
+    @Mock
+    private HttpServletRequest request;
+
+    @Mock
+    private HttpServletResponse response;
+
+    @BeforeEach
+    void setup() {
+        // Set up RequestContextHolder to provide mock request attributes
+        ServletRequestAttributes attributes = new ServletRequestAttributes(request, response);
+        RequestContextHolder.setRequestAttributes(attributes);
+    }
+
+    @Test
+    void testLogHttpRequestResponse_Success() throws Throwable {
+        // Arrange
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/test/api");
+        when(joinPoint.proceed()).thenReturn("Success Response");
+        when(objectMapper.writeValueAsString(any())).thenReturn("{\"key\":\"value\"}");
+        when(response.getStatus()).thenReturn(200);
+
+        LogCaptor logCaptor = LogCaptor.forClass(RequestResponseLogger.class);
+
+        // Act
+        Object result = requestResponseLogger.logHttpRequestResponse(joinPoint);
+
+        // Assert
+        assertEquals("Success Response", result);
+        assertTrue(logCaptor.getInfoLogs().stream()
+                .anyMatch(log -> log.contains("HTTP REQUEST: [Method: POST, URI: /test/api, Body: {\"key\":\"value\"}]")));
+        assertTrue(logCaptor.getInfoLogs().stream()
+                .anyMatch(log -> log.contains("HTTP RESPONSE: [Method: POST, URI: /test/api, Status: 200, Time: ")));
+    }
+
+    @Test
+    void testLogHttpRequestResponse_Exception() throws Throwable {
+        // Arrange
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getRequestURI()).thenReturn("/test/error");
+        when(joinPoint.proceed()).thenThrow(new RuntimeException("Simulated Exception"));
+
+        LogCaptor logCaptor = LogCaptor.forClass(RequestResponseLogger.class);
+
+        // Act & Assert
+        Exception exception = assertThrows(RuntimeException.class,
+                () -> requestResponseLogger.logHttpRequestResponse(joinPoint));
+        assertEquals("Simulated Exception", exception.getMessage());
+        assertTrue(logCaptor.getErrorLogs().stream()
+                .anyMatch(log -> log.contains("HTTP EXCEPTION: [Method: GET, URI: /test/error, Error: Simulated Exception]")));
+    }
+
+    @Test
+    void testLogHttpRequestResponse_NoAttributes() throws Throwable {
+        // Arrange
+        RequestContextHolder.resetRequestAttributes(); // Simulate no request context
+        when(joinPoint.proceed()).thenReturn("No Attributes Response");
+
+        LogCaptor logCaptor = LogCaptor.forClass(RequestResponseLogger.class);
+
+        // Act
+        Object result = requestResponseLogger.logHttpRequestResponse(joinPoint);
+
+        // Assert
+        assertEquals("No Attributes Response", result);
+        assertTrue(logCaptor.getWarnLogs().stream()
+                .anyMatch(log -> log.contains("RequestContextHolder does not contain any request attributes. Skipping logging.")));
+    }
+}
 
