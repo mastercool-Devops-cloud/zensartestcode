@@ -1,5 +1,15 @@
 Can we make response an optional if we expect it could be null so we can do a more robust empty check please?
 Do we know what the actual type will be of result? I prefer to use the exact type where possible for type safety reasons.
+ the aspect intercepts methods with varying return types (e.g., String, custom objects, or primitives), you may not know the exact type at runtime. In such cases:
+
+Use Generics in the Aspect: Not directly feasible here since proceed() only returns Object.
+Runtime Checks with instanceof: Handle specific cases based on known return types.
+Default Logging for Object: Fallback to serializing result with ObjectMapper.
+
+Type Safety: Casting adds safety when you know the expected type, but excessive instanceof checks can reduce clarity.
+Flexibility: Sticking to Object with careful logging (as in the original code) accommodates varied return types without requiring type-specific handling.
+If this aspect is used in a wide range of contexts, preserving Object with robust serialization (like ObjectMapper) is often the better approach.
+
 If attributes can be null, can we make it an optional to do a more robust empty check?
 Do we know what these arguments represent? If so can we please given them appropriate names to describe what they are?
 What is this object? what do you expect its type to be?
