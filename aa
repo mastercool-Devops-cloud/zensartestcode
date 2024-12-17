@@ -274,3 +274,61 @@ class RequestResponseLoggerTest {
         assertTrue(logAppender.list.stream().anyMatch(event ->
                 event.getFormattedMessage().contains("HTTP RESPONSE: [Method: POST, URI: /api/test, Status: 200")));
     }
+
+ @Test
+    void testLogHttpRequestResponse_WithException() throws Throwable {
+        // Arrange
+        request.setMethod("GET");
+        request.setRequestURI("/api/error");
+        RuntimeException exception = new RuntimeException("Simulated Exception");
+
+        when(joinPoint.proceed()).thenThrow(exception);
+
+        // Act & Assert
+        RuntimeException thrownException = assertThrows(RuntimeException.class, () -> logger.logHttpRequestResponse(joinPoint));
+        assertEquals("Simulated Exception", thrownException.getMessage());
+
+        assertTrue(logAppender.list.stream().anyMatch(event ->
+                event.getFormattedMessage().contains("HTTP EXCEPTION: [Method: GET, URI: /api/error, Error: Simulated Exception]")));
+    }
+
+    @Test
+    void testLogHttpRequestResponse_NoAttributes() throws Throwable {
+        // Arrange
+        RequestContextHolder.resetRequestAttributes();
+        when(joinPoint.proceed()).thenReturn("Default Response");
+
+        // Act
+        Object result = logger.logHttpRequestResponse(joinPoint);
+
+        // Assert
+        assertEquals("Default Response", result);
+        assertTrue(logAppender.list.stream().anyMatch(event ->
+                event.getFormattedMessage().contains("RequestContextHolder does not contain any request attributes. Skipping logging.")));
+    }
+
+    @Test
+    void testConvertObjectToJson_NullObject() {
+        // Act
+        String json = logger.convertObjectToJson(null);
+
+        // Assert
+        assertEquals("", json);
+    }
+
+    @Test
+    void testGetRequestBody_ExceptionOnSerialization() throws Throwable {
+        // Arrange
+        Object mockObject = new Object();
+        when(joinPoint.getArgs()).thenReturn(new Object[]{mockObject});
+        when(objectMapper.writeValueAsString(mockObject)).thenThrow(new JsonProcessingException("Serialization Error") {});
+
+        // Act
+        String requestBody = logger.getRequestBody(joinPoint);
+
+        // Assert
+        assertTrue(logAppender.list.stream().anyMatch(event ->
+                event.getFormattedMessage().contains("Error serializing request body")));
+        assertEquals("", requestBody);
+    }
+}
