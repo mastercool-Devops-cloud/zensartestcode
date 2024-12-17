@@ -385,4 +385,97 @@ private void logResponse(HttpServletRequest request, HttpServletResponse respons
             responseBody
     );
 }
+========================================
+@Slf4j
+@AllArgsConstructor
+@Component
+@Aspect
+public class RequestResponseLogger {
+
+    private final ObjectMapper objectMapper;
+
+    @Around("within(@org.springframework.web.bind.annotation.RestController *)")
+    public Object logHttpRequestResponse(ProceedingJoinPoint joinPoint) throws Exception {
+        // Use Optional to wrap potentially null attributes
+        Optional<ServletRequestAttributes> optionalAttributes = 
+            Optional.ofNullable((ServletRequestAttributes) RequestContextHolder.getRequestAttributes());
+
+        if (optionalAttributes.isEmpty()) {
+            log.warn("RequestContextHolder does not contain any request attributes. Skipping logging.");
+            return proceedSafely(joinPoint);
+        }
+
+        ServletRequestAttributes attributes = optionalAttributes.get();
+        HttpServletRequest request = Optional.ofNullable(attributes.getRequest()).orElse(null);
+        HttpServletResponse response = Optional.ofNullable(attributes.getResponse()).orElse(null);
+
+        String requestBody = getRequestBody(joinPoint);
+        log.info("HTTP REQUEST: [Method: {}, URI: {}, Body: {}]",
+                Optional.ofNullable(request).map(HttpServletRequest::getMethod).orElse("UNKNOWN"),
+                Optional.ofNullable(request).map(HttpServletRequest::getRequestURI).orElse("UNKNOWN"),
+                requestBody
+        );
+
+        Object result;
+        long startTime = System.currentTimeMillis();
+        try {
+            result = proceedSafely(joinPoint);
+        } catch (Exception e) {
+            log.error("HTTP EXCEPTION: [Method: {}, URI: {}, Error: {}]",
+                    Optional.ofNullable(request).map(HttpServletRequest::getMethod).orElse("UNKNOWN"),
+                    Optional.ofNullable(request).map(HttpServletRequest::getRequestURI).orElse("UNKNOWN"),
+                    e.getMessage());
+            throw e; // Rethrow the exception
+        }
+        long duration = System.currentTimeMillis() - startTime;
+
+        String responseBody = response != null ? convertObjectToJson(result) : "N/A";
+        log.info("HTTP RESPONSE: [Method: {}, URI: {}, Status: {}, Time: {} ms, Body: {}]",
+                Optional.ofNullable(request).map(HttpServletRequest::getMethod).orElse("UNKNOWN"),
+                Optional.ofNullable(request).map(HttpServletRequest::getRequestURI).orElse("UNKNOWN"),
+                response != null ? response.getStatus() : 0,
+                duration,
+                responseBody
+        );
+
+        return result;
+    }
+
+    private Object proceedSafely(ProceedingJoinPoint joinPoint) throws Exception {
+        try {
+            return joinPoint.proceed();
+        } catch (Throwable t) {
+            if (t instanceof Exception) {
+                throw (Exception) t;
+            } else {
+                throw new LoggingException("Unexpected error occurred", t);
+            }
+        }
+    }
+
+    private String getRequestBody(ProceedingJoinPoint joinPoint) {
+        Object[] args = Optional.ofNullable(joinPoint.getArgs()).orElse(new Object[0]);
+        if (args.length > 0) {
+            try {
+                return Arrays.stream(args)
+                        .map(this::convertObjectToJson)
+                        .reduce((arg1, arg2) -> arg1 + ", " + arg2)
+                        .orElse("");
+            } catch (Exception e) {
+                log.error("Error serializing request body", e);
+            }
+        }
+        return "";
+    }
+
+    private String convertObjectToJson(Object object) {
+        if (object == null) return "";
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing object to JSON", e);
+            return "Error serializing object to JSON";
+        }
+    }
+}
 
