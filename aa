@@ -479,3 +479,27 @@ public class RequestResponseLogger {
     }
 }
 
+===================================------------------
+private String getRequestBody(ProceedingJoinPoint joinPoint) {
+    Object[] methodArguments = joinPoint.getArgs(); // Renamed for clarity
+
+    if (methodArguments == null || methodArguments.length == 0) {
+        log.info("No method arguments to log");
+        return "";
+    }
+
+    try {
+        // Stream through the arguments and convert to JSON
+        return Arrays.stream(methodArguments)
+                .map(this::convertObjectToJson)
+                .reduce((arg1, arg2) -> arg1 + ", " + arg2)
+                .orElse("");
+    } catch (Exception e) {
+        log.error("Error serializing method arguments", e);
+        return "";
+    }
+}
+
+return Arrays.stream(methodArguments)
+        .map(this::convertObjectToJson)
+        .collect(Collectors.joining(", "));
