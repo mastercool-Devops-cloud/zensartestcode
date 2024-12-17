@@ -1,7 +1,5 @@
-java.lang.NullPointerException: Cannot read the array length because "args" is null
-
-	at com.sb.fedssimplification.cashflowcalculator.config.RequestResponseLogger.getRequestBody(RequestResponseLogger.java:81)
-	at com.sb.fedssimplification.cashflowcalculator.config.RequestResponseLogger.logHttpRequestResponse(RequestResponseLogger.java:39)
-	at com.sb.fedssimplification.cashflowcalculator.config.RequestResponseLoggerTest.testLogHttpRequestResponse_Success(RequestResponseLoggerTest.java:58)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Can we make response an optional if we expect it could be null so we can do a more robust empty check please?
+Do we know what the actual type will be of result? I prefer to use the exact type where possible for type safety reasons.
+If attributes can be null, can we make it an optional to do a more robust empty check?
+Do we know what these arguments represent? If so can we please given them appropriate names to describe what they are?
+What is this object? what do you expect its type to be?
