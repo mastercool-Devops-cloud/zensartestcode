@@ -13,3 +13,21 @@ If this aspect is used in a wide range of contexts, preserving Object with robus
 If attributes can be null, can we make it an optional to do a more robust empty check?
 Do we know what these arguments represent? If so can we please given them appropriate names to describe what they are?
 What is this object? what do you expect its type to be?
+
+Step-by-Step Process
+Stream of Arguments: The method arguments are converted into a stream using Arrays.stream(methodArguments).
+
+Map to JSON: Each argument is converted into a JSON string representation using the map(this::convertObjectToJson) step.
+
+Reduce: The reduce operation iteratively combines the elements into a single string. The lambda (arg1, arg2) -> arg1 + ", " + arg2 appends arg2 to arg1 with a , separator.
+
+For example:
+
+Assume the stream contains ["arg1", "arg2", "arg3"].
+During the first iteration:
+arg1 = "arg1", arg2 = "arg2".
+Result = "arg1, arg2".
+During the second iteration:
+arg1 = "arg1, arg2", arg2 = "arg3".
+Result = "arg1, arg2, arg3".
+Final Result: After all elements are combined, you get a single string: "arg1, arg2, arg3".
