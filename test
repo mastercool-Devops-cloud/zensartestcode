@@ -31,3 +31,32 @@ During the second iteration:
 arg1 = "arg1, arg2", arg2 = "arg3".
 Result = "arg1, arg2, arg3".
 Final Result: After all elements are combined, you get a single string: "arg1, arg2, arg3".
+=================================================
+Why Are Exceptions Rethrown-:
+The logHttpRequestResponse method is an aspect that intercepts a method call. If the intercepted method throws an exception, it is crucial to rethrow that exception so that the calling code can handle it as intended.
+
+without Aspect implementation
+---------------------------------
+public MyResponse handleRequest(MyRequest request) throws MyCustomException {
+    if (request.isInvalid()) {
+        throw new MyCustomException("Invalid request");
+    }
+    return new MyResponse("Success");
+}
+
+with Aspect implementation
+---------------------------------
+@Around("...")
+public Object logHttpRequestResponse(ProceedingJoinPoint joinPoint) throws Exception {
+    try {
+        return joinPoint.proceed(); // Call the original method
+    } catch (Exception e) {
+        log.error("Error occurred: {}", e.getMessage());
+        throw e; // refer to the original behavior and contract of the method that is being wrapped or intercepted by the aspect. 
+    }
+}
+
+What Kind of Exceptions Are Rethrown-:
+the proceedSafely(joinPoint) method internally calls the intercepted method using joinPoint.proceed(). This call might throw Checked Exceptions or Runtime Exceptions. 
+Checked Exceptions: If the intercepted method declares checked exceptions (e.g., IOException, SQLException), they will be thrown during execution.
+Runtime Exceptions: If the method encounters issues like NullPointerException, IllegalArgumentException, or others.
