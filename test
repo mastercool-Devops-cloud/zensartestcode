@@ -62,3 +62,24 @@ Checked Exceptions: If the intercepted method declares checked exceptions (e.g.,
 Runtime Exceptions: If the method encounters issues like NullPointerException, IllegalArgumentException, or others.
 
 I can see the method throws exception, but when I see this exception being thrown I want to know what is going to responsible for catching it and how it gets handled
+========================--------------------=======================
+
+Scenarios in Your Code
+Within the Aspect:
+
+In your aspect, if an exception occurs during proceedSafely(joinPoint), it is caught and logged:
+java
+Copy code
+try {
+    result = proceedSafely(joinPoint);
+} catch (Exception e) {
+    log.error("HTTP EXCEPTION: [Method: {}, URI: {}, Error: {}]",
+            Optional.ofNullable(request).map(HttpServletRequest::getMethod).orElse("UNKNOWN"),
+            Optional.ofNullable(request).map(HttpServletRequest::getRequestURI).orElse("UNKNOWN"),
+            e.getMessage());
+    throw e; // Rethrown to the caller
+}
+Handling: The aspect logs the exception but explicitly rethrows it so the caller or framework can handle it.
+At the Framework Level:
+
+If the method being intercepted is a controller method, Spring's exception-handling mechanisms (e.g., @ExceptionHandler or @ControllerAdvice) will likely handle the rethrown exception.
