@@ -60,3 +60,5 @@ What Kind of Exceptions Are Rethrown-:
 the proceedSafely(joinPoint) method internally calls the intercepted method using joinPoint.proceed(). This call might throw Checked Exceptions or Runtime Exceptions. 
 Checked Exceptions: If the intercepted method declares checked exceptions (e.g., IOException, SQLException), they will be thrown during execution.
 Runtime Exceptions: If the method encounters issues like NullPointerException, IllegalArgumentException, or others.
+
+I can see the method throws exception, but when I see this exception being thrown I want to know what is going to responsible for catching it and how it gets handled
