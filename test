@@ -83,3 +83,6 @@ Handling: The aspect logs the exception but explicitly rethrows it so the caller
 At the Framework Level:
 
 If the method being intercepted is a controller method, Spring's exception-handling mechanisms (e.g., @ExceptionHandler or @ControllerAdvice) will likely handle the rethrown exception.
+
+--------------------------------------------------------------------
+Yes but it still will not log validation failures. We need to expand the pointcut to include validation
