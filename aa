@@ -1,49 +1,182 @@
-@Around("within(@org.springframework.web.bind.annotation.RestController *) || " +
-        "execution(* *..*Service.*(..)) || " +
-        "@annotation(org.springframework.validation.annotation.Validated)")
-public Object logHttpRequestResponse(ProceedingJoinPoint joinPoint) throws Exception {
-    // Aspect logic remains the same
-}
+package com.example.interceptor;
 
+import com.example.util.LoggingUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
 
-try {
-    result = proceedSafely(joinPoint);
-} catch (MethodArgumentNotValidException ex) {
-    String validationErrors = ex.getBindingResult().getFieldErrors().stream()
-            .map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage()))
-            .collect(Collectors.joining(", "));
-    log.error("VALIDATION FAILED: [Method: {}, URI: {}, Errors: {}]",
-            Optional.ofNullable(request).map(HttpServletRequest::getMethod).orElse("UNKNOWN"),
-            Optional.ofNullable(request).map(HttpServletRequest::getRequestURI).orElse("UNKNOWN"),
-            validationErrors);
-    throw ex;
-} catch (Exception e) {
-    log.error("HTTP EXCEPTION: [Method: {}, URI: {}, Error: {}]",
-            Optional.ofNullable(request).map(HttpServletRequest::getMethod).orElse("UNKNOWN"),
-            Optional.ofNullable(request).map(HttpServletRequest::getRequestURI).orElse("UNKNOWN"),
-            e.getMessage());
-    throw e; // Rethrow for higher-level handling
-}
+@Component
+public class LoggingInterceptor implements HandlerInterceptor {
 
+    private static final Logger logger = LoggerFactory.getLogger(LoggingInterceptor.class);
 
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
-        String validationErrors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage()))
-                .collect(Collectors.joining(", "));
-        log.error("Validation failed: {}", validationErrors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Validation errors: " + validationErrors);
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        try {
+            LoggingUtil.logRequest(request);
+        } catch (Exception e) {
+            logger.error("Exception occurred while logging request in preHandle: {}", e.getMessage(), e);
+        }
+        return true; // Allow request to proceed
     }
 
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<String> handleConstraintViolationException(ConstraintViolationException ex) {
-        String validationErrors = ex.getConstraintViolations().stream()
-                .map(violation -> String.format("%s: %s", violation.getPropertyPath(), violation.getMessage()))
-                .collect(Collectors.joining(", "));
-        log.error("Constraint violation: {}", validationErrors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Validation errors: " + validationErrors);
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        try {
+            LoggingUtil.logResponse(response);
+
+            // Log any exception thrown during request processing
+            if (ex != null) {
+                logger.error("Exception occurred during request processing: {}", ex.getMessage(), ex);
+            }
+        } catch (Exception e) {
+            logger.error("Exception occurred while logging response in afterCompletion: {}", e.getMessage(), e);
+        }
     }
 }
+
+---------------------------------------
+package com.example.util;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public class LoggingUtil {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    public static void logRequest(HttpServletRequest request) {
+        try {
+            Map<String, Object> requestLog = Map.of(
+                    "method", request.getMethod(),
+                    "uri", request.getRequestURI(),
+                    "query", request.getQueryString(),
+                    "headers", Collections.list(request.getHeaderNames())
+                            .stream()
+                            .collect(Collectors.toMap(h -> h, request::getHeader)),
+                    "body", getRequestBody(request)
+            );
+            logger.info("Request: {}", objectMapper.writeValueAsString(requestLog));
+        } catch (Exception e) {
+            logger.error("Error logging request: {}", e.getMessage(), e);
+        }
+    }
+
+    public static void logResponse(HttpServletResponse response) {
+        try {
+            Map<String, Object> responseLog = Map.of(
+                    "status", response.getStatus(),
+                    "headers", response.getHeaderNames()
+                            .stream()
+                            .collect(Collectors.toMap(h -> h, response::getHeader))
+            );
+            logger.info("Response: {}", objectMapper.writeValueAsString(responseLog));
+        } catch (Exception e) {
+            logger.error("Error logging response: {}", e.getMessage(), e);
+        }
+    }
+
+    private static String getRequestBody(HttpServletRequest request) {
+        try (BufferedReader reader = request.getReader()) {
+            return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+        } catch (IOException e) {
+            return "Error reading body: " + e.getMessage();
+        }
+    }
+}
+-----------------------------
+package com.example.util;
+
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+public class ResponseWrapperUtil {
+
+    public static String getResponseBody(ContentCachingResponseWrapper response) {
+        try {
+            byte[] content = response.getContentAsByteArray();
+            return new String(content, response.getCharacterEncoding());
+        } catch (Exception e) {
+            return "Error reading response body: " + e.getMessage();
+        }
+    }
+}
+---------------------------------------
+package com.example.interceptor;
+
+import com.example.util.LoggingUtil;
+import com.example.util.ResponseWrapperUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+@Component
+public class LoggingInterceptor implements HandlerInterceptor {
+
+    private static final Logger logger = LoggerFactory.getLogger(LoggingInterceptor.class);
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        LoggingUtil.logRequest(request); // Log request
+        return true;
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
+        try {
+            LoggingUtil.logResponse(response); // Log headers and status
+
+            // Log response body in JSON format
+            String responseBody = ResponseWrapperUtil.getResponseBody(responseWrapper);
+            logger.info("Response Body: {}", responseBody);
+        } catch (Exception e) {
+            logger.error("Error logging response body: {}", e.getMessage(), e);
+        } finally {
+            try {
+                responseWrapper.copyBodyToResponse(); // Ensure response body is forwarded correctly
+            } catch (Exception e) {
+                logger.error("Error copying response body: {}", e.getMessage(), e);
+            }
+        }
+    }
+}
+-------------------------------------------
+package com.example.config;
+
+import com.example.interceptor.LoggingInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private LoggingInterceptor loggingInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loggingInterceptor)
+                .addPathPatterns("/**") // Apply to all endpoints
+                .excludePathPatterns("/health", "/metrics"); // Exclude specific endpoints
+    }
+}
+
