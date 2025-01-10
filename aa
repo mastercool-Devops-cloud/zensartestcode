@@ -323,3 +323,74 @@ public class AppConfig implements WebMvcConfigurer {
     }
 }
 -----------------------------------------
+
+package com.example.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import javax.servlet.Filter;
+
+@Configuration
+public class FilterConfig {
+
+    @Bean
+    public Filter responseCachingFilter() {
+        return new ResponseCachingFilter();
+    }
+}
+----------------------------------package com.example.config;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import java.io.IOException;
+
+public class ResponseCachingFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        if (response instanceof HttpServletResponse) {
+            ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
+            chain.doFilter(request, wrappedResponse);
+            wrappedResponse.copyBodyToResponse(); // Ensure body is written back to the client.
+        } else {
+            chain.doFilter(request, response);
+        }
+    }
+}
+---------------------------------------------
+public static void logResponseWithBody(HttpServletResponse response) {
+        Optional.ofNullable(response).ifPresentOrElse(res -> {
+            if (res instanceof ContentCachingResponseWrapper) {
+                try {
+                    ContentCachingResponseWrapper wrappedResponse = (ContentCachingResponseWrapper) res;
+                    String responseBody = new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8);
+
+                    String responseLog = objectMapper.writeValueAsString(
+                            Map.of(
+                                    "status", wrappedResponse.getStatus(),
+                                    "headers", wrappedResponse.getHeaderNames().stream()
+                                            .collect(Collectors.toMap(h -> h, wrappedResponse::getHeader)),
+                                    "body", responseBody
+                            )
+                    );
+
+                    logger.info("Response: {}", responseLog);
+
+                    // Ensure the response body is written back to the client
+                    wrappedResponse.copyBodyToResponse();
+                } catch (Exception e) {
+                    logger.error("Error logging response: {}", e.getMessage(), e);
+                }
+            } else {
+                logger.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
+            }
+        }, () -> logger.warn("HttpServletResponse is null, cannot log response."));
+    }
