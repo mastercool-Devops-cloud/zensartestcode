@@ -112,3 +112,214 @@ public class FilterConfig {
     }
 }
 ----------------------------------
+package com.example.util;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
+public class LoggingUtil {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    public static void logResponseWithBody(HttpServletResponse response) {
+        Optional.ofNullable(response).ifPresentOrElse(res -> {
+            if (res instanceof ContentCachingResponseWrapper) {
+                try {
+                    ContentCachingResponseWrapper wrappedResponse = (ContentCachingResponseWrapper) res;
+                    String responseBody = new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8);
+
+                    String responseLog = objectMapper.writeValueAsString(
+                            Map.of(
+                                    "status", wrappedResponse.getStatus(),
+                                    "headers", wrappedResponse.getHeaderNames()
+                                            .stream()
+                                            .collect(Collectors.toMap(h -> h, wrappedResponse::getHeader)),
+                                    "body", responseBody
+                            )
+                    );
+
+                    logger.info("Response: {}", responseLog);
+
+                    // Ensure the response body is written back to the client.
+                    wrappedResponse.copyBodyToResponse();
+                } catch (Exception e) {
+                    logger.error("Error logging response: {}", e.getMessage(), e);
+                }
+            } else {
+                logger.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
+            }
+        }, () -> logger.warn("HttpServletResponse is null, cannot log response."));
+    }
+}
+---------------------------------
+package com.example.interceptor;
+
+import com.example.util.LoggingUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+@Component
+public class LoggingInterceptor implements HandlerInterceptor {
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        LoggingUtil.logRequest(request);
+        return true;
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        LoggingUtil.logResponse(response);
+        if (ex != null) {
+            LoggingUtil.logException(ex);
+        }
+    }
+}
+---------------------------------------------------
+package com.example.util;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class LoggingUtil {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    public static void logRequest(HttpServletRequest request) {
+        Optional.ofNullable(request).ifPresentOrElse(req -> {
+            try {
+                Map<String, Object> requestLog = Map.of(
+                        "method", Optional.ofNullable(req.getMethod()).orElse("UNKNOWN"),
+                        "uri", Optional.ofNullable(req.getRequestURI()).orElse("UNKNOWN"),
+                        "query", Optional.ofNullable(req.getQueryString()).orElse(""),
+                        "headers", Optional.ofNullable(Collections.list(req.getHeaderNames()))
+                                .orElse(Collections.emptyList())
+                                .stream()
+                                .collect(Collectors.toMap(h -> h, req::getHeader)),
+                        "body", getRequestBody(req)
+                );
+                logger.info("Request: {}", objectMapper.writeValueAsString(requestLog));
+            } catch (Exception e) {
+                logger.error("Error logging request: {}", e.getMessage(), e);
+            }
+        }, () -> logger.warn("HttpServletRequest is null, cannot log request."));
+    }
+
+    public static void logResponse(HttpServletResponse response) {
+        Optional.ofNullable(response).ifPresentOrElse(res -> {
+            try {
+                Map<String, Object> responseLog = Map.of(
+                        "status", res.getStatus(),
+                        "headers", Optional.ofNullable(res.getHeaderNames())
+                                .orElse(Collections.emptySet())
+                                .stream()
+                                .collect(Collectors.toMap(h -> h, res::getHeader))
+                );
+                logger.info("Response: {}", objectMapper.writeValueAsString(responseLog));
+            } catch (Exception e) {
+                logger.error("Error logging response: {}", e.getMessage(), e);
+            }
+        }, () -> logger.warn("HttpServletResponse is null, cannot log response."));
+    }
+
+    public static void logException(Exception ex) {
+        logger.error("Exception occurred: {}", ex.getMessage(), ex);
+    }
+
+    private static String getRequestBody(HttpServletRequest request) {
+        return Optional.ofNullable(request)
+                .filter(req -> req instanceof ContentCachingRequestWrapper)
+                .map(req -> {
+                    ContentCachingRequestWrapper wrappedRequest = (ContentCachingRequestWrapper) req;
+                    byte[] content = wrappedRequest.getContentAsByteArray();
+                    return new String(content, StandardCharsets.UTF_8);
+                })
+                .orElse("Request body not available or request not wrapped with ContentCachingRequestWrapper.");
+    }
+}
+-----------------------------------------------
+package com.example.config;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+
+import java.io.IOException;
+
+public class RequestCachingFilter implements Filter {
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        // No initialization required
+    }
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        if (request instanceof HttpServletRequest) {
+            HttpServletRequest wrappedRequest = new ContentCachingRequestWrapper((HttpServletRequest) request);
+            chain.doFilter(wrappedRequest, response);
+        } else {
+            chain.doFilter(request, response);
+        }
+    }
+
+    @Override
+    public void destroy() {
+        // No cleanup required
+    }
+}
+-----------------------------------------
+package com.example.config;
+
+import com.example.interceptor.LoggingInterceptor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import javax.servlet.Filter;
+
+@Configuration
+public class AppConfig implements WebMvcConfigurer {
+
+    private final LoggingInterceptor loggingInterceptor;
+
+    public AppConfig(LoggingInterceptor loggingInterceptor) {
+        this.loggingInterceptor = loggingInterceptor;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loggingInterceptor);
+    }
+
+    @Bean
+    public Filter requestCachingFilter() {
+        return new RequestCachingFilter();
+    }
+}
+-----------------------------------------
