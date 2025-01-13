@@ -472,3 +472,11 @@ public class GlobalExceptionHandler {
                                 .orElse(Collections.emptySet())
                                 .stream()
                                 .collect(Collectors.toMap(h -> h, res::getHeader))
+--------------------------------------
+"headers", Optional.ofNullable(Collections.list(req.getHeaderNames()))
+        .map(list -> list.stream()
+                         .map(Object::toString) // Convert each element to String
+                         .collect(Collectors.toList())) // Collect as List<String>
+        .orElse(Collections.emptyList()) // Ensure the fallback is a List<String>
+        .stream()
+        .collect(Collectors.toMap(h -> h, req::getHeader))
