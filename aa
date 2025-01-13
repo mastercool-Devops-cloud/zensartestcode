@@ -1,41 +1,57 @@
-public static String getRequestBody(HttpServletRequest request) {
-        return Optional.ofNullable(request)
-                .filter(req -> req instanceof ContentCachingRequestWrapper)
-                .map(req -> (ContentCachingRequestWrapper) req)
-                .map(wrapper -> new String(wrapper.getContentAsByteArray(), StandardCharsets.UTF_8))
-                .orElse("Request body not available");
-    }
+package com.example.util;
 
------------------------------------------
-private static String getRequestBody(HttpServletRequest request) {
-    // Check if request is wrapped with ContentCachingRequestWrapper
-    if (!(request instanceof ContentCachingRequestWrapper)) {
-        return "Request not wrapped with ContentCachingRequestWrapper.";
-    }
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    // Use ContentCachingRequestWrapper to get the request body
-    ContentCachingRequestWrapper wrappedRequest = (ContentCachingRequestWrapper) request;
-    byte[] content = wrappedRequest.getContentAsByteArray();
-    
-    // If content is available, return it
-    if (content.length > 0) {
-        return new String(content, StandardCharsets.UTF_8);
-    }
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-    // If content is not available, read from the InputStream manually (Java 8 compatible)
-    try {
-        StringBuilder body = new StringBuilder();
-        int read;
-        char[] buffer = new char[1024];
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(request.getInputStream(), StandardCharsets.UTF_8))) {
-            while ((read = reader.read(buffer)) != -1) {
-                body.append(buffer, 0, read);
-            }
+public class LoggingUtil {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    public static void logRequest(HttpServletRequest request) {
+        try {
+            Map<String, Object> requestLog = Map.of(
+                    "method", request.getMethod(),
+                    "uri", request.getRequestURI(),
+                    "query", request.getQueryString(),
+                    "headers", Collections.list(request.getHeaderNames())
+                            .stream()
+                            .collect(Collectors.toMap(h -> h, request::getHeader)),
+                    "body", getRequestBody(request)
+            );
+            logger.info("Request: {}", objectMapper.writeValueAsString(requestLog));
+        } catch (Exception e) {
+            logger.error("Error logging request: {}", e.getMessage(), e);
         }
-        return body.toString();
-    } catch (IOException e) {
-        return "Error reading request body: " + e.getMessage();
+    }
+
+    public static void logResponse(HttpServletResponse response) {
+        try {
+            Map<String, Object> responseLog = Map.of(
+                    "status", response.getStatus(),
+                    "headers", response.getHeaderNames()
+                            .stream()
+                            .collect(Collectors.toMap(h -> h, response::getHeader))
+            );
+            logger.info("Response: {}", objectMapper.writeValueAsString(responseLog));
+        } catch (Exception e) {
+            logger.error("Error logging response: {}", e.getMessage(), e);
+        }
+    }
+
+    private static String getRequestBody(HttpServletRequest request) {
+        try (BufferedReader reader = request.getReader()) {
+            return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+        } catch (IOException e) {
+            return "Error reading body: " + e.getMessage();
+        }
     }
 }
-
-
