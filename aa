@@ -30,3 +30,29 @@ HttpServletRequest wrappedRequest =
                     req instanceof ContentCachingRequestWrapper
                     ? req
                     : new ContentCachingRequestWrapper(req);
+-----------------------------------
+public static void logRequest(HttpServletRequest request) {
+    Optional.ofNullable(request).ifPresentOrElse(req -> {
+        try {
+            // Check if the request is wrapped; wrap it if not already done
+            HttpServletRequest wrappedRequest = 
+                    req instanceof ContentCachingRequestWrapper
+                    ? req
+                    : new ContentCachingRequestWrapper(req);
+
+            Map<String, Object> requestLog = Map.of(
+                    "method", Optional.ofNullable(wrappedRequest.getMethod()).orElse("UNKNOWN"),
+                    "uri", Optional.ofNullable(wrappedRequest.getRequestURI()).orElse("UNKNOWN"),
+                    "query", Optional.ofNullable(wrappedRequest.getQueryString()).orElse(""),
+                    "headers", Collections.list(wrappedRequest.getHeaderNames())
+                            .stream()
+                            .collect(Collectors.toMap(h -> h, wrappedRequest::getHeader)),
+                    "body", getRequestBody(wrappedRequest) // Use the wrapped request for body extraction
+            );
+            logger.info("Request: {}", objectMapper.writeValueAsString(requestLog));
+        } catch (Exception e) {
+            logger.error("Error logging request: {}", e.getMessage(), e);
+        }
+    }, () -> logger.warn("HttpServletRequest is null, cannot log request."));
+}
+
