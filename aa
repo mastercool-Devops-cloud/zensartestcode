@@ -462,3 +462,13 @@ public class GlobalExceptionHandler {
     }
 }
 
+----------------------------------
+"headers", Optional.ofNullable(Collections.list(req.getHeaderNames()))
+                                .orElse(Collections.emptyList())
+                                .stream()
+                                .collect(Collectors.toMap(h -> h, req::getHeader)),
+----------------------------------
+"headers", Optional.ofNullable(res.getHeaderNames())
+                                .orElse(Collections.emptySet())
+                                .stream()
+                                .collect(Collectors.toMap(h -> h, res::getHeader))
