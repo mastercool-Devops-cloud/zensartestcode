@@ -25,3 +25,8 @@ public class FilterConfig {
         return registrationBean;
     }
 }
+-------------------------------------------------
+HttpServletRequest wrappedRequest = 
+                    req instanceof ContentCachingRequestWrapper
+                    ? req
+                    : new ContentCachingRequestWrapper(req);
