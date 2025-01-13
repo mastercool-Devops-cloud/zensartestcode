@@ -1,1 +1,3 @@
 Request: {"method":"POST","body":"","uri":"/foreign-exchange-contract","query":""}
+
+Request: {"query":"","uri":"/foreign-exchange-contract","method":"POST","body":"","headers":{"content-length":"306","host":"localhost:8237","content-type":"application/json","user-agent":"insomnia/9.3.2","accept":"*/*"}}
