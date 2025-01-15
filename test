@@ -95,3 +95,5 @@ class RequestWrapperTest {
         assertEquals("Request body not available or request not wrapped with ContentCachingRequestWrapper.", requestWrapper.getBody());
     }
 }
+------------------------------------
+java: incompatible types: java.io.ByteArrayInputStream cannot be converted to jakarta.servlet.http.HttpServletRequest
