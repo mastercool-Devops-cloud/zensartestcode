@@ -1,25 +1,6 @@
-@Component
-public class LoggingCachingFilter implements Filter {
 
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
-            ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper((HttpServletRequest) request);
-            ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
-
-            try {
-                chain.doFilter(wrappedRequest, wrappedResponse);
-            } finally {
-                // Log the request and response bodies
-                LoggingUtil.logRequest(wrappedRequest);
-                LoggingUtil.logResponse(wrappedResponse);
-
-                // Write back the response body to the client
-                wrappedResponse.copyBodyToResponse();
-            }
-        } else {
-            chain.doFilter(request, response);
-        }
-    }
-}
+"query", Optional.ofNullable(req.getQueryString()).orElse(""),
+                        "headers", Collections.list(req.getHeaderNames())
+                                .stream()
+                                .collect(Collectors.toMap(h -> h, req::getHeader)),
+                        "body", getRequestBody(req)
