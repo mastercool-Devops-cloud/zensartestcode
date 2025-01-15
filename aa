@@ -1,6 +1,141 @@
+package com.example.logging;
 
-"query", Optional.ofNullable(req.getQueryString()).orElse(""),
-                        "headers", Collections.list(req.getHeaderNames())
-                                .stream()
-                                .collect(Collectors.toMap(h -> h, req::getHeader)),
-                        "body", getRequestBody(req)
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class RequestWrapper {
+    private final String method;
+    private final String uri;
+    private final String query;
+    private final Map<String, String> headers;
+    private final String body;
+
+    public RequestWrapper(HttpServletRequest request) {
+        this.method = Optional.ofNullable(request.getMethod()).orElse("UNKNOWN");
+        this.uri = Optional.ofNullable(request.getRequestURI()).orElse("UNKNOWN");
+        this.query = Optional.ofNullable(request.getQueryString()).orElse("");
+        this.headers = Collections.list(request.getHeaderNames())
+                .stream()
+                .collect(Collectors.toMap(h -> h, request::getHeader));
+        this.body = extractRequestBody(request);
+    }
+
+    private String extractRequestBody(HttpServletRequest request) {
+        if (request instanceof ContentCachingRequestWrapper) {
+            ContentCachingRequestWrapper wrappedRequest = (ContentCachingRequestWrapper) request;
+            byte[] content = wrappedRequest.getContentAsByteArray();
+            return content.length > 0 ? new String(content, StandardCharsets.UTF_8) : "No body content.";
+        }
+        return "Request body not available or request not wrapped with ContentCachingRequestWrapper.";
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public String getUri() {
+        return uri;
+    }
+
+    public String getQuery() {
+        return query;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public String getBody() {
+        return body;
+    }
+
+    @Override
+    public String toString() {
+        return "RequestWrapper{" +
+                "method='" + method + '\'' +
+                ", uri='" + uri + '\'' +
+                ", query='" + query + '\'' +
+                ", headers=" + headers +
+                ", body='" + body + '\'' +
+                '}';
+    }
+}
+-------------------------------
+package com.example.logging;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class LoggingUtil {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    public static void logRequest(HttpServletRequest request) {
+        Optional.ofNullable(request).ifPresentOrElse(req -> {
+            try {
+                RequestWrapper requestWrapper = new RequestWrapper(req);
+
+                Map<String, Object> requestLog = Map.of(
+                        "method", requestWrapper.getMethod(),
+                        "uri", requestWrapper.getUri(),
+                        "query", requestWrapper.getQuery(),
+                        "headers", requestWrapper.getHeaders(),
+                        "body", requestWrapper.getBody()
+                );
+
+                logger.info("Request: {}", objectMapper.writeValueAsString(requestLog));
+            } catch (Exception e) {
+                logger.error("Error logging request: {}", e.getMessage(), e);
+            }
+        }, () -> logger.warn("HttpServletRequest is null, cannot log request."));
+    }
+
+    public static void logResponseWithBody(HttpServletResponse response) {
+        Optional.ofNullable(response).ifPresentOrElse(res -> {
+            if (res instanceof ContentCachingResponseWrapper) {
+                try {
+                    ContentCachingResponseWrapper wrappedResponse = (ContentCachingResponseWrapper) res;
+                    String responseBody = new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8);
+
+                    String responseLog = objectMapper.writeValueAsString(
+                            Map.of(
+                                    "status", wrappedResponse.getStatus(),
+                                    "headers", wrappedResponse.getHeaderNames()
+                                            .stream()
+                                            .collect(Collectors.toMap(h -> h, wrappedResponse::getHeader)),
+                                    "body", responseBody
+                            )
+                    );
+
+                    logger.info("Response: {}", responseLog);
+
+                    // Ensure the response body is written back to the client.
+                    wrappedResponse.copyBodyToResponse();
+                } catch (Exception e) {
+                    logger.error("Error logging response: {}", e.getMessage(), e);
+                }
+            } else {
+                logger.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
+            }
+        }, () -> logger.warn("HttpServletResponse is null, cannot log response."));
+    }
+
+    public static void logException(Exception ex) {
+        logger.error("Exception occurred: {}", ex.getMessage(), ex);
+    }
+}
