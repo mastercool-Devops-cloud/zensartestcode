@@ -2,3 +2,25 @@
 Response: "ResponseLog{status=200, headers={}, body={\"fxContractDto\":{\"contractNumber\":\"99C7BV5D\",\"contractTypeCode\":\"DE\",\"fecNumber\":\"99C75W5P\",\"parentContractNumber\":\"99C75W5P\",\"profitLossIndicator\":\"P\",\"valueDate\":\"2024-10-30\",\"purchaseSaleIndicator\":\"B\",\"storeAmount\":29983.50,\"nettedAmount\":574521,\"buyCurrencyAmount\":30000,\"sellCurrencyAmount\":574521}}}"
 
 Request: "RequestLog{method='POST', uri='/foreign-exchange-contract', headers={content-length=306, host=localhost:8237, content-type=application/json, user-agent=insomnia/9.3.2, accept=*/*}, body={\n  \"contractNumber\": \"99C7BV5D\",\n  \"contractTypeCode\": \"DE\",\n  \"fecNumber\": \"99C75W5P\",\n  \"storeAmount\": 0.00,\n  \"parentContractNumber\": \"99C75W5P\",\n  \"nettedAmount\": 574521.00,\n  \"valueDate\": \"2024-10-30\",\n  \"purchaseSaleIndicator\": \"B\",\n\t\"buyCurrencyAmount\": 30000.00,\n\t\"sellCurrencyAmount\": 574521.00\n}}"
+
+@Override
+public String toString() {
+    String cleanBody = body != null ? body.toString().replace("\n", "").replace("\t", "") : null;
+    return "RequestLog{" +
+            "method='" + method + '\'' +
+            ", uri='" + uri + '\'' +
+            ", query='" + query + '\'' +
+            ", headers=" + headers +
+            ", body=" + cleanBody +
+            '}';
+}
+-------------------------------------
+@Override
+public String toString() {
+    String cleanBody = body != null ? body.toString().replace("\n", "").replace("\t", "") : null;
+    return "ResponseLog{" +
+            "status=" + status +
+            ", headers=" + headers +
+            ", body=" + cleanBody +
+            '}';
+}
