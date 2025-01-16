@@ -1,24 +1,43 @@
-[LoggingUtil.lambda$logRequest$2(LoggingUtil.java:58)] : Request: "RequestLog{method='POST', uri='/foreign-exchange-contract', headers={content-length=306, host=localhost:8237, content-type=application/json, user-agent=insomnia/9.3.2, accept=*/*}, body={  \"contractNumber\": \"99C7BV5D\",  \"contractTypeCode\": \"DE\",  \"fecNumber\": \"99C75W5P\",  \"storeAmount\": 0.00,  \"parentContractNumber\": \"99C75W5P\",  \"nettedAmount\": 574521.00,  \"valueDate\": \"2024-10-30\",  \"purchaseSaleIndicator\": \"B\",\"buyCurrencyAmount\": 30000.00,\"sellCurrencyAmount\": 574521.00}}"
+@Log4j2
+public class LoggingUtil {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
-Response: "ResponseLog{status=200, headers={}, body={\"fxContractDto\":{\"contractNumber\":\"99C7BV5D\",\"contractTypeCode\":\"DE\",\"fecNumber\":\"99C75W5P\",\"parentContractNumber\":\"99C75W5P\",\"profitLossIndicator\":\"P\",\"valueDate\":\"2024-10-30\",\"purchaseSaleIndicator\":\"B\",\"storeAmount\":29983.50,\"nettedAmount\":574521,\"buyCurrencyAmount\":30000,\"sellCurrencyAmount\":574521}}}"
+    // Existing methods: logRequest(), logResponseWithBody()
 
-@Override
-public String toString() {
-    String cleanBody = body != null ? body
-            .replace("\\", "") // Remove backslashes
-            .replace("\n", "") // Remove newlines
-            .replace("\t", "") // Remove tabs
-            : null;
-    return "ResponseLog{" +
-            "status=" + status +
-            ", headers=" + headers +
-            ", body=" + cleanBody +
-            '}';
+    /**
+     * Logs a general exception with optional contextual details.
+     *
+     * @param exception The exception to log.
+     * @param context   Additional contextual information (can be null or empty).
+     */
+    public static void logException(Exception exception, Map<String, Object> context) {
+        if (exception != null) {
+            StringBuilder logMessage = new StringBuilder("An exception occurred: ");
+            logMessage.append(exception.getMessage());
+
+            // Add context if available
+            if (context != null && !context.isEmpty()) {
+                try {
+                    String contextJson = objectMapper.writeValueAsString(context);
+                    logMessage.append(" | Context: ").append(contextJson);
+                } catch (JsonProcessingException e) {
+                    logMessage.append(" | Context could not be serialized.");
+                }
+            }
+
+            logger.error(logMessage.toString(), exception);
+        } else {
+            logger.warn("Attempted to log a null exception.");
+        }
+    }
+
+    /**
+     * Overloaded method for logging an exception without context.
+     *
+     * @param exception The exception to log.
+     */
+    public static void logException(Exception exception) {
+        logException(exception, null);
+    }
 }
-----------------------
-RequestLog requestLog = new RequestLog(method, uri, query, headers, body
-        .replace("\\", "")
-        .replace("\n", "")
-        .replace("\t", "")
-);
-log.info("Request: {}", requestLog.toString());
