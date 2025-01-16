@@ -38,4 +38,29 @@ class RequestWrapperTest {
         assertEquals(Map.of("Content-Type", "application/json"), requestWrapper.getHeaders());
         assertEquals(requestBody, requestWrapper.getBody());
     }
+@Test
+    void testRequestWrapperWithEmptyBody() {
+        // Create a MockHttpServletRequest
+        MockHttpServletRequest mockRequest = new MockHttpServletRequest();
+        mockRequest.setMethod("GET");
+        mockRequest.setRequestURI("/api/resource");
+        mockRequest.setQueryString("id=123");
+        mockRequest.addHeader("Accept", "application/json");
+
+        // Do not add a body to the request
+
+        // Wrap the mock request in ContentCachingRequestWrapper
+        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(mockRequest);
+
+        // Create RequestWrapper instance
+        RequestWrapper requestWrapper = new RequestWrapper(wrappedRequest);
+
+        // Assertions
+        assertEquals("GET", requestWrapper.getMethod());
+        assertEquals("/api/resource", requestWrapper.getUri());
+        assertEquals("id=123", requestWrapper.getQuery());
+        assertEquals(Map.of("Accept", "application/json"), requestWrapper.getHeaders());
+        assertEquals("", requestWrapper.getBody()); // Empty body
+    }
+}
 }
