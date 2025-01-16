@@ -64,3 +64,104 @@ class RequestWrapperTest {
     }
 }
 }
+---------------------------------------
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.util.ContentCachingRequestWrapper;
+import org.springframework.mock.web.util.ContentCachingResponseWrapper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+class LoggingUtilTest {
+
+    @Test
+    void testLogRequest() {
+        // Create a MockHttpServletRequest
+        MockHttpServletRequest mockRequest = new MockHttpServletRequest();
+        mockRequest.setMethod("POST");
+        mockRequest.setRequestURI("/api/resource");
+        mockRequest.setQueryString("id=123");
+        mockRequest.addHeader("Content-Type", "application/json");
+        mockRequest.setContent("{\"name\":\"John\",\"age\":30}".getBytes());
+
+        // Wrap the request in ContentCachingRequestWrapper
+        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(mockRequest);
+
+        // Capture logs using a custom logger or by verifying the interaction
+        LoggingUtil.logRequest(wrappedRequest);
+
+        // No explicit assertions here as logs are the output
+        // Ensure no exceptions are thrown
+    }
+
+    @Test
+    void testLogResponseWithBody() {
+        // Create a MockHttpServletResponse
+        MockHttpServletResponse mockResponse = new MockHttpServletResponse();
+        mockResponse.setStatus(200);
+        mockResponse.addHeader("Content-Type", "application/json");
+
+        // Wrap the response in ContentCachingResponseWrapper
+        ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
+        String responseBody = "{\"status\":\"success\",\"message\":\"Operation completed\"}";
+        wrappedResponse.setContentLength(responseBody.length());
+        wrappedResponse.getWriter().write(responseBody);
+
+        // Log the response
+        LoggingUtil.logResponseWithBody(wrappedResponse);
+
+        // Ensure the response is correctly written back
+        assertEquals(responseBody, new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void testLogException() {
+        // Create an exception
+        Exception exception = new RuntimeException("Test exception");
+
+        // Log the exception
+        LoggingUtil.logException(exception);
+
+        // Ensure no exceptions are thrown during logging
+        // No explicit assertions here as logs are the output
+    }
+
+    @Test
+    void testLogRequestWithNullRequest() {
+        // Pass a null request
+        LoggingUtil.logRequest(null);
+
+        // No exceptions should be thrown
+        // Verify the warning log is written (use log capturing for validation)
+    }
+
+    @Test
+    void testLogResponseWithNullResponse() {
+        // Pass a null response
+        LoggingUtil.logResponseWithBody(null);
+
+        // No exceptions should be thrown
+        // Verify the warning log is written (use log capturing for validation)
+    }
+
+    @Test
+    void testLogResponseWithoutContentCachingWrapper() {
+        // Create a mock HttpServletResponse
+        HttpServletResponse mockResponse = Mockito.mock(HttpServletResponse.class);
+
+        // Log the response
+        LoggingUtil.logResponseWithBody(mockResponse);
+
+        // Verify the warning log is written (use log capturing for validation)
+        // No explicit assertions as logs are the output
+    }
+}
+
