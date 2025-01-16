@@ -79,3 +79,29 @@ public class LoggingUtil {
     }
 }
 
+-------------------------------------
+public static void logResponseWithBody(HttpServletResponse response) {
+    Optional.ofNullable(response).ifPresentOrElse(res -> {
+        if (res instanceof ContentCachingResponseWrapper) {
+            try {
+                ContentCachingResponseWrapper wrappedResponse = (ContentCachingResponseWrapper) res;
+                String responseBody = new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8);
+
+                Map<String, String> headers = wrappedResponse.getHeaderNames()
+                        .stream()
+                        .collect(Collectors.toMap(h -> h, wrappedResponse::getHeader));
+
+                ResponseLog responseLog = new ResponseLog(wrappedResponse.getStatus(), headers, responseBody);
+
+                log.info("Response: {}", responseLog.toString());
+
+                // Ensure the response body is written back to the client
+                wrappedResponse.copyBodyToResponse();
+            } catch (Exception e) {
+                log.error("Error logging response: {}", e.getMessage(), e);
+            }
+        } else {
+            log.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
+        }
+    }, () -> log.warn("HttpServletResponse is null, cannot log response."));
+}
