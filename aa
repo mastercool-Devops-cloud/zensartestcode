@@ -2,3 +2,80 @@ Body with the map
 Maybe choose an object that would be general enough to encapsulate most of our scenarios and replace it with that and so then you log request will take in a parameter of that object type that you will create and it will simply just log it like Log.info dot toString().
 
 A general object with general properties in which we can put  this information in there.
+
+import java.util.Map;
+
+public class RequestLog {
+    private final String method;
+    private final String uri;
+    private final String query;
+    private final Map<String, String> headers;
+    private final Object body; // Keep it as Object to support various scenarios
+
+    public RequestLog(String method, String uri, String query, Map<String, String> headers, Object body) {
+        this.method = method;
+        this.uri = uri;
+        this.query = query;
+        this.headers = headers;
+        this.body = body;
+    }
+
+    @Override
+    public String toString() {
+        return "RequestLog{" +
+                "method='" + method + '\'' +
+                ", uri='" + uri + '\'' +
+                ", query='" + query + '\'' +
+                ", headers=" + headers +
+                ", body=" + body +
+                '}';
+    }
+
+    // Getters can be added here if needed
+}
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class LoggingUtil {
+    public static void logRequest(HttpServletRequest request) {
+        Optional.ofNullable(request).ifPresentOrElse(req -> {
+            try {
+                // Extract details from the request
+                String method = Optional.ofNullable(req.getMethod()).orElse("UNKNOWN");
+                String uri = Optional.ofNullable(req.getRequestURI()).orElse("UNKNOWN");
+                String query = Optional.ofNullable(req.getQueryString()).orElse("");
+                Map<String, String> headers = Optional.ofNullable(Collections.list(req.getHeaderNames()))
+                        .orElse(Collections.emptyList())
+                        .stream()
+                        .collect(Collectors.toMap(h -> h, req::getHeader));
+                String body = getRequestBody(req);
+
+                // Create a RequestLog object
+                RequestLog requestLog = new RequestLog(method, uri, query, headers, body);
+
+                // Log the request using toString()
+                log.info("Request: {}", requestLog.toString());
+            } catch (Exception e) {
+                log.error("Error logging request: {}", e.getMessage(), e);
+            }
+        }, () -> log.warn("HttpServletRequest is null, cannot log request."));
+    }
+
+    private static String getRequestBody(HttpServletRequest request) {
+        return Optional.ofNullable(request)
+                .filter(req -> req instanceof ContentCachingRequestWrapper)
+                .map(req -> {
+                    ContentCachingRequestWrapper wrappedRequest = (ContentCachingRequestWrapper) req;
+                    byte[] content = wrappedRequest.getContentAsByteArray();
+                    return new String(content, StandardCharsets.UTF_8);
+                })
+                .orElse("Request body not available or request not wrapped with ContentCachingRequestWrapper.");
+    }
+}
+
