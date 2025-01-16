@@ -113,3 +113,26 @@ public static void logResponseWithBody(HttpServletResponse response) {
         .orElse(Collections.emptyList()) // Ensure the fallback is a List<String>
         .stream()
         .collect(Collectors.toMap(h -> h, req::getHeader))
+----------------------------------------------
+import java.util.Map;
+
+public class ResponseLog {
+    private final int status;
+    private final Map<String, String> headers;
+    private final Object body;
+
+    public ResponseLog(int status, Map<String, String> headers, Object body) {
+        this.status = status;
+        this.headers = headers;
+        this.body = body;
+    }
+
+    @Override
+    public String toString() {
+        return "ResponseLog{" +
+                "status=" + status +
+                ", headers=" + headers +
+                ", body=" + body +
+                '}';
+    }
+}
