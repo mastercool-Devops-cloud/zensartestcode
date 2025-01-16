@@ -1,3 +1,24 @@
 [LoggingUtil.lambda$logRequest$2(LoggingUtil.java:58)] : Request: "RequestLog{method='POST', uri='/foreign-exchange-contract', headers={content-length=306, host=localhost:8237, content-type=application/json, user-agent=insomnia/9.3.2, accept=*/*}, body={  \"contractNumber\": \"99C7BV5D\",  \"contractTypeCode\": \"DE\",  \"fecNumber\": \"99C75W5P\",  \"storeAmount\": 0.00,  \"parentContractNumber\": \"99C75W5P\",  \"nettedAmount\": 574521.00,  \"valueDate\": \"2024-10-30\",  \"purchaseSaleIndicator\": \"B\",\"buyCurrencyAmount\": 30000.00,\"sellCurrencyAmount\": 574521.00}}"
 
 Response: "ResponseLog{status=200, headers={}, body={\"fxContractDto\":{\"contractNumber\":\"99C7BV5D\",\"contractTypeCode\":\"DE\",\"fecNumber\":\"99C75W5P\",\"parentContractNumber\":\"99C75W5P\",\"profitLossIndicator\":\"P\",\"valueDate\":\"2024-10-30\",\"purchaseSaleIndicator\":\"B\",\"storeAmount\":29983.50,\"nettedAmount\":574521,\"buyCurrencyAmount\":30000,\"sellCurrencyAmount\":574521}}}"
+
+@Override
+public String toString() {
+    String cleanBody = body != null ? body
+            .replace("\\", "") // Remove backslashes
+            .replace("\n", "") // Remove newlines
+            .replace("\t", "") // Remove tabs
+            : null;
+    return "ResponseLog{" +
+            "status=" + status +
+            ", headers=" + headers +
+            ", body=" + cleanBody +
+            '}';
+}
+----------------------
+RequestLog requestLog = new RequestLog(method, uri, query, headers, body
+        .replace("\\", "")
+        .replace("\n", "")
+        .replace("\t", "")
+);
+log.info("Request: {}", requestLog.toString());
