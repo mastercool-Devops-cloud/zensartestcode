@@ -70,3 +70,10 @@ public static void logResponse(HttpServletResponse response) {
 } catch (JsonProcessingException | IOException | Exception e) {
     log.error("Error occurred while logging response: {}", e.getMessage(), e);
 }
+--------------------------------------
+ <file name="D:\Fed project\POC Demo code\Fed-Simplification-github\cashflow-calculator\src\main\java\com\sb\fedssimplification\cashflowcalculator\util\LoggingUtil.java">
+        <error line="50" column="5" severity="error" message="Cyclomatic Complexity is 10 (max allowed is 7)."
+               source="com.puppycrawl.tools.checkstyle.checks.metrics.CyclomaticComplexityCheck"/>
+        <error line="50" column="5" severity="error"
+               message="Method logResponse length is 41 lines (max allowed is 40)."
+               source="com.puppycrawl.tools.checkstyle.checks.sizes.MethodLengthCheck"/>
