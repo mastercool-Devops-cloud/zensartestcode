@@ -2,3 +2,8 @@
 'Optional.ofNullable()' with non-null argument should be replaced with 'Optional.of()'
 
 Function may return null, but it's not allowed here
+
+Map<String, String> headers = Optional.ofNullable(responseWrapper.getHeaderNames())
+        .map(names -> names.stream()
+                .collect(Collectors.toMap(h -> h, h -> Optional.ofNullable(responseWrapper.getHeader(h)).orElse(""))))
+        .orElse(Collections.emptyMap());
