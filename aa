@@ -66,3 +66,7 @@ public static void logResponse(HttpServletResponse response) {
         }
     }, () -> log.warn("HttpServletResponse is null, cannot log response."));
 }
+------------------------------
+} catch (JsonProcessingException | IOException | Exception e) {
+    log.error("Error occurred while logging response: {}", e.getMessage(), e);
+}
