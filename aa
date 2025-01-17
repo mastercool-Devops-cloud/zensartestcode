@@ -169,3 +169,12 @@ java: constructor HttpStatus in enum com.sb.fedssimplification.cashflowcalculato
   required: no arguments
   found:    int,int,java.lang.String,<nulltype>,java.lang.String
   reason: actual and formal argument lists differ in length
+
+-------------------
+HttpStatusInfo(int minStatus, int maxStatus, String logLevel, String errorCodePrefix, String defaultMessage) {
+        this.minStatus = minStatus;
+        this.maxStatus = maxStatus;
+        this.logLevel = logLevel;
+        this.errorCodePrefix = errorCodePrefix;
+        this.defaultMessage = defaultMessage;
+    }
