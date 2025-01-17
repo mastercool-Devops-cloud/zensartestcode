@@ -178,3 +178,4 @@ HttpStatusInfo(int minStatus, int maxStatus, String logLevel, String errorCodePr
         this.errorCodePrefix = errorCodePrefix;
         this.defaultMessage = defaultMessage;
     }
+java: variable method not initialized in the default constructor
