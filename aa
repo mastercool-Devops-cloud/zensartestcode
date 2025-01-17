@@ -69,3 +69,19 @@ public class RequestFilter implements Filter {
         }
     }
 }
+{
+  "timestamp": "2025-01-17T14:32:00Z",
+  "level": "ERROR",
+  "message": "Failed to process user login",
+  "logger_name": "auth-service",
+  "service_name": "auth-service",
+  "environment": "production",
+  "host": "auth-server-01",
+ 
+  "user_id": "user-12345",
+  "event_type": "user_login",
+  "ip_address": "203.0.113.42",
+  
+  "error_code": "401",
+  "error_message": "Invalid credentials",
+}
