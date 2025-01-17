@@ -277,3 +277,84 @@ public class MessageInfo {
                 '}';
     }
 }
+--------------------------------------
+public enum HttpStatusInfo {
+    INFORMATIONAL(100, 199, "INFO", null, "Informational response"),
+    SUCCESS(200, 299, "INFO", null, "Successful response"),
+    REDIRECTION(300, 399, "INFO", null, "Redirection message"),
+    CLIENT_ERROR(400, 499, "WARN", "HTTP-4XX", "Client error"),
+    SERVER_ERROR(500, 599, "ERROR", "HTTP-5XX", "Server error");
+
+    private final int minStatus;
+    private final int maxStatus;
+    private final String logLevel;
+    private final String errorCodePrefix;
+    private final String defaultMessage;
+
+    HttpStatusInfo(int minStatus, int maxStatus, String logLevel, String errorCodePrefix, String defaultMessage) {
+        this.minStatus = minStatus;
+        this.maxStatus = maxStatus;
+        this.logLevel = logLevel;
+        this.errorCodePrefix = errorCodePrefix;
+        this.defaultMessage = defaultMessage;
+    }
+
+    public static HttpStatusInfo fromStatus(int status) {
+        for (HttpStatusInfo info : values()) {
+            if (status >= info.minStatus && status <= info.maxStatus) {
+                return info;
+            }
+        }
+        return null; // Fallback (shouldn't happen if status codes are valid)
+    }
+
+    public String getLogLevel() {
+        return logLevel;
+    }
+
+    public String getErrorCode(int status) {
+        return errorCodePrefix != null ? errorCodePrefix + "-" + status : null;
+    }
+
+    public String getDefaultMessage() {
+        return defaultMessage;
+    }
+}
+-------------------------------------
+public static void logInfo(HttpServletRequest request, HttpServletResponse response, String message) {
+    try {
+        // Extract request details
+        String method = Optional.ofNullable(request.getMethod()).orElse("UNKNOWN");
+        String uri = Optional.ofNullable(request.getRequestURI()).orElse("UNKNOWN");
+        Map<String, String> requestHeaders = Collections.list(request.getHeaderNames())
+                .stream()
+                .collect(Collectors.toMap(h -> h, request::getHeader));
+
+        // Extract response details
+        int status = response.getStatus();
+        HttpStatusInfo statusInfo = HttpStatusInfo.fromStatus(status);
+        String logLevel = statusInfo != null ? statusInfo.getLogLevel() : "INFO";
+        String errorCode = statusInfo != null ? statusInfo.getErrorCode(status) : null;
+        String errorMessage = statusInfo != null ? statusInfo.getDefaultMessage() : "Unknown status";
+
+        Map<String, String> responseHeaders = Optional.ofNullable(response.getHeaderNames())
+                .map(headers -> headers.stream().collect(Collectors.toMap(h -> h, response::getHeader)))
+                .orElse(Collections.emptyMap());
+
+        // Build the log message
+        String logDetails = String.format(
+                "Message: %s | Method: %s | URI: %s | Status: %d | LogLevel: %s | ErrorCode: %s | ErrorMessage: %s | " +
+                        "RequestHeaders: %s | ResponseHeaders: %s",
+                message, method, uri, status, logLevel, errorCode, errorMessage, requestHeaders, responseHeaders
+        );
+
+        // Log with the appropriate log level
+        switch (logLevel) {
+            case "ERROR" -> logger.error(logDetails);
+            case "WARN" -> logger.warn(logDetails);
+            default -> logger.info(logDetails);
+        }
+    } catch (Exception e) {
+        logger.error("Error logging information: {}", e.getMessage(), e);
+    }
+}
