@@ -85,3 +85,153 @@ public class RequestFilter implements Filter {
   "error_code": "401",
   "error_message": "Invalid credentials",
 }
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Optional;
+
+public class LoggingUtil {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+
+    public static void logResponseWithDetails(HttpServletResponse response, String serviceName, String environment) {
+        Optional.ofNullable(response).ifPresentOrElse(res -> {
+            try {
+                // Extract response details
+                int statusCode = res.getStatus();
+                String logLevel = getLogLevelFromStatus(statusCode);
+                String errorCode = (statusCode >= 400) ? "HTTP-" + statusCode : null;
+                String errorMessage = (statusCode >= 400) ? getErrorMessageFromStatus(statusCode) : null;
+
+                // Create MessageInfo object
+                MessageInfo messageInfo = new MessageInfo(
+                        logLevel,
+                        "Response processed",
+                        serviceName,
+                        environment,
+                        null, // Event type can be null or specified as needed
+                        null, // Request details are not included here
+                        null, // IP address
+                        errorCode,
+                        errorMessage
+                );
+
+                // Log the response with the appropriate log level
+                String logMessage = new ObjectMapper().writeValueAsString(messageInfo);
+                if ("ERROR".equalsIgnoreCase(logLevel)) {
+                    logger.error(logMessage);
+                } else if ("WARN".equalsIgnoreCase(logLevel)) {
+                    logger.warn(logMessage);
+                } else {
+                    logger.info(logMessage);
+                }
+            } catch (Exception e) {
+                logger.error("Error logging response details: {}", e.getMessage(), e);
+            }
+        }, () -> logger.warn("HttpServletResponse is null, cannot log response details."));
+    }
+
+    private static String getLogLevelFromStatus(int statusCode) {
+        if (statusCode >= 500) {
+            return "ERROR"; // Server errors
+        } else if (statusCode >= 400) {
+            return "WARN"; // Client errors
+        } else {
+            return "INFO"; // Successful responses
+        }
+    }
+
+    private static String getErrorMessageFromStatus(int statusCode) {
+        switch (statusCode) {
+            case 400: return "Bad Request";
+            case 401: return "Unauthorized";
+            case 403: return "Forbidden";
+            case 404: return "Not Found";
+            case 500: return "Internal Server Error";
+            case 502: return "Bad Gateway";
+            case 503: return "Service Unavailable";
+            default: return "Unknown Error";
+        }
+    }
+}
+-----------------------------
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class LoggingUtil {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+
+    public static void logInfo(HttpServletRequest request, HttpServletResponse response, String message) {
+        try {
+            // Extract request details
+            String method = Optional.ofNullable(request.getMethod()).orElse("UNKNOWN");
+            String uri = Optional.ofNullable(request.getRequestURI()).orElse("UNKNOWN");
+            Map<String, String> requestHeaders = Collections.list(request.getHeaderNames())
+                    .stream()
+                    .collect(Collectors.toMap(h -> h, request::getHeader));
+            
+            // Extract response details
+            int status = response.getStatus();
+            Map<String, String> responseHeaders = Optional.ofNullable(response.getHeaderNames())
+                    .map(headers -> headers.stream().collect(Collectors.toMap(h -> h, response::getHeader)))
+                    .orElse(Collections.emptyMap());
+            String logLevel = determineLogLevel(status);
+            String errorCode = determineErrorCode(status);
+            String errorMessage = determineErrorMessage(status);
+
+            // Build the log message
+            String logDetails = String.format(
+                "Message: %s | Method: %s | URI: %s | Status: %d | LogLevel: %s | ErrorCode: %s | ErrorMessage: %s | " +
+                "RequestHeaders: %s | ResponseHeaders: %s",
+                message, method, uri, status, logLevel, errorCode, errorMessage, requestHeaders, responseHeaders
+            );
+
+            // Log with the appropriate log level
+            if ("ERROR".equalsIgnoreCase(logLevel)) {
+                logger.error(logDetails);
+            } else if ("WARN".equalsIgnoreCase(logLevel)) {
+                logger.warn(logDetails);
+            } else {
+                logger.info(logDetails);
+            }
+        } catch (Exception e) {
+            logger.error("Error logging information: {}", e.getMessage(), e);
+        }
+    }
+
+    private static String determineLogLevel(int status) {
+        if (status >= 500) {
+            return "ERROR"; // Server errors
+        } else if (status >= 400) {
+            return "WARN"; // Client errors
+        } else {
+            return "INFO"; // Successful responses
+        }
+    }
+
+    private static String determineErrorCode(int status) {
+        return (status >= 400) ? "HTTP-" + status : null;
+    }
+
+    private static String determineErrorMessage(int status) {
+        switch (status) {
+            case 400: return "Bad Request";
+            case 401: return "Unauthorized";
+            case 403: return "Forbidden";
+            case 404: return "Not Found";
+            case 500: return "Internal Server Error";
+            case 502: return "Bad Gateway";
+            case 503: return "Service Unavailable";
+            default: return null;
+        }
+    }
+}
