@@ -7,3 +7,62 @@ Map<String, String> headers = Optional.ofNullable(responseWrapper.getHeaderNames
         .map(names -> names.stream()
                 .collect(Collectors.toMap(h -> h, h -> Optional.ofNullable(responseWrapper.getHeader(h)).orElse(""))))
         .orElse(Collections.emptyMap());
+--------------------------------------
+public static void logResponse(HttpServletResponse response) {
+    Optional.ofNullable(response).ifPresentOrElse(res -> {
+        if (res instanceof ContentCachingResponseWrapper) {
+            try {
+                ContentCachingResponseWrapper wrappedResponse = (ContentCachingResponseWrapper) res;
+                String responseBody = new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8);
+
+                Map<String, String> headers = Optional.ofNullable(wrappedResponse.getHeaderNames())
+                        .map(names -> names.stream()
+                                .collect(Collectors.toMap(
+                                        h -> h,
+                                        h -> Optional.ofNullable(wrappedResponse.getHeader(h)).orElse("")
+                                )))
+                        .orElse(Collections.emptyMap());
+
+                int statusCode = wrappedResponse.getStatus();
+                HttpStatusInfo statusInfo = HttpStatusInfo.fromStatus(statusCode);
+
+                String logLevel = statusInfo != null ? statusInfo.getLogLevel() : "INFO";
+                String errorCode = statusInfo != null ? statusInfo.getErrorCode() : null;
+                String errorMessage = statusInfo != null ? statusInfo.getDefaultMessage() : "Unknown status";
+
+                LoggingResponse responseLog = new LoggingResponse(statusCode, headers, responseBody);
+
+                log.info("Response: {}", OBJECT_MAPPER.writeValueAsString(responseLog));
+
+                MessageInfo messageInfo = new MessageInfo(
+                        TimeUtil.getCurrentTimestamp(),
+                        logLevel,
+                        "Response processed",
+                        "MyServiceName",
+                        null, // Environment
+                        null, // Host
+                        errorCode,
+                        errorMessage
+                );
+
+                String logMessage = OBJECT_MAPPER.writeValueAsString(messageInfo);
+
+                switch (logLevel) {
+                    case "ERROR" -> log.error(logMessage);
+                    case "WARN" -> log.warn(logMessage);
+                    default -> log.info(logMessage);
+                }
+
+                wrappedResponse.copyBodyToResponse();
+            } catch (JsonProcessingException e) {
+                log.error("Error processing JSON for response log: {}", e.getMessage(), e);
+            } catch (IOException e) {
+                log.error("Error copying response body to client: {}", e.getMessage(), e);
+            } catch (Exception e) {
+                log.error("Unexpected error logging response: {}", e.getMessage(), e);
+            }
+        } else {
+            log.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
+        }
+    }, () -> log.warn("HttpServletResponse is null, cannot log response."));
+}
