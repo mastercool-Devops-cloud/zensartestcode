@@ -237,42 +237,41 @@ public class LoggingUtil {
 }
 --------------------------------------
 import java.time.LocalDateTime;
-import java.util.Map;
 
-public class RequestLog {
+public class MessageInfo {
     private LocalDateTime timestamp;
     private String logLevel;
-    private String method;
-    private String uri;
-    private Map<String, String> headers;
-    private String requestBody;
-    private int status;
+    private String message;
+    private String serviceName;
+    private String environment;
+    private String eventType;
+    private String ipAddress;
     private String errorCode;
     private String errorMessage;
 
-    public RequestLog(String logLevel, String method, String uri, Map<String, String> headers, String requestBody,
-                      int status, String errorCode, String errorMessage) {
+    public MessageInfo(String logLevel, String message, String serviceName, String environment, String eventType,
+                       String ipAddress, String errorCode, String errorMessage) {
         this.timestamp = LocalDateTime.now();
         this.logLevel = logLevel;
-        this.method = method;
-        this.uri = uri;
-        this.headers = headers;
-        this.requestBody = requestBody;
-        this.status = status;
+        this.message = message;
+        this.serviceName = serviceName;
+        this.environment = environment;
+        this.eventType = eventType;
+        this.ipAddress = ipAddress;
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
     }
 
     @Override
     public String toString() {
-        return "RequestLog{" +
+        return "MessageInfo{" +
                 "timestamp=" + timestamp +
                 ", logLevel='" + logLevel + '\'' +
-                ", method='" + method + '\'' +
-                ", uri='" + uri + '\'' +
-                ", headers=" + headers +
-                ", requestBody='" + requestBody + '\'' +
-                ", status=" + status +
+                ", message='" + message + '\'' +
+                ", serviceName='" + serviceName + '\'' +
+                ", environment='" + environment + '\'' +
+                ", eventType='" + eventType + '\'' +
+                ", ipAddress='" + ipAddress + '\'' +
                 ", errorCode='" + errorCode + '\'' +
                 ", errorMessage='" + errorMessage + '\'' +
                 '}';
