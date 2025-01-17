@@ -3,41 +3,69 @@ public class LoggingUtil {
     private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Existing methods: logRequest(), logResponseWithBody()
+    // Existing methods: logRequest(), logResponseWithBody(), logException()
 
     /**
-     * Logs a general exception with optional contextual details.
+     * Logs an informational message with optional context.
      *
-     * @param exception The exception to log.
-     * @param context   Additional contextual information (can be null or empty).
+     * @param message The informational message to log.
+     * @param context Additional contextual information (can be null or empty).
      */
-    public static void logException(Exception exception, Map<String, Object> context) {
-        if (exception != null) {
-            StringBuilder logMessage = new StringBuilder("An exception occurred: ");
-            logMessage.append(exception.getMessage());
-
-            // Add context if available
-            if (context != null && !context.isEmpty()) {
-                try {
-                    String contextJson = objectMapper.writeValueAsString(context);
-                    logMessage.append(" | Context: ").append(contextJson);
-                } catch (JsonProcessingException e) {
-                    logMessage.append(" | Context could not be serialized.");
-                }
-            }
-
-            logger.error(logMessage.toString(), exception);
-        } else {
-            logger.warn("Attempted to log a null exception.");
+    public static void logInfo(String message, Map<String, Object> context) {
+        if (message == null || message.isEmpty()) {
+            logger.warn("Attempted to log an empty or null informational message.");
+            return;
         }
+
+        StringBuilder logMessage = new StringBuilder(message);
+
+        // Add context if available
+        if (context != null && !context.isEmpty()) {
+            try {
+                String contextJson = objectMapper.writeValueAsString(context);
+                logMessage.append(" | Context: ").append(contextJson);
+            } catch (JsonProcessingException e) {
+                logMessage.append(" | Context could not be serialized.");
+            }
+        }
+
+        logger.info(logMessage.toString());
     }
 
     /**
-     * Overloaded method for logging an exception without context.
+     * Overloaded method for logging an informational message without context.
      *
-     * @param exception The exception to log.
+     * @param message The informational message to log.
      */
-    public static void logException(Exception exception) {
-        logException(exception, null);
+    public static void logInfo(String message) {
+        logInfo(message, null);
+    }
+}
+------------------------------
+@Component
+public class RequestFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+
+        try {
+            // Log the incoming request
+            LoggingUtil.logRequest(httpServletRequest);
+
+            // Log additional info about the request
+            LoggingUtil.logInfo("Request received and logged", Map.of(
+                "method", httpServletRequest.getMethod(),
+                "uri", httpServletRequest.getRequestURI()
+            ));
+
+            chain.doFilter(request, response);
+
+        } catch (Exception e) {
+            // Log exceptions during request processing
+            LoggingUtil.logException(e);
+            throw e;
+        }
     }
 }
