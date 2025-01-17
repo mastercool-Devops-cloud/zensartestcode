@@ -77,3 +77,90 @@ public static void logResponse(HttpServletResponse response) {
         <error line="50" column="5" severity="error"
                message="Method logResponse length is 41 lines (max allowed is 40)."
                source="com.puppycrawl.tools.checkstyle.checks.sizes.MethodLengthCheck"/>
+--------------------------------------
+public static void logResponse(HttpServletResponse response) {
+    Optional.ofNullable(response).ifPresentOrElse(
+        res -> {
+            if (res instanceof ContentCachingResponseWrapper) {
+                handleContentCachingResponse((ContentCachingResponseWrapper) res);
+            } else {
+                log.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
+            }
+        },
+        () -> log.warn("HttpServletResponse is null, cannot log response.")
+    );
+}
+
+private static void handleContentCachingResponse(ContentCachingResponseWrapper responseWrapper) {
+    try {
+        String responseBody = extractResponseBody(responseWrapper);
+        Map<String, String> headers = extractHeaders(responseWrapper);
+        int statusCode = responseWrapper.getStatus();
+
+        logDetailedResponse(responseWrapper, responseBody, headers, statusCode);
+        responseWrapper.copyBodyToResponse();
+    } catch (Exception e) {
+        handleLoggingException(e);
+    }
+}
+
+private static String extractResponseBody(ContentCachingResponseWrapper responseWrapper) {
+    return new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
+}
+
+private static Map<String, String> extractHeaders(ContentCachingResponseWrapper responseWrapper) {
+    return Optional.ofNullable(responseWrapper.getHeaderNames())
+        .map(names -> names.stream()
+            .collect(Collectors.toMap(
+                h -> h,
+                h -> Optional.ofNullable(responseWrapper.getHeader(h)).orElse("")
+            )))
+        .orElse(Collections.emptyMap());
+}
+
+private static void logDetailedResponse(
+    ContentCachingResponseWrapper responseWrapper,
+    String responseBody,
+    Map<String, String> headers,
+    int statusCode
+) throws JsonProcessingException {
+    HttpStatusInfo statusInfo = HttpStatusInfo.fromStatus(statusCode);
+
+    String logLevel = statusInfo != null ? statusInfo.getLogLevel() : "INFO";
+    String errorCode = statusInfo != null ? statusInfo.getErrorCode() : null;
+    String errorMessage = statusInfo != null ? statusInfo.getDefaultMessage() : "Unknown status";
+
+    LoggingResponse responseLog = new LoggingResponse(statusCode, headers, responseBody);
+    log.info("Response: {}", OBJECT_MAPPER.writeValueAsString(responseLog));
+
+    MessageInfo messageInfo = new MessageInfo(
+        TimeUtil.getCurrentTimestamp(),
+        logLevel,
+        "Response processed",
+        "MyServiceName",
+        null, // Environment
+        null, // Host
+        errorCode,
+        errorMessage
+    );
+
+    logMessage(logLevel, OBJECT_MAPPER.writeValueAsString(messageInfo));
+}
+
+private static void logMessage(String logLevel, String logMessage) {
+    switch (logLevel) {
+        case "ERROR" -> log.error(logMessage);
+        case "WARN" -> log.warn(logMessage);
+        default -> log.info(logMessage);
+    }
+}
+
+private static void handleLoggingException(Exception e) {
+    if (e instanceof JsonProcessingException) {
+        log.error("Error processing JSON for response log: {}", e.getMessage(), e);
+    } else if (e instanceof IOException) {
+        log.error("Error copying response body to client: {}", e.getMessage(), e);
+    } else {
+        log.error("Unexpected error logging response: {}", e.getMessage(), e);
+    }
+}
