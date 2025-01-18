@@ -235,3 +235,20 @@ public static void logResponse(HttpServletResponse response) {
 }
 ----------------------------
 private final MessageInfo messageInfo;
+
+--------------------------
+private static Map<String, String> extractHeaders(HttpServletResponse response) {
+    if (response instanceof ContentCachingResponseWrapper) {
+        ContentCachingResponseWrapper responseWrapper = (ContentCachingResponseWrapper) response;
+        return Optional.ofNullable(responseWrapper.getHeaderNames())
+            .map(names -> names.stream()
+                .collect(Collectors.toMap(
+                    headerName -> headerName,
+                    headerName -> Optional.ofNullable(responseWrapper.getHeader(headerName)).orElse("")
+                )))
+            .orElse(Collections.emptyMap());
+    }
+
+    // Fallback for non-wrapped responses
+    return Collections.emptyMap();
+}
