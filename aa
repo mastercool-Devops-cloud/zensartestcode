@@ -252,3 +252,7 @@ private static Map<String, String> extractHeaders(HttpServletResponse response) 
     // Fallback for non-wrapped responses
     return Collections.emptyMap();
 }
+-------------------------------------
+Map<String, String> headers = responseWrapper.getHeaderNames()
+                    .stream()
+                    .collect(Collectors.toMap(h -> h, responseWrapper::getHeader));
