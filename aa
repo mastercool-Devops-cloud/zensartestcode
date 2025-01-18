@@ -179,3 +179,59 @@ HttpStatusInfo(int minStatus, int maxStatus, String logLevel, String errorCodePr
         this.defaultMessage = defaultMessage;
     }
 java: variable method not initialized in the default constructor
+-----------------------------------------
+public static void logResponse(HttpServletResponse response) {
+    Optional.ofNullable(response).ifPresentOrElse(res -> {
+        if (res instanceof ContentCachingResponseWrapper) {
+            try {
+                ContentCachingResponseWrapper wrappedResponse = (ContentCachingResponseWrapper) res;
+                String responseBody = new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8);
+
+                Map<String, String> headers = Optional.ofNullable(wrappedResponse.getHeaderNames())
+                        .map(names -> names.stream()
+                                .collect(Collectors.toMap(
+                                        h -> h,
+                                        h -> Optional.ofNullable(wrappedResponse.getHeader(h)).orElse("")
+                                )))
+                        .orElse(Collections.emptyMap());
+
+                int statusCode = wrappedResponse.getStatus();
+                HttpStatusInfo statusInfo = HttpStatusInfo.fromStatus(statusCode);
+
+                String logLevel = statusInfo != null ? statusInfo.getLogLevel() : "INFO";
+                String errorCode = statusInfo != null ? statusInfo.getErrorCode(statusCode) : null;
+                String errorMessage = statusInfo != null ? statusInfo.getDefaultMessage() : "Unknown status";
+
+                MessageInfo messageInfo = new MessageInfo(
+                        TimeUtil.getCurrentTimestamp(),
+                        logLevel,
+                        "Response processed",
+                        "MyServiceName",
+                        null, // Environment
+                        null, // Host
+                        errorCode,
+                        errorMessage
+                );
+
+                RequestLog requestLog = new RequestLog(
+                        "N/A", // Method not applicable for response
+                        "N/A", // URI not applicable for response
+                        "N/A", // Query not applicable for response
+                        headers,
+                        responseBody,
+                        messageInfo
+                );
+
+                log.info("Response: {}", OBJECT_MAPPER.writeValueAsString(requestLog));
+
+                wrappedResponse.copyBodyToResponse();
+            } catch (Exception e) {
+                log.error("Unexpected error logging response: {}", e.getMessage(), e);
+            }
+        } else {
+            log.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
+        }
+    }, () -> log.warn("HttpServletResponse is null, cannot log response."));
+}
+----------------------------
+private final MessageInfo messageInfo;
