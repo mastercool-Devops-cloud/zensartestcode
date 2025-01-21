@@ -310,3 +310,35 @@ public class EnvironmentUtil {
     }
 }
 
+-----------------------------------------
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+
+import javax.annotation.PostConstruct;
+
+@Configuration
+public class EnvironmentUtil {
+
+    private static Environment environment;
+
+    @Autowired
+    private Environment injectedEnvironment;
+
+    @PostConstruct
+    private void init() {
+        // Initialize the static environment with the injected instance
+        environment = injectedEnvironment;
+    }
+
+    /**
+     * Get the active Spring profile.
+     *
+     * @return the active profile or "default" if no profile is active
+     */
+    public static String getActiveProfile() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        // Return the first active profile, or "default" if none are active
+        return activeProfiles.length > 0 ? activeProfiles[0] : "default";
+    }
+}
