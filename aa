@@ -256,3 +256,57 @@ private static Map<String, String> extractHeaders(HttpServletResponse response) 
 Map<String, String> headers = responseWrapper.getHeaderNames()
                     .stream()
                     .collect(Collectors.toMap(h -> h, responseWrapper::getHeader));
+-------------------------------
+public static String getClientIpAddress(HttpServletRequest request) {
+    final String[] HEADER_CANDIDATES = {
+        "X-Forwarded-For",
+        "Proxy-Client-IP",
+        "WL-Proxy-Client-IP",
+        "HTTP_X_FORWARDED_FOR",
+        "HTTP_X_FORWARDED",
+        "HTTP_X_CLUSTER_CLIENT_IP",
+        "HTTP_CLIENT_IP",
+        "HTTP_FORWARDED_FOR",
+        "HTTP_FORWARDED",
+        "HTTP_VIA",
+        "REMOTE_ADDR"
+    };
+
+    for (String header : HEADER_CANDIDATES) {
+        String ip = request.getHeader(header);
+        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            // In case of multiple IPs, take the first one
+            return ip.split(",")[0];
+        }
+    }
+
+    // Fallback to remote address if no headers provide the IP
+    return request.getRemoteAddr();
+}
+-----------------------------------------
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
+
+@Component
+public class EnvironmentUtil {
+
+    private final Environment environment;
+
+    @Autowired
+    public EnvironmentUtil(Environment environment) {
+        this.environment = environment;
+    }
+
+    /**
+     * Get the active Spring profile.
+     *
+     * @return the active profile or "default" if no profile is active
+     */
+    public String getActiveProfile() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        // Return the first active profile, or "default" if none are active
+        return activeProfiles.length > 0 ? activeProfiles[0] : "default";
+    }
+}
+
