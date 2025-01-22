@@ -1,93 +1,61 @@
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import javax.servlet.http.HttpServletRequest;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Map;
 
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class LoggingUtilTest {
 
-    @Mock
-    private HttpServletRequest mockRequest;
+    private MockHttpServletRequest mockRequest;
+    private MockHttpServletResponse mockResponse;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        mockRequest = new MockHttpServletRequest();
+        mockResponse = new MockHttpServletResponse();
     }
 
     @Test
-    void testLogRequest_WithValidRequest() throws Exception {
+    void testLogRequest_WithValidRequest() {
         // Mock request data
-        when(mockRequest.getMethod()).thenReturn("POST");
-        when(mockRequest.getRequestURI()).thenReturn("/api/test");
-        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Collections.singletonList("Authorization")));
-        when(mockRequest.getHeader("Authorization")).thenReturn("Bearer dummy-token");
-
-        // Mock static utility methods
-        mockStatic(EnvironmentUtil.class);
-        when(EnvironmentUtil.getActiveProfile()).thenReturn("dev");
-
-        mockStatic(ApplicationProperties.class);
-        when(ApplicationProperties.getApplicationName()).thenReturn("TestApp");
-
-        mockStatic(TimeUtil.class);
-        when(TimeUtil.getCurrentTimestamp()).thenReturn("2025-01-13T10:00:00Z");
-
-        mockStatic(LoggingUtil.class);
-        when(LoggingUtil.getClientIpAddress(mockRequest)).thenReturn("127.0.0.1");
+        mockRequest.setMethod("POST");
+        mockRequest.setRequestURI("/api/test");
+        mockRequest.addHeader("Authorization", "Bearer dummy-token");
 
         // Call the method
-        LoggingUtil.logRequest(mockRequest);
-
-        // Verify the logs or ensure no exceptions
-        // This would require additional integration with Log4j2 testing utilities
+        assertDoesNotThrow(() -> LoggingUtil.logRequest(mockRequest));
     }
 
     @Test
     void testLogRequest_WithNullRequest() {
         // Call with a null request
-        LoggingUtil.logRequest(null);
-
-        // Assert behavior (you could capture logs to validate warnings)
+        assertDoesNotThrow(() -> LoggingUtil.logRequest(null));
     }
 
     @Test
-    void testLogRequest_WithEmptyHeaders() throws Exception {
+    void testLogRequest_WithEmptyHeaders() {
         // Mock request data with no headers
-        when(mockRequest.getMethod()).thenReturn("GET");
-        when(mockRequest.getRequestURI()).thenReturn("/api/empty-headers");
-        when(mockRequest.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
-
-        // Mock static utility methods
-        mockStatic(EnvironmentUtil.class);
-        when(EnvironmentUtil.getActiveProfile()).thenReturn("test");
-
-        mockStatic(ApplicationProperties.class);
-        when(ApplicationProperties.getApplicationName()).thenReturn("EmptyHeadersApp");
-
-        mockStatic(TimeUtil.class);
-        when(TimeUtil.getCurrentTimestamp()).thenReturn("2025-01-13T11:00:00Z");
+        mockRequest.setMethod("GET");
+        mockRequest.setRequestURI("/api/empty-headers");
 
         // Call the method
-        LoggingUtil.logRequest(mockRequest);
-
-        // Verify the behavior
+        assertDoesNotThrow(() -> LoggingUtil.logRequest(mockRequest));
     }
 
     @Test
-    void testLogRequest_ExceptionHandling() throws Exception {
+    void testLogRequest_ExceptionHandling() {
         // Mock a request that throws an exception
-        when(mockRequest.getMethod()).thenThrow(new RuntimeException("Simulated exception"));
+        mockRequest = new MockHttpServletRequest() {
+            @Override
+            public String getMethod() {
+                throw new RuntimeException("Simulated exception");
+            }
+        };
 
         // Call the method
-        LoggingUtil.logRequest(mockRequest);
-
-        // Assert behavior (you could capture logs to validate error handling)
+        assertDoesNotThrow(() -> LoggingUtil.logRequest(mockRequest));
     }
 }
