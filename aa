@@ -1,368 +1,39 @@
 
-'Optional.ofNullable()' with non-null argument should be replaced with 'Optional.of()'
+import nl.altindag.log.LogCaptor;
+import org.junit.jupiter.api.Test;
 
-Function may return null, but it's not allowed here
+import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Map;
 
-Map<String, String> headers = Optional.ofNullable(responseWrapper.getHeaderNames())
-        .map(names -> names.stream()
-                .collect(Collectors.toMap(h -> h, h -> Optional.ofNullable(responseWrapper.getHeader(h)).orElse(""))))
-        .orElse(Collections.emptyMap());
---------------------------------------
-public static void logResponse(HttpServletResponse response) {
-    Optional.ofNullable(response).ifPresentOrElse(res -> {
-        if (res instanceof ContentCachingResponseWrapper) {
-            try {
-                ContentCachingResponseWrapper wrappedResponse = (ContentCachingResponseWrapper) res;
-                String responseBody = new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8);
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
-                Map<String, String> headers = Optional.ofNullable(wrappedResponse.getHeaderNames())
-                        .map(names -> names.stream()
-                                .collect(Collectors.toMap(
-                                        h -> h,
-                                        h -> Optional.ofNullable(wrappedResponse.getHeader(h)).orElse("")
-                                )))
-                        .orElse(Collections.emptyMap());
+class LoggingUtilTest {
 
-                int statusCode = wrappedResponse.getStatus();
-                HttpStatusInfo statusInfo = HttpStatusInfo.fromStatus(statusCode);
+    @Test
+    void testLogRequestEnsuresAllFieldsPopulated() {
+        // Arrange
+        LogCaptor logCaptor = LogCaptor.forClass(LoggingUtil.class);
 
-                String logLevel = statusInfo != null ? statusInfo.getLogLevel() : "INFO";
-                String errorCode = statusInfo != null ? statusInfo.getErrorCode() : null;
-                String errorMessage = statusInfo != null ? statusInfo.getDefaultMessage() : "Unknown status";
+        HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getMethod()).thenReturn("POST");
+        when(mockRequest.getRequestURI()).thenReturn("/test-uri");
+        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Collections.singletonList("User-Agent")));
+        when(mockRequest.getHeader("User-Agent")).thenReturn("JUnit-Test-Agent");
+        when(mockRequest.getRemoteAddr()).thenReturn("127.0.0.1");
 
-                LoggingResponse responseLog = new LoggingResponse(statusCode, headers, responseBody);
+        // Act
+        LoggingUtil.logRequest(mockRequest);
 
-                log.info("Response: {}", OBJECT_MAPPER.writeValueAsString(responseLog));
-
-                MessageInfo messageInfo = new MessageInfo(
-                        TimeUtil.getCurrentTimestamp(),
-                        logLevel,
-                        "Response processed",
-                        "MyServiceName",
-                        null, // Environment
-                        null, // Host
-                        errorCode,
-                        errorMessage
-                );
-
-                String logMessage = OBJECT_MAPPER.writeValueAsString(messageInfo);
-
-                switch (logLevel) {
-                    case "ERROR" -> log.error(logMessage);
-                    case "WARN" -> log.warn(logMessage);
-                    default -> log.info(logMessage);
-                }
-
-                wrappedResponse.copyBodyToResponse();
-            } catch (JsonProcessingException e) {
-                log.error("Error processing JSON for response log: {}", e.getMessage(), e);
-            } catch (IOException e) {
-                log.error("Error copying response body to client: {}", e.getMessage(), e);
-            } catch (Exception e) {
-                log.error("Unexpected error logging response: {}", e.getMessage(), e);
-            }
-        } else {
-            log.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
-        }
-    }, () -> log.warn("HttpServletResponse is null, cannot log response."));
-}
-------------------------------
-} catch (JsonProcessingException | IOException | Exception e) {
-    log.error("Error occurred while logging response: {}", e.getMessage(), e);
-}
---------------------------------------
- <file name="D:\Fed project\POC Demo code\Fed-Simplification-github\cashflow-calculator\src\main\java\com\sb\fedssimplification\cashflowcalculator\util\LoggingUtil.java">
-        <error line="50" column="5" severity="error" message="Cyclomatic Complexity is 10 (max allowed is 7)."
-               source="com.puppycrawl.tools.checkstyle.checks.metrics.CyclomaticComplexityCheck"/>
-        <error line="50" column="5" severity="error"
-               message="Method logResponse length is 41 lines (max allowed is 40)."
-               source="com.puppycrawl.tools.checkstyle.checks.sizes.MethodLengthCheck"/>
---------------------------------------
-public static void logResponse(HttpServletResponse response) {
-    Optional.ofNullable(response).ifPresentOrElse(
-        res -> {
-            if (res instanceof ContentCachingResponseWrapper) {
-                handleContentCachingResponse((ContentCachingResponseWrapper) res);
-            } else {
-                log.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
-            }
-        },
-        () -> log.warn("HttpServletResponse is null, cannot log response.")
-    );
-}
-
-private static void handleContentCachingResponse(ContentCachingResponseWrapper responseWrapper) {
-    try {
-        String responseBody = extractResponseBody(responseWrapper);
-        Map<String, String> headers = extractHeaders(responseWrapper);
-        int statusCode = responseWrapper.getStatus();
-
-        logDetailedResponse(responseWrapper, responseBody, headers, statusCode);
-        responseWrapper.copyBodyToResponse();
-    } catch (Exception e) {
-        handleLoggingException(e);
-    }
-}
-
-private static String extractResponseBody(ContentCachingResponseWrapper responseWrapper) {
-    return new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-}
-
-private static Map<String, String> extractHeaders(ContentCachingResponseWrapper responseWrapper) {
-    return Optional.ofNullable(responseWrapper.getHeaderNames())
-        .map(names -> names.stream()
-            .collect(Collectors.toMap(
-                h -> h,
-                h -> Optional.ofNullable(responseWrapper.getHeader(h)).orElse("")
-            )))
-        .orElse(Collections.emptyMap());
-}
-
-private static void logDetailedResponse(
-    ContentCachingResponseWrapper responseWrapper,
-    String responseBody,
-    Map<String, String> headers,
-    int statusCode
-) throws JsonProcessingException {
-    HttpStatusInfo statusInfo = HttpStatusInfo.fromStatus(statusCode);
-
-    String logLevel = statusInfo != null ? statusInfo.getLogLevel() : "INFO";
-    String errorCode = statusInfo != null ? statusInfo.getErrorCode() : null;
-    String errorMessage = statusInfo != null ? statusInfo.getDefaultMessage() : "Unknown status";
-
-    LoggingResponse responseLog = new LoggingResponse(statusCode, headers, responseBody);
-    log.info("Response: {}", OBJECT_MAPPER.writeValueAsString(responseLog));
-
-    MessageInfo messageInfo = new MessageInfo(
-        TimeUtil.getCurrentTimestamp(),
-        logLevel,
-        "Response processed",
-        "MyServiceName",
-        null, // Environment
-        null, // Host
-        errorCode,
-        errorMessage
-    );
-
-    logMessage(logLevel, OBJECT_MAPPER.writeValueAsString(messageInfo));
-}
-
-private static void logMessage(String logLevel, String logMessage) {
-    switch (logLevel) {
-        case "ERROR" -> log.error(logMessage);
-        case "WARN" -> log.warn(logMessage);
-        default -> log.info(logMessage);
-    }
-}
-
-private static void handleLoggingException(Exception e) {
-    if (e instanceof JsonProcessingException) {
-        log.error("Error processing JSON for response log: {}", e.getMessage(), e);
-    } else if (e instanceof IOException) {
-        log.error("Error copying response body to client: {}", e.getMessage(), e);
-    } else {
-        log.error("Unexpected error logging response: {}", e.getMessage(), e);
-    }
-}
--------------------------------------------------------
-java: constructor HttpStatus in enum com.sb.fedssimplification.cashflowcalculator.enums.HttpStatus cannot be applied to given types;
-  required: no arguments
-  found:    int,int,java.lang.String,<nulltype>,java.lang.String
-  reason: actual and formal argument lists differ in length
-
--------------------
-HttpStatusInfo(int minStatus, int maxStatus, String logLevel, String errorCodePrefix, String defaultMessage) {
-        this.minStatus = minStatus;
-        this.maxStatus = maxStatus;
-        this.logLevel = logLevel;
-        this.errorCodePrefix = errorCodePrefix;
-        this.defaultMessage = defaultMessage;
-    }
-java: variable method not initialized in the default constructor
------------------------------------------
-public static void logResponse(HttpServletResponse response) {
-    Optional.ofNullable(response).ifPresentOrElse(res -> {
-        if (res instanceof ContentCachingResponseWrapper) {
-            try {
-                ContentCachingResponseWrapper wrappedResponse = (ContentCachingResponseWrapper) res;
-                String responseBody = new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8);
-
-                Map<String, String> headers = Optional.ofNullable(wrappedResponse.getHeaderNames())
-                        .map(names -> names.stream()
-                                .collect(Collectors.toMap(
-                                        h -> h,
-                                        h -> Optional.ofNullable(wrappedResponse.getHeader(h)).orElse("")
-                                )))
-                        .orElse(Collections.emptyMap());
-
-                int statusCode = wrappedResponse.getStatus();
-                HttpStatusInfo statusInfo = HttpStatusInfo.fromStatus(statusCode);
-
-                String logLevel = statusInfo != null ? statusInfo.getLogLevel() : "INFO";
-                String errorCode = statusInfo != null ? statusInfo.getErrorCode(statusCode) : null;
-                String errorMessage = statusInfo != null ? statusInfo.getDefaultMessage() : "Unknown status";
-
-                MessageInfo messageInfo = new MessageInfo(
-                        TimeUtil.getCurrentTimestamp(),
-                        logLevel,
-                        "Response processed",
-                        "MyServiceName",
-                        null, // Environment
-                        null, // Host
-                        errorCode,
-                        errorMessage
-                );
-
-                RequestLog requestLog = new RequestLog(
-                        "N/A", // Method not applicable for response
-                        "N/A", // URI not applicable for response
-                        "N/A", // Query not applicable for response
-                        headers,
-                        responseBody,
-                        messageInfo
-                );
-
-                log.info("Response: {}", OBJECT_MAPPER.writeValueAsString(requestLog));
-
-                wrappedResponse.copyBodyToResponse();
-            } catch (Exception e) {
-                log.error("Unexpected error logging response: {}", e.getMessage(), e);
-            }
-        } else {
-            log.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
-        }
-    }, () -> log.warn("HttpServletResponse is null, cannot log response."));
-}
-----------------------------
-private final MessageInfo messageInfo;
-
---------------------------
-private static Map<String, String> extractHeaders(HttpServletResponse response) {
-    if (response instanceof ContentCachingResponseWrapper) {
-        ContentCachingResponseWrapper responseWrapper = (ContentCachingResponseWrapper) response;
-        return Optional.ofNullable(responseWrapper.getHeaderNames())
-            .map(names -> names.stream()
-                .collect(Collectors.toMap(
-                    headerName -> headerName,
-                    headerName -> Optional.ofNullable(responseWrapper.getHeader(headerName)).orElse("")
-                )))
-            .orElse(Collections.emptyMap());
-    }
-
-    // Fallback for non-wrapped responses
-    return Collections.emptyMap();
-}
--------------------------------------
-Map<String, String> headers = responseWrapper.getHeaderNames()
-                    .stream()
-                    .collect(Collectors.toMap(h -> h, responseWrapper::getHeader));
--------------------------------
-public static String getClientIpAddress(HttpServletRequest request) {
-    final String[] HEADER_CANDIDATES = {
-        "X-Forwarded-For",
-        "Proxy-Client-IP",
-        "WL-Proxy-Client-IP",
-        "HTTP_X_FORWARDED_FOR",
-        "HTTP_X_FORWARDED",
-        "HTTP_X_CLUSTER_CLIENT_IP",
-        "HTTP_CLIENT_IP",
-        "HTTP_FORWARDED_FOR",
-        "HTTP_FORWARDED",
-        "HTTP_VIA",
-        "REMOTE_ADDR"
-    };
-
-    for (String header : HEADER_CANDIDATES) {
-        String ip = request.getHeader(header);
-        if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
-            // In case of multiple IPs, take the first one
-            return ip.split(",")[0];
-        }
-    }
-
-    // Fallback to remote address if no headers provide the IP
-    return request.getRemoteAddr();
-}
------------------------------------------
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
-
-@Component
-public class EnvironmentUtil {
-
-    private final Environment environment;
-
-    @Autowired
-    public EnvironmentUtil(Environment environment) {
-        this.environment = environment;
-    }
-
-    /**
-     * Get the active Spring profile.
-     *
-     * @return the active profile or "default" if no profile is active
-     */
-    public String getActiveProfile() {
-        String[] activeProfiles = environment.getActiveProfiles();
-        // Return the first active profile, or "default" if none are active
-        return activeProfiles.length > 0 ? activeProfiles[0] : "default";
-    }
-}
-
------------------------------------------
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
-
-import javax.annotation.PostConstruct;
-
-@Configuration
-public class EnvironmentUtil {
-
-    private static Environment environment;
-
-    @Autowired
-    private Environment injectedEnvironment;
-
-    @PostConstruct
-    private void init() {
-        // Initialize the static environment with the injected instance
-        environment = injectedEnvironment;
-    }
-
-    /**
-     * Get the active Spring profile.
-     *
-     * @return the active profile or "default" if no profile is active
-     */
-    public static String getActiveProfile() {
-        String[] activeProfiles = environment.getActiveProfiles();
-        // Return the first active profile, or "default" if none are active
-        return activeProfiles.length > 0 ? activeProfiles[0] : "default";
-    }
-}
-==================================================
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-
-@Component
-public class ApplicationProperties {
-
-    @Value("${spring.application.name:UnknownApplication}")
-    private String applicationName;
-
-    private static String staticApplicationName;
-
-    @PostConstruct
-    private void init() {
-        // Assign the injected value to the static field
-        staticApplicationName = applicationName;
-    }
-
-    public static String getApplicationName() {
-        return staticApplicationName;
+        // Assert
+        assertTrue(logCaptor.getInfoLogs().size() > 0, "No info logs were captured.");
+        
+        String logMessage = logCaptor.getInfoLogs().get(0);
+        assertTrue(logMessage.contains("\"method\":\"POST\""), "Method not logged properly.");
+        assertTrue(logMessage.contains("\"uri\":\"/test-uri\""), "URI not logged properly.");
+        assertTrue(logMessage.contains("\"headers\":{\"User-Agent\":\"JUnit-Test-Agent\"}"), "Headers not logged properly.");
+        assertTrue(logMessage.contains("\"clientIpAddress\":\"127.0.0.1\""), "Client IP not logged properly.");
     }
 }
