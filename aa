@@ -44,3 +44,4 @@ class LoggingUtilTest {
     <version>2.7.10</version>
     <scope>test</scope>
 </dependency>
+org.apache.logging.log4j.LoggingException: log4j-slf4j2-impl cannot be present with log4j-to-slf4j
