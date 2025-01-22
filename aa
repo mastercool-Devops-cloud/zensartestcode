@@ -59,3 +59,58 @@ class LoggingUtilTest {
         assertDoesNotThrow(() -> LoggingUtil.logRequest(mockRequest));
     }
 }
+-------------------------------------
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import javax.servlet.http.HttpServletRequest;
+
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Map;
+
+import static org.mockito.Mockito.*;
+
+class LoggingUtilTest {
+
+    @Mock
+    private HttpServletRequest mockRequest;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testLogRequest_WithAllFieldsPopulated() throws Exception {
+        // Mock request data
+        when(mockRequest.getMethod()).thenReturn("POST");
+        when(mockRequest.getRequestURI()).thenReturn("/api/test");
+        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Collections.singletonList("Authorization")));
+        when(mockRequest.getHeader("Authorization")).thenReturn("Bearer dummy-token");
+
+        when(mockRequest.getRemoteAddr()).thenReturn("192.168.1.1");
+
+        // Mock static utility methods
+        mockStatic(EnvironmentUtil.class);
+        when(EnvironmentUtil.getActiveProfile()).thenReturn("prod");
+
+        mockStatic(ApplicationProperties.class);
+        when(ApplicationProperties.getApplicationName()).thenReturn("TestApplication");
+
+        mockStatic(TimeUtil.class);
+        when(TimeUtil.getCurrentTimestamp()).thenReturn("2025-01-13T10:00:00Z");
+
+        // Mock LoggingUtil's internal method
+        mockStatic(LoggingUtil.class);
+        when(LoggingUtil.getClientIpAddress(mockRequest)).thenReturn("192.168.1.1");
+
+        // Call the method
+        LoggingUtil.logRequest(mockRequest);
+
+        // Verify the logs or ensure no exceptions are thrown
+        // To assert the logs, you can use LogCaptor or a Log4j2 testing appender
+    }
+}
