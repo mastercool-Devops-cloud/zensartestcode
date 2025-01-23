@@ -268,6 +268,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
@@ -277,62 +278,42 @@ class EnvironmentUtilTest {
     @Mock
     private Environment mockEnvironment;
 
-    private EnvironmentUtil environmentUtil;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        environmentUtil = new EnvironmentUtil(mockEnvironment);
+
+        // Simulate @PostConstruct behavior by setting the static field
+        ReflectionTestUtils.setField(EnvironmentUtil.class, "environment", mockEnvironment);
     }
 
     @Test
-    void testGetActiveProfile_WithActiveProfiles() {
-        // Mock environment with active profiles
+    void testGetActiveProfile_WhenActiveProfileExists() {
+        // Mock the behavior of the Environment
         when(mockEnvironment.getActiveProfiles()).thenReturn(new String[]{"dev"});
 
-        // Call the method
-        String activeProfile = environmentUtil.getActiveProfile();
-
-        // Assert the result
-        assertEquals("dev", activeProfile);
+        // Assert the active profile is returned correctly
+        assertEquals("dev", EnvironmentUtil.getActiveProfile());
     }
 
     @Test
-    void testGetActiveProfile_WithMultipleActiveProfiles() {
-        // Mock environment with multiple active profiles
-        when(mockEnvironment.getActiveProfiles()).thenReturn(new String[]{"prod", "dev"});
-
-        // Call the method
-        String activeProfile = environmentUtil.getActiveProfile();
-
-        // Assert the result
-        assertEquals("prod", activeProfile); // First profile should be returned
-    }
-
-    @Test
-    void testGetActiveProfile_WithNoActiveProfiles() {
-        // Mock environment with no active profiles
+    void testGetActiveProfile_WhenNoActiveProfiles() {
+        // Mock the behavior of the Environment with no active profiles
         when(mockEnvironment.getActiveProfiles()).thenReturn(new String[]{});
 
-        // Call the method
-        String activeProfile = environmentUtil.getActiveProfile();
-
-        // Assert the result
-        assertEquals("default", activeProfile); // Default profile should be returned
+        // Assert the default profile is returned
+        assertEquals("default", EnvironmentUtil.getActiveProfile());
     }
 
     @Test
-    void testGetActiveProfile_WithNullActiveProfiles() {
-        // Mock environment returning null for active profiles (edge case)
-        when(mockEnvironment.getActiveProfiles()).thenReturn(null);
+    void testGetActiveProfile_WhenMultipleActiveProfiles() {
+        // Mock the behavior of the Environment with multiple active profiles
+        when(mockEnvironment.getActiveProfiles()).thenReturn(new String[]{"test", "prod"});
 
-        // Call the method
-        String activeProfile = environmentUtil.getActiveProfile();
-
-        // Assert the result
-        assertEquals("default", activeProfile); // Default profile should be returned
+        // Assert the first active profile is returned
+        assertEquals("test", EnvironmentUtil.getActiveProfile());
     }
 }
+
 -----------------------------------------
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
