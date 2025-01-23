@@ -194,3 +194,4 @@ class LoggingFilterConfigTest {
         assertThat(filterRegistrationBean.getOrder()).isEqualTo(2);
     }
 }
+org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named 'loggingFilter' available
