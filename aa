@@ -166,7 +166,7 @@ class LoggingFilterConfigTest {
 
     @Test
     void testRequestCachingLoggingFilterRegistration() {
-        FilterRegistrationBean<?> filterRegistrationBean = context.getBean("loggingFilter", FilterRegistrationBean.class);
+        FilterRegistrationBean<?> filterRegistrationBean = context.getBean("requestCachingLoggingFilter", FilterRegistrationBean.class);
 
         // Assert filter is registered
         assertThat(filterRegistrationBean).isNotNull();
@@ -181,7 +181,7 @@ class LoggingFilterConfigTest {
 
     @Test
     void testResponseCachingLoggingFilterRegistration() {
-        FilterRegistrationBean<?> filterRegistrationBean = context.getBean("loggingFilter", FilterRegistrationBean.class);
+        FilterRegistrationBean<?> filterRegistrationBean = context.getBean("responseCachingLoggingFilter", FilterRegistrationBean.class);
 
         // Assert filter is registered
         assertThat(filterRegistrationBean).isNotNull();
@@ -194,4 +194,6 @@ class LoggingFilterConfigTest {
         assertThat(filterRegistrationBean.getOrder()).isEqualTo(2);
     }
 }
+
 org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named 'loggingFilter' available
+ @Bean(name = "requestCachingLoggingFilter")
