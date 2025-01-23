@@ -1,116 +1,76 @@
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
-class LoggingUtilTest {
-
-    private MockHttpServletRequest mockRequest;
-    private MockHttpServletResponse mockResponse;
-
-    @BeforeEach
-    void setUp() {
-        mockRequest = new MockHttpServletRequest();
-        mockResponse = new MockHttpServletResponse();
-    }
-
-    @Test
-    void testLogRequest_WithValidRequest() {
-        // Mock request data
-        mockRequest.setMethod("POST");
-        mockRequest.setRequestURI("/api/test");
-        mockRequest.addHeader("Authorization", "Bearer dummy-token");
-
-        // Call the method
-        assertDoesNotThrow(() -> LoggingUtil.logRequest(mockRequest));
-    }
-
-    @Test
-    void testLogRequest_WithNullRequest() {
-        // Call with a null request
-        assertDoesNotThrow(() -> LoggingUtil.logRequest(null));
-    }
-
-    @Test
-    void testLogRequest_WithEmptyHeaders() {
-        // Mock request data with no headers
-        mockRequest.setMethod("GET");
-        mockRequest.setRequestURI("/api/empty-headers");
-
-        // Call the method
-        assertDoesNotThrow(() -> LoggingUtil.logRequest(mockRequest));
-    }
-
-    @Test
-    void testLogRequest_ExceptionHandling() {
-        // Mock a request that throws an exception
-        mockRequest = new MockHttpServletRequest() {
-            @Override
-            public String getMethod() {
-                throw new RuntimeException("Simulated exception");
-            }
-        };
-
-        // Call the method
-        assertDoesNotThrow(() -> LoggingUtil.logRequest(mockRequest));
-    }
-}
--------------------------------------
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import javax.servlet.http.HttpServletRequest;
-
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Map;
-
 import static org.mockito.Mockito.*;
 
 class LoggingUtilTest {
 
-    @Mock
-    private HttpServletRequest mockRequest;
+    private MockHttpServletResponse mockResponse;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        mockResponse = new MockHttpServletResponse();
     }
 
     @Test
-    void testLogRequest_WithAllFieldsPopulated() throws Exception {
-        // Mock request data
-        when(mockRequest.getMethod()).thenReturn("POST");
-        when(mockRequest.getRequestURI()).thenReturn("/api/test");
-        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Collections.singletonList("Authorization")));
-        when(mockRequest.getHeader("Authorization")).thenReturn("Bearer dummy-token");
+    void testLogResponse_WithValidResponse() {
+        // Wrap the response to enable caching
+        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockResponse);
 
-        when(mockRequest.getRemoteAddr()).thenReturn("192.168.1.1");
+        // Set mock data for the response
+        responseWrapper.setStatus(200);
+        responseWrapper.addHeader("Content-Type", "application/json");
+        responseWrapper.addHeader("Authorization", "Bearer dummy-token");
+        responseWrapper.getOutputStream().write("{\"message\":\"Success\"}".getBytes(StandardCharsets.UTF_8));
+        responseWrapper.copyBodyToResponse();
 
-        // Mock static utility methods
-        mockStatic(EnvironmentUtil.class);
-        when(EnvironmentUtil.getActiveProfile()).thenReturn("prod");
+        // Assert no exceptions during logging
+        assertDoesNotThrow(() -> LoggingUtil.logResponse(responseWrapper));
+    }
 
-        mockStatic(ApplicationProperties.class);
-        when(ApplicationProperties.getApplicationName()).thenReturn("TestApplication");
+    @Test
+    void testLogResponse_WithEmptyHeaders() {
+        // Wrap the response to enable caching
+        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockResponse);
 
-        mockStatic(TimeUtil.class);
-        when(TimeUtil.getCurrentTimestamp()).thenReturn("2025-01-13T10:00:00Z");
+        // Set status code and empty headers
+        responseWrapper.setStatus(204);
+        responseWrapper.getOutputStream().write("".getBytes(StandardCharsets.UTF_8));
+        responseWrapper.copyBodyToResponse();
 
-        // Mock LoggingUtil's internal method
-        mockStatic(LoggingUtil.class);
-        when(LoggingUtil.getClientIpAddress(mockRequest)).thenReturn("192.168.1.1");
+        // Assert no exceptions during logging
+        assertDoesNotThrow(() -> LoggingUtil.logResponse(responseWrapper));
+    }
 
-        // Call the method
-        LoggingUtil.logRequest(mockRequest);
+    @Test
+    void testLogResponse_WithNullResponse() {
+        // Call the method with a null response
+        assertDoesNotThrow(() -> LoggingUtil.logResponse(null));
+    }
 
-        // Verify the logs or ensure no exceptions are thrown
-        // To assert the logs, you can use LogCaptor or a Log4j2 testing appender
+    @Test
+    void testLogResponse_WithNonCachingResponse() {
+        // Call the method with a non-caching response
+        assertDoesNotThrow(() -> LoggingUtil.logResponse(mockResponse));
+    }
+
+    @Test
+    void testLogResponse_WithExceptionDuringLogging() {
+        // Wrap the response
+        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockResponse);
+
+        // Simulate a response body that throws an exception during logging
+        ContentCachingResponseWrapper faultyResponse = mock(ContentCachingResponseWrapper.class);
+        when(faultyResponse.getContentAsByteArray()).thenThrow(new RuntimeException("Simulated exception"));
+        when(faultyResponse.getStatus()).thenReturn(500);
+
+        // Assert no exceptions during logging
+        assertDoesNotThrow(() -> LoggingUtil.logResponse(faultyResponse));
     }
 }
