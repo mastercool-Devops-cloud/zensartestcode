@@ -1,1 +1,1 @@
-LoggingFilterConfigTest » IllegalState Unable to find a @SpringBootConfiguration, you need to use @ContextConfiguration or @SpringBootTest(classes=...) with your test
+Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.3.2:repackage (repackage) on project logging-utility: Execution repackage of goal org.springframework.boot:spring-boot-maven-plugin:3.3.2:repackage failed: Unable to find main class -> [Help 1]
