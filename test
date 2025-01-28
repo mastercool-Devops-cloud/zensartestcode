@@ -1,25 +1,136 @@
-WARNING: A Java agent has been loaded dynamically (C:\Users\RC76327\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.18\byte-buddy-agent-1.14.18.jar)
-WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
-WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
-WARNING: Dynamic loading of agents will be disallowed by default in a future release
-Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+public class LogProcessorFactory {
 
-org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
-CachedBodyHttpServletRequestWapper cannot be returned by getInputStream()
-getInputStream() should return ServletInputStream
-***
-If you're unsure why you're getting above error read on.
-Due to the nature of the syntax above problem might occur because:
-1. This exception *might* occur in wrongly written multi-threaded tests.
-   Please refer to Mockito FAQ on limitations of concurrency testing.
-2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
-   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
+    public static LogProcessor getLogProcessor(LogType logType) {
+        switch (logType) {
+            case EXCEPTION:
+                return new ExceptionLogProcessor();
+            case REQUEST:
+                return new RequestLogProcessor(); // For request logging (optional)
+            case RESPONSE:
+                return new ResponseLogProcessor(); // For response logging (optional)
+            default:
+                throw new IllegalArgumentException("Unknown log type: " + logType);
+        }
+    }
+}
+-----------------------------------------------
+public interface LogProcessor {
+    void process(Object input); // Input can be customized based on your needs
+}
+----------------------------------
+import javax.servlet.http.HttpServletResponse;
 
+public class ResponseLogProcessor implements LogProcessor {
 
-	at com.sb.fedssimplification.utilitymodules.loggingutility.model.request.CachedBodyHttpServletRequestWapper.<init>(CachedBodyHttpServletRequestWapper.java:16)
-	at com.sb.fedssimplification.cashflowcalculator.filter.RequestCachingLoggingFilter.doFilter(RequestCachingLoggingFilter.java:22)
-	at com.sb.fedssimplification.cashflowcalculator.filter.RequestCachingLoggingFilterTest.testDoFilterWithHttpServletRequest(RequestCachingLoggingFilterTest.java:38)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+    @Override
+    public void process(Object object) {
+        if (object instanceof HttpServletResponse) {
+            HttpServletResponse response = (HttpServletResponse) object;
+            LoggingUtil.logResponse(response); // Delegate to LoggingUtil for response logging
+        } else {
+            throw new IllegalArgumentException("Invalid object type for ResponseLogProcessor");
+        }
+    }
+}
+-----------------------------
+import javax.servlet.http.HttpServletResponse;
 
+public class ResponseLogProcessor implements LogProcessor {
+
+    @Override
+    public void process(Object object) {
+        if (object instanceof HttpServletResponse) {
+            HttpServletResponse response = (HttpServletResponse) object;
+            LoggingUtil.logResponse(response); // Delegate to LoggingUtil for response logging
+        } else {
+            throw new IllegalArgumentException("Invalid object type for ResponseLogProcessor");
+        }
+    }
+}
+--------------------------------------
+@Log4j2
+public class LoggingUtil {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public static void log(LogRequest logRequest) {
+        try {
+            log.info("Request: {}", OBJECT_MAPPER.writeValueAsString(logRequest));
+        } catch (JsonProcessingException e) {
+            log.error("Error logging request: {}", e.getMessage(), e);
+        }
+    }
+
+    public static void log(LogResponse logResponse) {
+        try {
+            log.info("Response: {}", OBJECT_MAPPER.writeValueAsString(logResponse));
+        } catch (JsonProcessingException e) {
+            log.error("Error logging response: {}", e.getMessage(), e);
+        }
+    }
+}
+---------------------------------------
+public class RequestCachingLoggingFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        try {
+            if (request instanceof HttpServletRequest) {
+                LogProcessor requestProcessor = LogProcessorFactory.getLogProcessor(LogType.REQUEST);
+                requestProcessor.process(request); // Log the request
+            }
+
+            chain.doFilter(request, response);
+
+        } catch (Exception e) {
+            LoggingUtil.logException(e); // Log the exception
+            throw e; // Re-throw the exception to ensure proper error handling
+        }
+    }
+}
+-----------------------------------------------
+public class ResponseCachingLoggingFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        ContentCachingResponseWrapper wrappedResponse = null;
+
+        try {
+            if (response instanceof HttpServletResponse) {
+                wrappedResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
+            }
+
+            chain.doFilter(request, wrappedResponse != null ? wrappedResponse : response);
+
+            if (wrappedResponse != null) {
+                LogProcessor responseProcessor = LogProcessorFactory.getLogProcessor(LogType.RESPONSE);
+                responseProcessor.process(wrappedResponse); // Log the response
+                wrappedResponse.copyBodyToResponse();
+            }
+
+        } catch (Exception e) {
+            LoggingUtil.logException(e); // Log the exception
+            throw e; // Re-throw the exception to ensure proper error handling
+        }
+    }
+}
+----------------------------------------
+public class RequestCachingLoggingFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        try {
+            if (request instanceof HttpServletRequest) {
+                chain.doFilter(request, response);
+            }
+        } catch (Exception e) {
+            // Use factory to get the appropriate log processor
+            LogProcessor exceptionProcessor = LogProcessorFactory.getLogProcessor(LogType.EXCEPTION);
+            exceptionProcessor.process(e); // Process the exception
+            throw e; // Re-throw the exception
+        }
+    }
+}
