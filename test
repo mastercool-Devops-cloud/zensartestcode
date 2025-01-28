@@ -33,20 +33,37 @@ public class ResponseLogProcessor implements LogProcessor {
     }
 }
 -----------------------------
-import javax.servlet.http.HttpServletResponse;
+package com.example.logging.processors;
 
-public class ResponseLogProcessor implements LogProcessor {
+import com.example.logging.util.LoggingUtil;
+
+public class ExceptionLogProcessor implements LogProcessor {
 
     @Override
-    public void process(Object object) {
-        if (object instanceof HttpServletResponse) {
-            HttpServletResponse response = (HttpServletResponse) object;
-            LoggingUtil.logResponse(response); // Delegate to LoggingUtil for response logging
+    public void process(Object input) {
+        if (input instanceof Exception) {
+            LoggingUtil.logException((Exception) input);
         } else {
-            throw new IllegalArgumentException("Invalid object type for ResponseLogProcessor");
+            throw new IllegalArgumentException("Invalid input for ExceptionLogProcessor");
         }
     }
 }
+--------------------------------------
+import javax.servlet.http.HttpServletRequest;
+
+public class RequestLogProcessor implements LogProcessor {
+
+    @Override
+    public void process(Object object) {
+        if (object instanceof HttpServletRequest) {
+            HttpServletRequest request = (HttpServletRequest) object;
+            LoggingUtil.logRequest(request); // Delegate to LoggingUtil for request logging
+        } else {
+            throw new IllegalArgumentException("Invalid object type for RequestLogProcessor");
+        }
+    }
+}
+
 --------------------------------------
 @Log4j2
 public class LoggingUtil {
