@@ -4,9 +4,10 @@ import org.mockito.Mockito;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static org.mockito.Mockito.*;
@@ -28,17 +29,52 @@ class RequestCachingLoggingFilterTest {
     void testDoFilterWithHttpServletRequest() throws IOException, ServletException {
         // Mock HttpServletRequest
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
-        CachedBodyHttpServletRequestWapper wrappedRequest = mock(CachedBodyHttpServletRequestWapper.class);
+        ServletInputStream mockInputStream = createMockServletInputStream("test body content");
 
-        // Mock the wrapper
-        Mockito.when(mockRequest.getInputStream()).thenReturn(null); // Adjust if input stream usage is needed
-        doReturn(wrappedRequest).when(mockRequest);
+        // Stub getInputStream method
+        when(mockRequest.getInputStream()).thenReturn(mockInputStream);
 
         // Call the filter
         filter.doFilter(mockRequest, mockResponse, mockFilterChain);
 
-        // Verify that the request is wrapped and LoggingUtil.logRequest() is called
-        verify(mockFilterChain, times(1)).doFilter(wrappedRequest, mockResponse);
+        // Verify that LoggingUtil.logRequest() and filterChain.doFilter() are called
+        verify(mockFilterChain, times(1)).doFilter(any(CachedBodyHttpServletRequestWapper.class), eq(mockResponse));
     }
 
+    @Test
+    void testDoFilterWithoutHttpServletRequest() throws IOException, ServletException {
+        // Mock a non-HttpServletRequest request
+        ServletRequest mockRequest = mock(ServletRequest.class);
+
+        // Call the filter
+        filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+        // Verify that the filter passes through unwrapped requests
+        verify(mockFilterChain, times(1)).doFilter(mockRequest, mockResponse);
+    }
+
+    private ServletInputStream createMockServletInputStream(String content) {
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content.getBytes());
+        return new ServletInputStream() {
+            @Override
+            public boolean isFinished() {
+                return byteArrayInputStream.available() == 0;
+            }
+
+            @Override
+            public boolean isReady() {
+                return true;
+            }
+
+            @Override
+            public void setReadListener(javax.servlet.ReadListener readListener) {
+                // No-op for this mock
+            }
+
+            @Override
+            public int read() {
+                return byteArrayInputStream.read();
+            }
+        };
+    }
 }
