@@ -1,167 +1,25 @@
-org.opentest4j.AssertionFailedError: 
-Expected :{"name":"John","age":30}
-Actual   :Request body not available or request not wrapped with ContentCachingRequestWrapper.
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.Test;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.web.util.ContentCachingRequestWrapper;
+WARNING: A Java agent has been loaded dynamically (C:\Users\RC76327\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.18\byte-buddy-agent-1.14.18.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
 
-import java.util.Map;
+org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
+CachedBodyHttpServletRequestWapper cannot be returned by getInputStream()
+getInputStream() should return ServletInputStream
+***
+If you're unsure why you're getting above error read on.
+Due to the nature of the syntax above problem might occur because:
+1. This exception *might* occur in wrongly written multi-threaded tests.
+   Please refer to Mockito FAQ on limitations of concurrency testing.
+2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
+   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class RequestWrapperTest {
-
-    @Test
-    void testRequestWrapper() {
-        // Create a MockHttpServletRequest
-        MockHttpServletRequest mockRequest = new MockHttpServletRequest();
-        mockRequest.setMethod("POST");
-        mockRequest.setRequestURI("/api/resource");
-        mockRequest.setQueryString("id=123");
-        mockRequest.addHeader("Content-Type", "application/json");
-
-        // Add a body to the request
-        String requestBody = "{\"name\":\"John\",\"age\":30}";
-        mockRequest.setContent(requestBody.getBytes());
-
-        // Wrap the mock request in ContentCachingRequestWrapper
-        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(mockRequest);
-
-        // Create RequestWrapper instance
-        RequestWrapper requestWrapper = new RequestWrapper(wrappedRequest);
-
-        // Assertions
-        assertEquals("POST", requestWrapper.getMethod());
-        assertEquals("/api/resource", requestWrapper.getUri());
-        assertEquals("id=123", requestWrapper.getQuery());
-        assertEquals(Map.of("Content-Type", "application/json"), requestWrapper.getHeaders());
-        assertEquals(requestBody, requestWrapper.getBody());
-    }
-@Test
-    void testRequestWrapperWithEmptyBody() {
-        // Create a MockHttpServletRequest
-        MockHttpServletRequest mockRequest = new MockHttpServletRequest();
-        mockRequest.setMethod("GET");
-        mockRequest.setRequestURI("/api/resource");
-        mockRequest.setQueryString("id=123");
-        mockRequest.addHeader("Accept", "application/json");
-
-        // Do not add a body to the request
-
-        // Wrap the mock request in ContentCachingRequestWrapper
-        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(mockRequest);
-
-        // Create RequestWrapper instance
-        RequestWrapper requestWrapper = new RequestWrapper(wrappedRequest);
-
-        // Assertions
-        assertEquals("GET", requestWrapper.getMethod());
-        assertEquals("/api/resource", requestWrapper.getUri());
-        assertEquals("id=123", requestWrapper.getQuery());
-        assertEquals(Map.of("Accept", "application/json"), requestWrapper.getHeaders());
-        assertEquals("", requestWrapper.getBody()); // Empty body
-    }
-}
-}
----------------------------------------
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.mock.web.util.ContentCachingRequestWrapper;
-import org.springframework.mock.web.util.ContentCachingResponseWrapper;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
-class LoggingUtilTest {
-
-    @Test
-    void testLogRequest() {
-        // Create a MockHttpServletRequest
-        MockHttpServletRequest mockRequest = new MockHttpServletRequest();
-        mockRequest.setMethod("POST");
-        mockRequest.setRequestURI("/api/resource");
-        mockRequest.setQueryString("id=123");
-        mockRequest.addHeader("Content-Type", "application/json");
-        mockRequest.setContent("{\"name\":\"John\",\"age\":30}".getBytes());
-
-        // Wrap the request in ContentCachingRequestWrapper
-        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(mockRequest);
-
-        // Capture logs using a custom logger or by verifying the interaction
-        LoggingUtil.logRequest(wrappedRequest);
-
-        // No explicit assertions here as logs are the output
-        // Ensure no exceptions are thrown
-    }
-
-    @Test
-    void testLogResponseWithBody() {
-        // Create a MockHttpServletResponse
-        MockHttpServletResponse mockResponse = new MockHttpServletResponse();
-        mockResponse.setStatus(200);
-        mockResponse.addHeader("Content-Type", "application/json");
-
-        // Wrap the response in ContentCachingResponseWrapper
-        ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
-        String responseBody = "{\"status\":\"success\",\"message\":\"Operation completed\"}";
-        wrappedResponse.setContentLength(responseBody.length());
-        wrappedResponse.getWriter().write(responseBody);
-
-        // Log the response
-        LoggingUtil.logResponseWithBody(wrappedResponse);
-
-        // Ensure the response is correctly written back
-        assertEquals(responseBody, new String(wrappedResponse.getContentAsByteArray(), StandardCharsets.UTF_8));
-    }
-
-    @Test
-    void testLogException() {
-        // Create an exception
-        Exception exception = new RuntimeException("Test exception");
-
-        // Log the exception
-        LoggingUtil.logException(exception);
-
-        // Ensure no exceptions are thrown during logging
-        // No explicit assertions here as logs are the output
-    }
-
-    @Test
-    void testLogRequestWithNullRequest() {
-        // Pass a null request
-        LoggingUtil.logRequest(null);
-
-        // No exceptions should be thrown
-        // Verify the warning log is written (use log capturing for validation)
-    }
-
-    @Test
-    void testLogResponseWithNullResponse() {
-        // Pass a null response
-        LoggingUtil.logResponseWithBody(null);
-
-        // No exceptions should be thrown
-        // Verify the warning log is written (use log capturing for validation)
-    }
-
-    @Test
-    void testLogResponseWithoutContentCachingWrapper() {
-        // Create a mock HttpServletResponse
-        HttpServletResponse mockResponse = Mockito.mock(HttpServletResponse.class);
-
-        // Log the response
-        LoggingUtil.logResponseWithBody(mockResponse);
-
-        // Verify the warning log is written (use log capturing for validation)
-        // No explicit assertions as logs are the output
-    }
-}
+	at com.sb.fedssimplification.utilitymodules.loggingutility.model.request.CachedBodyHttpServletRequestWapper.<init>(CachedBodyHttpServletRequestWapper.java:16)
+	at com.sb.fedssimplification.cashflowcalculator.filter.RequestCachingLoggingFilter.doFilter(RequestCachingLoggingFilter.java:22)
+	at com.sb.fedssimplification.cashflowcalculator.filter.RequestCachingLoggingFilterTest.testDoFilterWithHttpServletRequest(RequestCachingLoggingFilterTest.java:38)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
