@@ -151,3 +151,21 @@ public class RequestCachingLoggingFilter implements Filter {
         }
     }
 }
+------------------------------------------
+package com.example.logging.util;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+public class LoggingUtil {
+
+    private static final Logger logger = LogManager.getLogger(LoggingUtil.class);
+
+    public static void logException(Exception exception) {
+        if (exception != null) {
+            logger.error("Exception occurred: {}", exception.getMessage(), exception);
+        } else {
+            logger.warn("Attempted to log a null exception.");
+        }
+    }
+}
