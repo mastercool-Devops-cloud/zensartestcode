@@ -169,3 +169,173 @@ public class LoggingUtil {
         }
     }
 }
+-----------------------------------------------------
+package com.example.logging.util;
+
+import com.example.logging.models.LoggingRequest;
+import com.example.logging.models.MessageInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class HttpRequestLoggingHelper {
+
+    private static final Logger log = LoggerFactory.getLogger(HttpRequestLoggingHelper.class);
+
+    private HttpRequestLoggingHelper() {
+        // Private constructor to prevent instantiation
+    }
+
+    public static Optional<LoggingRequest> buildRequestLog(HttpServletRequest request) {
+        return Optional.ofNullable(request).map(req -> {
+            try {
+                String method = Optional.ofNullable(req.getMethod()).orElse("UNKNOWN");
+                String uri = Optional.ofNullable(req.getRequestURI()).orElse("UNKNOWN");
+
+                Map<String, String> headers = Optional.ofNullable(Collections.list(req.getHeaderNames()))
+                        .map(list -> list.stream()
+                                .collect(Collectors.toMap(
+                                        headerName -> headerName,
+                                        req::getHeader
+                                )))
+                        .orElse(Collections.emptyMap());
+
+                String body = getRequestBody(req);
+                String clientIpAddress = getClientIpAddress(req);
+                MessageInfo messageInfo = getMessageInfo(clientIpAddress);
+
+                return new LoggingRequest(method, uri, headers, body, messageInfo);
+            } catch (Exception e) {
+                log.error("Error building request log: {}", e.getMessage(), e);
+                return null;
+            }
+        });
+    }
+
+    private static String getRequestBody(HttpServletRequest request) {
+        try {
+            if (request.getInputStream() != null) {
+                byte[] content = request.getInputStream().readAllBytes();
+                return new String(content, StandardCharsets.UTF_8);
+            }
+        } catch (IOException e) {
+            log.warn("Failed to read request body: {}", e.getMessage());
+        }
+        return "Request body not available or unreadable.";
+    }
+
+    private static String getClientIpAddress(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null) {
+            return forwardedFor.split(",")[0];
+        }
+        return request.getRemoteAddr();
+    }
+
+    private static MessageInfo getMessageInfo(String clientIpAddress) {
+        return new MessageInfo(
+                String.valueOf(System.currentTimeMillis()),
+                "INFO",
+                null,
+                "ApplicationName", // Replace with actual application name
+                "ENV", // Replace with actual environment
+                clientIpAddress
+        );
+    }
+}
+----------------------------------------
+package com.example.logging.util;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Log4j2
+public class HttpResponseLogHelper {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private HttpResponseLogHelper() {
+        // Private constructor to prevent instantiation
+    }
+
+    public static void logResponse(final HttpServletResponse response) {
+        Optional.ofNullable(response).ifPresentOrElse(
+            res -> {
+                if (res instanceof ContentCachingResponseWrapper) {
+                    handleContentCachingResponse((ContentCachingResponseWrapper) res);
+                } else {
+                    log.warn("HttpServletResponse is not wrapped with ContentCachingResponseWrapper, cannot log response body.");
+                }
+            },
+            () -> log.warn("HttpServletResponse is null, cannot log response.")
+        );
+    }
+
+    private static void handleContentCachingResponse(final ContentCachingResponseWrapper responseWrapper) {
+        try {
+            final String responseBody = extractResponseBody(responseWrapper);
+            final Map<String, String> headers = extractHeaders(responseWrapper);
+            final int statusCode = responseWrapper.getStatus();
+
+            logDetailedResponse(headers, statusCode, responseBody);
+            responseWrapper.copyBodyToResponse();
+        } catch (final Exception e) {
+            handleLoggingException(e);
+        }
+    }
+
+    private static String extractResponseBody(final ContentCachingResponseWrapper responseWrapper) {
+        return new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
+    }
+
+    private static Map<String, String> extractHeaders(final ContentCachingResponseWrapper responseWrapper) {
+        return Optional.ofNullable(responseWrapper.getHeaderNames())
+            .map(names -> names.stream()
+                .collect(Collectors.toMap(
+                    h -> h,
+                    h -> Optional.ofNullable(responseWrapper.getHeader(h)).orElse("")
+                )))
+            .orElse(Collections.emptyMap());
+    }
+
+    private static void logDetailedResponse(
+        final Map<String, String> headers,
+        final int statusCode,
+        final String responseBody
+    ) throws JsonProcessingException {
+        final String logLevel = "INFO"; // Replace with logic to determine log level
+        final String applicationName = "YourApplicationName"; // Replace with your application name
+        final String environment = "YourEnvironment"; // Replace with logic to fetch environment
+
+        final LoggingResponse responseLog = new LoggingResponse(statusCode, headers, responseBody);
+        log.info("Response: {}", OBJECT_MAPPER.writeValueAsString(responseLog));
+    }
+
+    private static void handleLoggingException(final Exception e) {
+        if (e instanceof JsonProcessingException) {
+            log.error("Error processing JSON for response log: {}", e.getMessage(), e);
+        } else if (e instanceof IOException) {
+            log.error("Error copying response body to client: {}", e.getMessage(), e);
+        } else {
+            log.error("Unexpected error logging response: {}", e.getMessage(), e);
+        }
+    }
+}
