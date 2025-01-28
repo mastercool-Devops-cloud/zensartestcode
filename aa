@@ -1,1 +1,44 @@
-Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.3.2:repackage (repackage) on project logging-utility: Execution repackage of goal org.springframework.boot:spring-boot-maven-plugin:3.3.2:repackage failed: Unable to find main class -> [Help 1]
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+
+import static org.mockito.Mockito.*;
+
+class RequestCachingLoggingFilterTest {
+
+    private RequestCachingLoggingFilter filter;
+    private FilterChain mockFilterChain;
+    private ServletResponse mockResponse;
+
+    @BeforeEach
+    void setUp() {
+        filter = new RequestCachingLoggingFilter();
+        mockFilterChain = mock(FilterChain.class);
+        mockResponse = mock(ServletResponse.class);
+    }
+
+    @Test
+    void testDoFilterWithHttpServletRequest() throws IOException, ServletException {
+        // Mock HttpServletRequest
+        HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        CachedBodyHttpServletRequestWapper wrappedRequest = mock(CachedBodyHttpServletRequestWapper.class);
+
+        // Mock the wrapper
+        Mockito.when(mockRequest.getInputStream()).thenReturn(null); // Adjust if input stream usage is needed
+        doReturn(wrappedRequest).when(mockRequest);
+
+        // Call the filter
+        filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+        // Verify that the request is wrapped and LoggingUtil.logRequest() is called
+        verify(mockFilterChain, times(1)).doFilter(wrappedRequest, mockResponse);
+    }
+
+}
