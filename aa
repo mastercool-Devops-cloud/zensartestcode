@@ -78,3 +78,81 @@ class RequestCachingLoggingFilterTest {
         };
     }
 }
+------------------------------------------------
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+
+import static org.mockito.Mockito.*;
+
+class ResponseCachingLoggingFilterTest {
+
+    private ResponseCachingLoggingFilter filter;
+    private FilterChain mockFilterChain;
+    private HttpServletRequest mockRequest;
+    private HttpServletResponse mockResponse;
+
+    @BeforeEach
+    void setUp() {
+        filter = new ResponseCachingLoggingFilter();
+        mockFilterChain = mock(FilterChain.class);
+        mockRequest = mock(HttpServletRequest.class);
+        mockResponse = mock(HttpServletResponse.class);
+    }
+
+    @Test
+    void testDoFilterWithHttpServletRequest() throws IOException, ServletException {
+        // Mock wrapped response
+        CachedCachingResponseWapper mockWrappedResponse = mock(CachedCachingResponseWapper.class);
+        doNothing().when(mockWrappedResponse).copyBodyToResponse();
+
+        // Call the filter
+        filter.doFilter(mockRequest, mockWrappedResponse, mockFilterChain);
+
+        // Verify that the wrapped response was used
+        verify(mockFilterChain, times(1)).doFilter(eq(mockRequest), eq(mockWrappedResponse));
+        verify(mockWrappedResponse, times(1)).copyBodyToResponse();
+        verifyStatic(LoggingUtil.class, times(1));
+        LoggingUtil.logResponse();
+    }
+
+    @Test
+    void testDoFilterWithoutHttpServletRequest() throws IOException, ServletException {
+        // Mock a non-HttpServletRequest request
+        ServletRequest nonHttpRequest = mock(ServletRequest.class);
+
+        // Call the filter
+        filter.doFilter(nonHttpRequest, mockResponse, mockFilterChain);
+
+        // Verify that the filter passes through unwrapped requests
+        verify(mockFilterChain, times(1)).doFilter(nonHttpRequest, mockResponse);
+        verifyNoInteractions(mockResponse);
+    }
+
+    @Test
+    void testDoFilterWithException() throws IOException, ServletException {
+        // Mock wrapped response
+        CachedCachingResponseWapper mockWrappedResponse = mock(CachedCachingResponseWapper.class);
+        doThrow(new RuntimeException("Test Exception")).when(mockFilterChain).doFilter(mockRequest, mockWrappedResponse);
+
+        // Call the filter and expect an exception
+        try {
+            filter.doFilter(mockRequest, mockWrappedResponse, mockFilterChain);
+        } catch (Exception e) {
+            // Verify that the exception is logged
+            verifyStatic(LoggingUtil.class, times(1));
+            LoggingUtil.logException(any(Exception.class));
+
+            // Verify that the response copyBodyToResponse was not called
+            verify(mockWrappedResponse, never()).copyBodyToResponse();
+        }
+    }
+}
