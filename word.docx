@@ -1,139 +1,90 @@
-Dev Podman machine
-	pod->(fed-deam_management)
-		-container
-			-appication
-				-port
-		-container
-			-appication
-				-port
-				
-	pod->(fed-trade)
-		-container
-			-appication
-				-port
-		-container
-			-appication
-				-port
---------------------------------------------
-UAT Podman machine
-	pod->(fed-deam_management)
-		-container
-			-appication
-				-port
-		-container
-			-appication
-				-port
-				
-	pod->(fed-trade)
-		-container
-			-appication
-				-port
-		-container
-			-appication
-				-port
+package com.example.config;
 
-how to crate different podman machine for dev and uat environment
-ChatGPT said:
-ChatGPT
-To create different Podman machines for Dev and UAT environments, you can utilize Podman's machine management features, which allow you to set up isolated environments (machines) on a single host system. Each machine will act like a separate virtual machine with its own configuration and containers.
+import com.example.filter.RequestLogFilter;
+import com.example.filter.ResponseLogFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-Steps to Create Different Podman Machines for Dev and UAT
-1. Install Podman on Your System
-Ensure Podman is installed on your system. If it's not installed, follow the installation instructions for your OS.
+@Configuration
+public class LoggingFilterConfig {
 
-2. Create the Dev Podman Machine
-Create the Dev Machine:
+    private final ApplicationProperties applicationProperties;
 
-bash
-Copy code
-podman machine init dev-machine
-dev-machine: This is the name of the machine you are creating for the Dev environment.
-Start the Dev Machine:
+    public LoggingFilterConfig(ApplicationProperties applicationProperties) {
+        this.applicationProperties = applicationProperties;
+    }
 
-bash
-Copy code
-podman machine start dev-machine
-Access the Dev Machine:
+    @Bean
+    public RequestLogFilter requestLogFilter() {
+        String applicationName = applicationProperties.getApplication();  // ✅ Fetch application name
+        return new RequestLogFilter(applicationName);
+    }
 
-bash
-Copy code
-podman machine ssh dev-machine
-This command connects you to the dev-machine environment, where you can run Podman commands to manage containers and pods for your Dev environment.
+    @Bean
+    public ResponseLogFilter responseLogFilter() {
+        return new ResponseLogFilter();
+    }
+}
+-----------------------------------
+package com.example.filter;
 
-3. Create the UAT Podman Machine
-Create the UAT Machine:
+import com.example.logging.util.HttpRequestLogHelper;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.stereotype.Component;
 
-bash
-Copy code
-podman machine init uat-machine
-uat-machine: This is the name of the machine you are creating for the UAT environment.
-Start the UAT Machine:
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 
-bash
-Copy code
-podman machine start uat-machine
-Access the UAT Machine:
+@Log4j2
+public class RequestLogFilter implements Filter {
 
-bash
-Copy code
-podman machine ssh uat-machine
-This command connects you to the uat-machine environment, where you can run Podman commands to manage containers and pods for your UAT environment.
+    private final String applicationName;
 
-4. Switching Between Dev and UAT Machines
-To switch between the Dev and UAT environments, you can stop one machine and start the other:
+    // ✅ Constructor to receive application name
+    public RequestLogFilter(String applicationName) {
+        this.applicationName = applicationName;
+    }
 
-Stop the Current Machine (if running):
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        // Initialization logic, if needed
+    }
 
-bash
-Copy code
-podman machine stop
-Start the Desired Machine:
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        if (request instanceof HttpServletRequest) {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
 
-bash
-Copy code
-podman machine start dev-machine  # For Dev
-podman machine start uat-machine  # For UAT
-SSH into the Desired Machine:
+            // ✅ Log the request with the application name
+            HttpRequestLogHelper.logRequest(httpRequest, applicationName);
 
-bash
-Copy code
-podman machine ssh dev-machine  # For Dev
-podman machine ssh uat-machine  # For UAT
-5. Managing Pods and Containers in Each Environment
-Once you're inside the specific Podman machine (Dev or UAT), you can create pods, run containers, and manage your environment as needed.
+            // ✅ Set start time for latency calculation
+            long startTime = System.currentTimeMillis();
+            httpRequest.setAttribute("startTime", startTime);
+        }
 
-Example for Dev:
+        // Continue the chain
+        chain.doFilter(request, response);
+    }
 
-bash
-Copy code
-podman pod create --name fed-deam_management
-podman run -d --pod fed-deam_management --name casflow-processor-container -p 8092:8092 myapp1-image
-Example for UAT:
+    @Override
+    public void destroy() {
+        // Cleanup logic, if needed
+    }
+}
+------------------------------------
+package com.example.config;
 
-bash
-Copy code
-podman pod create --name fed-trade
-podman run -d --pod fed-trade --name a-container -p 8080:8080 myapp2-image
-6. Checking the Status of Machines
-To list all Podman machines and their statuses:
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-bash
-Copy code
-podman machine list
-This will show you all machines, whether they are running or stopped, and other details like their names, disk usage, and more.
+@Getter
+@Component
+public class ApplicationProperties {
 
-Summary
-Podman Machines: These are isolated environments that behave like separate virtual machines, each with its own configuration and containers.
-Dev and UAT Machines: You can create different machines for Dev and UAT, allowing you to keep environments isolated from each other.
-Managing Machines: You can start, stop, and ssh into these machines to manage your containers and pods within the specific environment.
-This setup allows you to cleanly separate your Dev and UAT environments, making it easier to manage different stages of your application lifecycle.
-
-
-
-
-
-
-
-
-
-ChatGPT can make mist
+    @Value("${application.name}")
+    private String application;
+}
