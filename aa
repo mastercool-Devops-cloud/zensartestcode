@@ -180,3 +180,58 @@ class ApplicationPropertiesTest {
         assertEquals("TestApplication", applicationProperties.getApplication());
     }
 }
+-----------------------------------------------
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import com.example.config.ApplicationProperties;
+import com.example.config.EnvironmentName;
+import com.example.config.LoggingFilterConfig;
+import com.example.filter.RequestLogFilter;
+import com.example.filter.ResponseLogFilter;
+
+@ExtendWith(MockitoExtension.class)
+@ExtendWith(SpringExtension.class)
+class LoggingFilterConfigTest {
+
+    @Mock
+    private ApplicationProperties applicationProperties;
+
+    @Mock
+    private EnvironmentName environmentName;
+
+    @InjectMocks
+    private LoggingFilterConfig loggingFilterConfig;
+
+    @BeforeEach
+    void setUp() {
+        when(applicationProperties.getApplication()).thenReturn("TestApplication");
+        when(environmentName.getActiveProfile()).thenReturn("TestEnvironment");
+    }
+
+    @Test
+    void testRequestLogFilterBeanCreation() {
+        RequestLogFilter requestLogFilter = loggingFilterConfig.requestLogFilter();
+        
+        assertNotNull(requestLogFilter);
+        assertEquals("TestApplication", requestLogFilter.getApplicationName());
+        assertEquals("TestEnvironment", requestLogFilter.getEnvironmentName());
+    }
+
+    @Test
+    void testResponseLogFilterBeanCreation() {
+        ResponseLogFilter responseLogFilter = loggingFilterConfig.responseLogFilter();
+        
+        assertNotNull(responseLogFilter);
+        assertEquals("TestApplication", responseLogFilter.getApplicationName());
+        assertEquals("TestEnvironment", responseLogFilter.getEnvironmentName());
+    }
+}
