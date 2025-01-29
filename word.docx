@@ -88,3 +88,7 @@ public class ApplicationProperties {
     @Value("${application.name}")
     private String application;
 }
+-----------------------------------------
+Optional<String> body = Optional.ofNullable((String) requestData.get("body"));
+Optional<String> contextId = Optional.ofNullable((String) requestData.get("contextId"));
+Optional<String> clientIp = Optional.ofNullable((String) requestData.get("clientIp"));
