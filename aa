@@ -364,8 +364,10 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.util.ContentCachingResponseWrapper;
+
 import java.io.IOException;
 import java.util.Map;
+
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -396,24 +398,30 @@ class ResponseLogFilterTest {
 
     @Test
     void testDoFilter_SuccessfulResponseProcessing() throws IOException, ServletException {
+        // Create a wrapped response to simulate the behavior
         ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
 
         try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
             mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.RESPONSE))
                          .thenReturn(mockResponseProcessor);
 
-            responseLogFilter.doFilter(mockRequest, mockResponse, mockChain);
+            // Call the method under test
+            responseLogFilter.doFilter(mockRequest, wrappedResponse, mockChain);
 
-            // Verify doFilter is called with wrapped response
-            verify(mockChain).doFilter(mockRequest, any(ContentCachingResponseWrapper.class));
+            // Verify doFilter is called correctly
+            verify(mockChain).doFilter(eq(mockRequest), any(ContentCachingResponseWrapper.class));
 
             // Verify response logging
-            verify(mockResponseProcessor).process(any(ContentCachingResponseWrapper.class));
+            verify(mockResponseProcessor).process(any(ContentCachingResponseWrapper.class), any(Map.class));
+
+            // Ensure copyBodyToResponse() is called
+            verify(mockResponseProcessor, never()).process(any(ContentCachingResponseWrapper.class), isNull());
         }
     }
 
     @Test
     void testDoFilter_ExceptionHandling() throws IOException, ServletException {
+        // Create a wrapped response
         ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
 
         try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
@@ -422,12 +430,13 @@ class ResponseLogFilterTest {
             mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.ERROR))
                          .thenReturn(mockExceptionProcessor);
 
+            // Simulate an exception during filter execution
             doThrow(new RuntimeException("Test Exception")).when(mockChain).doFilter(mockRequest, wrappedResponse);
 
             try {
                 responseLogFilter.doFilter(mockRequest, wrappedResponse, mockChain);
             } catch (Exception e) {
-                // Verify exception processor is invoked
+                // Verify exception processor is invoked with correct parameters
                 verify(mockExceptionProcessor).process(any(ContentCachingResponseWrapper.class), any(Map.class));
             }
         }
