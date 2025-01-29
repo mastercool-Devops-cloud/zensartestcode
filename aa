@@ -473,3 +473,48 @@ class ResponseLogFilterTest {
     }
 }
 
+-------------------------------------------------------
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class LogProcessorFactoryTest {
+
+    @Test
+    void testGetLogProcessor_ForError() {
+        LogProcessor processor = LogProcessorFactory.getLogProcessor(LogType.ERROR);
+        assertNotNull(processor);
+        assertTrue(processor instanceof ExceptionLogProcessor, "Expected an ExceptionLogProcessor instance.");
+    }
+
+    @Test
+    void testGetLogProcessor_ForRequest() {
+        LogProcessor processor = LogProcessorFactory.getLogProcessor(LogType.REQUEST);
+        assertNotNull(processor);
+        assertTrue(processor instanceof RequestLogProcessor, "Expected a RequestLogProcessor instance.");
+    }
+
+    @Test
+    void testGetLogProcessor_ForResponse() {
+        LogProcessor processor = LogProcessorFactory.getLogProcessor(LogType.RESPONSE);
+        assertNotNull(processor);
+        assertTrue(processor instanceof ResponseLogProcessor, "Expected a ResponseLogProcessor instance.");
+    }
+
+    @Test
+    void testGetLogProcessor_WithNull_ThrowsException() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            LogProcessorFactory.getLogProcessor(null);
+        });
+
+        assertEquals("Unknown log type: null", exception.getMessage());
+    }
+
+    @Test
+    void testGetLogProcessor_WithInvalidType_ThrowsException() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            LogProcessorFactory.getLogProcessor(LogType.valueOf("UNKNOWN"));
+        });
+
+        assertTrue(exception.getMessage().contains("Unknown log type"), "Expected IllegalArgumentException for unknown type.");
+    }
+}
