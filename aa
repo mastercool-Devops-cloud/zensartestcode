@@ -266,3 +266,72 @@ class EnvironmentNameTest {
         assertEquals("default", environmentName.getActiveProfile());
     }
 }
+-------------------------------------------
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import java.io.IOException;
+import java.util.Map;
+import static org.mockito.Mockito.*;
+
+class RequestLogFilterTest {
+
+    @InjectMocks
+    private RequestLogFilter requestLogFilter;
+
+    @Mock
+    private HttpServletRequest mockRequest;
+
+    @Mock
+    private ServletResponse mockResponse;
+
+    @Mock
+    private FilterChain mockChain;
+
+    @Mock
+    private CachedBodyHttpServletRequestWrapper mockWrappedRequest;
+
+    @Mock
+    private LogProcessor mockRequestProcessor;
+
+    @Mock
+    private LogProcessor mockExceptionProcessor;
+
+    @Mock
+    private LogProcessorFactory mockLogProcessorFactory;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        requestLogFilter = new RequestLogFilter("TestApp", "TestEnv");
+    }
+
+    @Test
+    void testDoFilter_SuccessfulRequestProcessing() throws IOException, ServletException {
+        when(mockLogProcessorFactory.getLogProcessor(LogType.REQUEST)).thenReturn(mockRequestProcessor);
+
+        requestLogFilter.doFilter(mockRequest, mockResponse, mockChain);
+
+        verify(mockChain).doFilter(mockRequest, mockResponse);
+    }
+
+    @Test
+    void testDoFilter_ExceptionHandling() throws IOException, ServletException {
+        when(mockLogProcessorFactory.getLogProcessor(LogType.REQUEST)).thenReturn(mockRequestProcessor);
+        when(mockLogProcessorFactory.getLogProcessor(LogType.ERROR)).thenReturn(mockExceptionProcessor);
+        doThrow(new RuntimeException("Test Exception")).when(mockChain).doFilter(mockRequest, mockResponse);
+
+        try {
+            requestLogFilter.doFilter(mockRequest, mockResponse, mockChain);
+        } catch (Exception e) {
+            verify(mockExceptionProcessor).process(any(HttpServletRequest.class), any(Map.class));
+        }
+    }
+}
