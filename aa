@@ -229,3 +229,40 @@ class LoggingFilterConfigTest {
         assertEquals("TestEnvironment", responseLogFilter.getEnvironmentName());
     }
 }
+-----------------------------------------
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
+
+@ExtendWith(MockitoExtension.class)
+class EnvironmentNameTest {
+
+    @Mock
+    private Environment environment;  // ✅ Mocked environment 
+
+    @InjectMocks
+    private EnvironmentName environmentName;  // ✅ Inject mock into class
+
+    @BeforeEach
+    void setUp() {
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"TestProfile"});
+    }
+
+    @Test
+    void testGetActiveProfile_ReturnsActiveProfile() {
+        assertEquals("TestProfile", environmentName.getActiveProfile());
+    }
+
+    @Test
+    void testGetActiveProfile_ReturnsDefault_WhenNoActiveProfiles() {
+        when(environment.getActiveProfiles()).thenReturn(new String[]{});
+        assertEquals("default", environmentName.getActiveProfile());
+    }
+}
