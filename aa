@@ -391,3 +391,33 @@ class RequestLogFilterTest {
         }
     }
 }
+Argument(s) are different! Wanted:
+mockChain.doFilter(
+    mockRequest,
+    mockResponse
+);
+-> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_SuccessfulRequestProcessing(RequestLogFilterTest.java:65)
+Actual invocations have different arguments at position [0]:
+mockChain.doFilter(
+    com.sb.fedssimplification.utilitymodules.loggingutility.model.request.CachedBodyHttpServletRequestWrapper@1a28aef1,
+    mockResponse
+);
+-> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilter.doFilter(RequestLogFilter.java:47)
+
+Argument(s) are different! Wanted:
+mockChain.doFilter(
+    mockRequest,
+    mockResponse
+);
+-> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_SuccessfulRequestProcessing(RequestLogFilterTest.java:65)
+Actual invocations have different arguments at position [0]:
+mockChain.doFilter(
+    com.sb.fedssimplification.utilitymodules.loggingutility.model.request.CachedBodyHttpServletRequestWrapper@1a28aef1,
+    mockResponse
+);
+-> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilter.doFilter(RequestLogFilter.java:47)
+
+	at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_SuccessfulRequestProcessing(RequestLogFilterTest.java:65)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
