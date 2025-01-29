@@ -235,3 +235,9 @@ class LoggingFilterConfigTest {
         assertEquals("TestEnvironment", responseLogFilter.getEnvironmentName());
     }
 }
+-----------------------------
+java.lang.NullPointerException: Cannot invoke "org.springframework.core.env.Environment.getActiveProfiles()" because "com.sb.fedssimplification.cashflowcalculator.config.EnvironmentName.environment" is null
+
+	at com.sb.fedssimplification.cashflowcalculator.config.EnvironmentName.getActiveProfile(EnvironmentName.java:22)
+	at com.sb.fedssimplification.cashflowcalculator.config.LoggingFilterConfigTest.setUp(LoggingFilterConfigTest.java:32)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
