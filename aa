@@ -267,161 +267,6 @@ class EnvironmentNameTest {
     }
 }
 -------------------------------------------
-java.lang.NullPointerException: Cannot invoke "jakarta.servlet.ServletInputStream.readAllBytes()" because the return value of "jakarta.servlet.http.HttpServletRequest.getInputStream()" is null
-
-	at com.sb.fedssimplification.utilitymodules.loggingutility.model.request.CachedBodyHttpServletRequestWrapper.<init>(CachedBodyHttpServletRequestWrapper.java:15)
-	at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilter.doFilter(RequestLogFilter.java:39)
-	at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_SuccessfulRequestProcessing(RequestLogFilterTest.java:59)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
-
-
-Argument(s) are different! Wanted:
-mockExceptionProcessor.process(
-    <any jakarta.servlet.http.HttpServletRequest>,
-    <any java.util.Map>
-);
--> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_ExceptionHandling(RequestLogFilterTest.java:78)
-Actual invocations have different arguments at position [0]:
-mockExceptionProcessor.process(
-    java.lang.NullPointerException: Cannot invoke "jakarta.servlet.ServletInputStream.readAllBytes()" because the return value of "jakarta.servlet.http.HttpServletRequest.getInputStream()" is null,
-    {}
-);
--> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilter.doFilter(RequestLogFilter.java:52)
-
-Argument(s) are different! Wanted:
-mockExceptionProcessor.process(
-    <any jakarta.servlet.http.HttpServletRequest>,
-    <any java.util.Map>
-);
--> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_ExceptionHandling(RequestLogFilterTest.java:78)
-Actual invocations have different arguments at position [0]:
-mockExceptionProcessor.process(
-    java.lang.NullPointerException: Cannot invoke "jakarta.servlet.ServletInputStream.readAllBytes()" because the return value of "jakarta.servlet.http.HttpServletRequest.getInputStream()" is null,
-    {}
-);
--> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilter.doFilter(RequestLogFilter.java:52)
-
-	at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_ExceptionHandling(RequestLogFilterTest.java:78)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
-
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.Map;
-import static org.mockito.Mockito.*;
-
-@ExtendWith(MockitoExtension.class)
-class RequestLogFilterTest {
-
-    @InjectMocks
-    private RequestLogFilter requestLogFilter;
-
-    @Mock
-    private HttpServletRequest mockRequest;
-
-    @Mock
-    private ServletResponse mockResponse;
-
-    @Mock
-    private FilterChain mockChain;
-
-    @Mock
-    private LogProcessor mockRequestProcessor;
-
-    @Mock
-    private LogProcessor mockExceptionProcessor;
-
-    @Mock
-    private ServletInputStream mockInputStream;
-
-    @BeforeEach
-    void setUp() throws IOException {
-        requestLogFilter = new RequestLogFilter("TestApp", "TestEnv");
-
-        // Mock InputStream behavior to prevent NullPointerException
-        when(mockRequest.getInputStream()).thenReturn(mockInputStream);
-        when(mockInputStream.readAllBytes()).thenReturn("{}".getBytes()); // Simulate an empty JSON body
-    }
-
-    @Test
-    void testDoFilter_SuccessfulRequestProcessing() throws IOException, ServletException {
-        try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
-            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.REQUEST))
-                         .thenReturn(mockRequestProcessor);
-
-            requestLogFilter.doFilter(mockRequest, mockResponse, mockChain);
-
-            verify(mockChain).doFilter(mockRequest, mockResponse);
-        }
-    }
-
-    @Test
-    void testDoFilter_ExceptionHandling() throws IOException, ServletException {
-        try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
-            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.REQUEST))
-                         .thenReturn(mockRequestProcessor);
-            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.ERROR))
-                         .thenReturn(mockExceptionProcessor);
-
-            doThrow(new RuntimeException("Test Exception")).when(mockChain).doFilter(mockRequest, mockResponse);
-
-            try {
-                requestLogFilter.doFilter(mockRequest, mockResponse, mockChain);
-            } catch (Exception e) {
-                verify(mockExceptionProcessor).process(any(Throwable.class), any(Map.class));
-            }
-        }
-    }
-}
-Argument(s) are different! Wanted:
-mockChain.doFilter(
-    mockRequest,
-    mockResponse
-);
--> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_SuccessfulRequestProcessing(RequestLogFilterTest.java:65)
-Actual invocations have different arguments at position [0]:
-mockChain.doFilter(
-    com.sb.fedssimplification.utilitymodules.loggingutility.model.request.CachedBodyHttpServletRequestWrapper@1a28aef1,
-    mockResponse
-);
--> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilter.doFilter(RequestLogFilter.java:47)
-
-Argument(s) are different! Wanted:
-mockChain.doFilter(
-    mockRequest,
-    mockResponse
-);
--> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_SuccessfulRequestProcessing(RequestLogFilterTest.java:65)
-Actual invocations have different arguments at position [0]:
-mockChain.doFilter(
-    com.sb.fedssimplification.utilitymodules.loggingutility.model.request.CachedBodyHttpServletRequestWrapper@1a28aef1,
-    mockResponse
-);
--> at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilter.doFilter(RequestLogFilter.java:47)
-
-	at com.sb.fedssimplification.cashflowcalculator.filter.RequestLogFilterTest.testDoFilter_SuccessfulRequestProcessing(RequestLogFilterTest.java:65)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
@@ -505,3 +350,86 @@ class RequestLogFilterTest {
     }
 }
 
+------------------------------------------------
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+import java.io.IOException;
+import java.util.Map;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class ResponseLogFilterTest {
+
+    @InjectMocks
+    private ResponseLogFilter responseLogFilter;
+
+    @Mock
+    private HttpServletRequest mockRequest;
+
+    @Mock
+    private HttpServletResponse mockResponse;
+
+    @Mock
+    private FilterChain mockChain;
+
+    @Mock
+    private LogProcessor mockResponseProcessor;
+
+    @Mock
+    private LogProcessor mockExceptionProcessor;
+
+    @BeforeEach
+    void setUp() {
+        responseLogFilter = new ResponseLogFilter("TestApp", "TestEnv");
+    }
+
+    @Test
+    void testDoFilter_SuccessfulResponseProcessing() throws IOException, ServletException {
+        ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
+
+        try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.RESPONSE))
+                         .thenReturn(mockResponseProcessor);
+
+            responseLogFilter.doFilter(mockRequest, mockResponse, mockChain);
+
+            // Verify doFilter is called with wrapped response
+            verify(mockChain).doFilter(mockRequest, any(ContentCachingResponseWrapper.class));
+
+            // Verify response logging
+            verify(mockResponseProcessor).process(any(ContentCachingResponseWrapper.class));
+        }
+    }
+
+    @Test
+    void testDoFilter_ExceptionHandling() throws IOException, ServletException {
+        ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
+
+        try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.RESPONSE))
+                         .thenReturn(mockResponseProcessor);
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.ERROR))
+                         .thenReturn(mockExceptionProcessor);
+
+            doThrow(new RuntimeException("Test Exception")).when(mockChain).doFilter(mockRequest, wrappedResponse);
+
+            try {
+                responseLogFilter.doFilter(mockRequest, wrappedResponse, mockChain);
+            } catch (Exception e) {
+                // Verify exception processor is invoked
+                verify(mockExceptionProcessor).process(any(ContentCachingResponseWrapper.class), any(Map.class));
+            }
+        }
+    }
+}
