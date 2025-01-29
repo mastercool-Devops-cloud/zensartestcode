@@ -92,3 +92,6 @@ public class ApplicationProperties {
 Optional<String> body = Optional.ofNullable((String) requestData.get("body"));
 Optional<String> contextId = Optional.ofNullable((String) requestData.get("contextId"));
 Optional<String> clientIp = Optional.ofNullable((String) requestData.get("clientIp"));
+System.out.println("Body: " + body.orElse("No Body Captured"));
+System.out.println("Context ID: " + contextId.orElse("No Context ID"));
+System.out.println("Client IP: " + clientIp.orElse("No IP Found"));
