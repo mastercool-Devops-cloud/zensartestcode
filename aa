@@ -516,3 +516,88 @@ For more information see javadoc for PotentialStubbingProblem class.,
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
+------------------------------------------------
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import java.io.IOException;
+import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class ResponseLogFilterTest {
+
+    @InjectMocks
+    private ResponseLogFilter responseLogFilter;
+
+    @Mock
+    private HttpServletRequest mockRequest;
+
+    @Mock
+    private HttpServletResponse mockResponse;
+
+    @Mock
+    private FilterChain mockChain;
+
+    @Mock
+    private LogProcessor mockResponseProcessor;
+
+    @Mock
+    private LogProcessor mockExceptionProcessor;
+
+    @BeforeEach
+    void setUp() {
+        responseLogFilter = new ResponseLogFilter("TestApp", "TestEnv");
+    }
+
+    @Test
+    void testDoFilter_SuccessfulResponseProcessing() throws IOException, ServletException {
+        try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.RESPONSE))
+                         .thenReturn(mockResponseProcessor);
+
+            // Call the method under test
+            responseLogFilter.doFilter(mockRequest, mockResponse, mockChain);
+
+            // Verify doFilter is called correctly
+            verify(mockChain).doFilter(eq(mockRequest), argThat(response -> response instanceof ContentCachingResponseWrapper));
+
+            // Verify response logging
+            verify(mockResponseProcessor).process(any(ContentCachingResponseWrapper.class), any(Map.class));
+        }
+    }
+
+    @Test
+    void testDoFilter_ExceptionHandling() throws IOException, ServletException {
+        try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.RESPONSE))
+                         .thenReturn(mockResponseProcessor);
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.ERROR))
+                         .thenReturn(mockExceptionProcessor);
+
+            // Simulate an exception during filter execution
+            doThrow(new RuntimeException("Test Exception")).when(mockChain).doFilter(eq(mockRequest), any(ServletResponse.class));
+
+            try {
+                responseLogFilter.doFilter(mockRequest, mockResponse, mockChain);
+            } catch (Exception e) {
+                // Verify exception processor is invoked
+                verify(mockExceptionProcessor).process(any(ContentCachingResponseWrapper.class), any(Map.class));
+            }
+        }
+    }
+}
