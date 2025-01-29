@@ -353,3 +353,87 @@ Also, this error might show up because:
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
+----------------------------------------
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
+import java.util.Map;
+
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class RequestLogFilterTest {
+
+    @InjectMocks
+    private RequestLogFilter requestLogFilter;
+
+    @Mock
+    private HttpServletRequest mockRequest;
+
+    @Mock
+    private ServletResponse mockResponse;
+
+    @Mock
+    private FilterChain mockChain;
+
+    @Mock
+    private CachedBodyHttpServletRequestWrapper mockWrappedRequest;
+
+    @Mock
+    private LogProcessor mockRequestProcessor;
+
+    @Mock
+    private LogProcessor mockExceptionProcessor;
+
+    @BeforeEach
+    void setUp() {
+        requestLogFilter = new RequestLogFilter("TestApp", "TestEnv");
+    }
+
+    @Test
+    void testDoFilter_SuccessfulRequestProcessing() throws IOException, ServletException {
+        // Mock static method
+        try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.REQUEST))
+                         .thenReturn(mockRequestProcessor);
+
+            requestLogFilter.doFilter(mockRequest, mockResponse, mockChain);
+
+            // Verify the filter chain continues
+            verify(mockChain).doFilter(mockRequest, mockResponse);
+        }
+    }
+
+    @Test
+    void testDoFilter_ExceptionHandling() throws IOException, ServletException {
+        // Mock static method
+        try (MockedStatic<LogProcessorFactory> mockedFactory = mockStatic(LogProcessorFactory.class)) {
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.REQUEST))
+                         .thenReturn(mockRequestProcessor);
+            mockedFactory.when(() -> LogProcessorFactory.getLogProcessor(LogType.ERROR))
+                         .thenReturn(mockExceptionProcessor);
+
+            // Simulate exception in filter chain
+            doThrow(new RuntimeException("Test Exception")).when(mockChain).doFilter(mockRequest, mockResponse);
+
+            try {
+                requestLogFilter.doFilter(mockRequest, mockResponse, mockChain);
+            } catch (Exception e) {
+                // Ensure exception processor is called
+                verify(mockExceptionProcessor).process(any(HttpServletRequest.class), any(Map.class));
+            }
+        }
+    }
+}
