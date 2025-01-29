@@ -302,3 +302,22 @@ class LoggingFilterConfigTest {
     }
 }
 
+--------------------------------------------
+java.lang.NullPointerException: Cannot invoke "org.springframework.core.env.Environment.getActiveProfiles()" because "com.sb.fedssimplification.cashflowcalculator.config.EnvironmentName.environment" is null
+
+	at com.sb.fedssimplification.cashflowcalculator.config.EnvironmentName.getActiveProfile(EnvironmentName.java:25)
+	at com.sb.fedssimplification.cashflowcalculator.config.LoggingFilterConfig.responseLogFilter(LoggingFilterConfig.java:29)
+	at com.sb.fedssimplification.cashflowcalculator.config.LoggingFilterConfigTest.testResponseLogFilterBeanCreation(LoggingFilterConfigTest.java:50)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+
+java.lang.NullPointerException: Cannot invoke "org.springframework.core.env.Environment.getActiveProfiles()" because "com.sb.fedssimplification.cashflowcalculator.config.EnvironmentName.environment" is null
+
+	at com.sb.fedssimplification.cashflowcalculator.config.EnvironmentName.getActiveProfile(EnvironmentName.java:25)
+	at com.sb.fedssimplification.cashflowcalculator.config.LoggingFilterConfig.requestLogFilter(LoggingFilterConfig.java:22)
+	at com.sb.fedssimplification.cashflowcalculator.config.LoggingFilterConfigTest.testRequestLogFilterBeanCreation(LoggingFilterConfigTest.java:41)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
