@@ -1,18 +1,22 @@
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
-import java.util.*;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-class HttpRequestLoggingHelperTest {
+class HttpResponseLogHelperTest {
 
     @Mock
-    private HttpServletRequest mockRequest;
+    private HttpServletResponse mockResponse;
 
     private Map<String, String> mapData;
 
@@ -25,41 +29,91 @@ class HttpRequestLoggingHelperTest {
     }
 
     @Test
-    void testBuildRequestLog_ValidRequest() {
-        // Mock request data
-        when(mockRequest.getMethod()).thenReturn("POST");
-        when(mockRequest.getRequestURI()).thenReturn("/test");
-        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList("User-Agent", "Accept")));
-        when(mockRequest.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
-        when(mockRequest.getHeader("Accept")).thenReturn("application/json");
-
-        // Act
-        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
-
-        // Verify interactions
-        verify(mockRequest, times(1)).getMethod();
-        verify(mockRequest, times(1)).getRequestURI();
-        verify(mockRequest, times(1)).getHeaderNames();
-        verify(mockRequest, times(1)).getHeader("User-Agent");
-        verify(mockRequest, times(1)).getHeader("Accept");
-    }
-
-    @Test
-    void testBuildRequestLog_NullRequest_LogsWarning() {
-        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(null, mapData));
-    }
-
-    @Test
-    void testGetBaseMessageInfo_ReturnsValidBaseLogDetails() {
+    void testBuildLogResponse_ValidContentCachingResponseWrapper() throws IOException {
         // Arrange
-        Map<String, String> headers = new HashMap<>();
-        headers.put("application-name", "TestApp");
+        MockHttpServletResponse mockHttpResponse = new MockHttpServletResponse();
+        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockHttpResponse);
+
+        // Simulate response content
+        responseWrapper.getWriter().write("Test response body");
+        responseWrapper.setStatus(200);
+        responseWrapper.copyBodyToResponse();
 
         // Act
-        var baseLogDetails = HttpRequestLoggingHelper.getBaseMessageInfo(headers);
-
-        // Assert
-        assertNotNull(baseLogDetails);
-        assertEquals("TestApp", baseLogDetails.getApplicationName());
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(responseWrapper, mapData));
     }
+
+    @Test
+    void testBuildLogResponse_NullResponse_LogsWarning() {
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(null, mapData));
+    }
+
+    @Test
+    void testBuildLogResponse_NonCachingResponse_LogsWarning() {
+        // Act
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(mockResponse, mapData));
+    }
+
+    @Test
+    void testHandleLoggingException_JsonProcessingException() {
+        Exception jsonException = new com.fasterxml.jackson.core.JsonProcessingException("JSON Error") {};
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(jsonException));
+    }
+
+    @Test
+    void testHandleLoggingException_IOException() {
+        Exception ioException = new IOException("IO Error");
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(ioException));
+    }
+
+    @Test
+    void testHandleLoggingException_UnexpectedException() {
+        Exception runtimeException = new RuntimeException("Unexpected Error");
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(runtimeException));
+    }
+@Test
+void testBuildLogResponse_EmptyResponseBody() throws IOException {
+    MockHttpServletResponse mockHttpResponse = new MockHttpServletResponse();
+    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockHttpResponse);
+
+    responseWrapper.setStatus(200);
+    responseWrapper.copyBodyToResponse(); // Ensures body is processed
+
+    assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(responseWrapper, mapData));
+}
+@Test
+void testBuildLogResponse_Non200Status() throws IOException {
+    MockHttpServletResponse mockHttpResponse = new MockHttpServletResponse();
+    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockHttpResponse);
+
+    responseWrapper.getWriter().write("Error occurred");
+    responseWrapper.setStatus(500); // Simulating a server error
+    responseWrapper.copyBodyToResponse();
+
+    assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(responseWrapper, mapData));
+}
+@Test
+void testBuildLogResponse_MissingHeaders() throws IOException {
+    MockHttpServletResponse mockHttpResponse = new MockHttpServletResponse();
+    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockHttpResponse);
+
+    responseWrapper.getWriter().write("Response without headers");
+    responseWrapper.setStatus(200);
+    responseWrapper.copyBodyToResponse();
+
+    mapData.clear(); // Removing all headers
+
+    assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(responseWrapper, mapData));
+}
+@Test
+void testHandleLoggingException_DifferentExceptions() {
+    Exception jsonException = new com.fasterxml.jackson.core.JsonProcessingException("JSON Error") {};
+    Exception ioException = new IOException("IO Error");
+    Exception runtimeException = new RuntimeException("Unexpected Error");
+
+    assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(jsonException));
+    assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(ioException));
+    assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(runtimeException));
+}
+
 }
