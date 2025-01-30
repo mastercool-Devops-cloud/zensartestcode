@@ -1,48 +1,70 @@
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import jakarta.servlet.http.HttpServletResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.HashMap;
-import java.util.Map;
-
-class ResponseLogProcessorTest {
-
-    private ResponseLogProcessor responseLogProcessor;
+class LogUtilTest {
 
     @Mock
-    private HttpServletResponse mockResponse;
+    private Logger mockLogger;
+
+    @Mock
+    private RequestLog mockRequestLog;
+
+    @Mock
+    private ResponseLog mockResponseLog;
+
+    @Mock
+    private ErrorLog mockErrorLog;
+
+    @Mock
+    private ObjectMapper mockObjectMapper;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        responseLogProcessor = new ResponseLogProcessor();
+        LogUtilTestHelper.setLogger(mockLogger);
+        LogUtilTestHelper.setObjectMapper(mockObjectMapper);
     }
 
     @Test
-    void testProcess_ValidHttpResponse() {
-        Map<String, String> mapData = new HashMap<>();
+    void testLog_RequestLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenReturn("{\"request\":\"test\"}");
 
-        // Act
-        assertDoesNotThrow(() -> responseLogProcessor.process(mockResponse, mapData));
+        LogUtil.log(mockRequestLog);
 
-        // Verify that HttpResponseLoggingHelper.buildLogRequest() is called
-        verify(mockResponse, times(0)).getStatus(); // Adjust this based on actual HttpResponseLoggingHelper behavior
+        verify(mockLogger).info(eq("Request: {}"), anyString());
     }
 
     @Test
-    void testProcess_InvalidObject_ThrowsException() {
-        Map<String, String> mapData = new HashMap<>();
-        Object invalidObject = new Object(); // Not an HttpServletResponse
+    void testLog_ResponseLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockResponseLog)).thenReturn("{\"response\":\"test\"}");
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                responseLogProcessor.process(invalidObject, mapData)
-        );
+        LogUtil.log(mockResponseLog);
 
-        assertEquals("Invalid object type for ResponseLogProcessor", exception.getMessage());
+        verify(mockLogger).info(eq("Response: {}"), anyString());
+    }
+
+    @Test
+    void testLog_ErrorLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockErrorLog)).thenReturn("{\"error\":\"test\"}");
+
+        LogUtil.logException(mockErrorLog);
+
+        verify(mockLogger).info(eq("Error: {}"), anyString());
+    }
+
+    @Test
+    void testLog_RequestLog_JsonProcessingException() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenThrow(new JsonProcessingException("Test Error") {});
+
+        LogUtil.log(mockRequestLog);
+
+        verify(mockLogger).error(eq("Error logging request: {}"), anyString(), any(JsonProcessingException.class));
     }
 }
