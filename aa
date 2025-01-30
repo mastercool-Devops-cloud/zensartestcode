@@ -45,3 +45,8 @@ class RequestLogProcessorTest {
         assertEquals("Invalid object type for RequestLogProcessor", exception.getMessage());
     }
 }
+D:\Fed project\POC Demo code\Fed-Simplification-github\feds-module-utilities\logging-utility\src\main\java\com\sb\fedssimplification\utilitymodules\loggingutility\enums\HttpStatus.java:11:12
+java: constructor HttpStatus in enum com.sb.fedssimplification.utilitymodules.loggingutility.enums.HttpStatus cannot be applied to given types;
+  required: no arguments
+  found:    int,int,java.lang.String
+  reason: actual and formal argument lists differ in length
