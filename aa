@@ -12,4 +12,38 @@ java.lang.NullPointerException: Cannot invoke "java.util.Enumeration.hasMoreElem
 	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessorTest.testProcess_ValidHttpRequest(RequestLogProcessorTest.java:36)
 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	
+
+public static Optional<LoggingRequest> buildRequestLog(HttpServletRequest request, final Map<String, String> mapData) {
+    return Optional.ofNullable(request).ifPresentOrElse(req -> {
+        try {
+            String method = Optional.ofNullable(req.getMethod()).orElse("UNKNOWN");
+            String uri = Optional.ofNullable(req.getRequestURI()).orElse("UNKNOWN");
+
+            // 🛠 FIXED: Handle null headerNames
+            Enumeration<String> headerNames = req.getHeaderNames();
+            Map<String, String> headers = headerNames != null
+                    ? Collections.list(headerNames).stream()
+                            .collect(Collectors.toMap(headerName -> headerName, req::getHeader))
+                    : new HashMap<>();
+
+            headers.put("ip-address", IpAddressUtil.getClientIpAddress(req));
+
+            final Optional<String> appName = Optional.ofNullable(mapData.get("applicationName"));
+            final Optional<String> envName = Optional.ofNullable(mapData.get("environment"));
+
+            headers.put("application-name", appName.orElse("UNKNOWN"));
+            headers.put("environment", envName.orElse("UNKNOWN"));
+
+            final String body = getRequestBody(req);
+            final BaseLogDetails baseLogDetails = getBaseMessageInfo(headers);
+            final RequestLog requestLog = new RequestLog(baseLogDetails, method, uri, body);
+
+            LogUtils.logRequest(requestLog);
+        } catch (Exception e) {
+            log.error("Error logging request: {}", e.getMessage(), e);
+        }
+    }, () -> log.warn("HttpServletRequest is null, cannot log request"));
+}
+------------------------------------
+when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList("Content-Type", "User-Agent")));
+
