@@ -1,221 +1,29 @@
-java.lang.RuntimeException: Failed to set static field
 
-	at com.sb.fedssimplification.utilitymodules.loggingutility.util.LogUtilsTestHelper.setFinalStatic(LogUtilsTestHelper.java:27)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.util.LogUtilsTestHelper.setLogger(LogUtilsTestHelper.java:11)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.util.LogUtilsTest.setUp(LogUtilsTest.java:38)
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown, 
+Expected :class java.lang.IllegalArgumentException
+Actual   :class java.lang.NullPointerException
+<Click to see difference>
+
+
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.factory.LogProcessorFactoryTest.testGetLogProcessor_WithNull_ThrowsException(LogProcessorFactoryTest.java:36)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-Caused by: java.lang.NoSuchFieldException: modifiers
-	at java.base/java.lang.Class.getDeclaredField(Class.java:2782)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.util.LogUtilsTestHelper.setFinalStatic(LogUtilsTestHelper.java:22)
-	... 5 more
-import static org.mockito.Mockito.*;
+Caused by: java.lang.NullPointerException: Cannot invoke "com.sb.fedssimplification.utilitymodules.loggingutility.enums.LogType.ordinal()" because "logType" is null
+	at com.sb.fedssimplification.utilitymodules.loggingutility.factory.LogProcessorFactory.getLogProcessor(LogProcessorFactory.java:12)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.factory.LogProcessorFactoryTest.lambda$testGetLogProcessor_WithNull_ThrowsException$0(LogProcessorFactoryTest.java:37)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
+	... 6 more
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.junit.LoggerContextRule;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+@Test
+    void testGetLogProcessor_WithNull_ThrowsException() {
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            LogProcessorFactory.getLogProcessor(null);
+        });
 
-class LogUtilTest {
-
-    private static final Logger testLogger = LogManager.getLogger(LogUtil.class);
-
-    @Mock
-    private ObjectMapper mockObjectMapper;
-
-    @Mock
-    private RequestLog mockRequestLog;
-
-    @Mock
-    private ResponseLog mockResponseLog;
-
-    @Mock
-    private ErrorLog mockErrorLog;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        LogUtilTestHelper.setObjectMapper(mockObjectMapper);
+        assertEquals("Unknown log type: null", exception.getMessage());
     }
-
-    @Test
-    void testLog_RequestLog_Success() throws JsonProcessingException {
-        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenReturn("{\"request\":\"test\"}");
-
-        LogUtil.log(mockRequestLog);
-
-        testLogger.info("Expected log message"); // Simulate a log event
-    }
-
-    @Test
-    void testLog_ResponseLog_Success() throws JsonProcessingException {
-        when(mockObjectMapper.writeValueAsString(mockResponseLog)).thenReturn("{\"response\":\"test\"}");
-
-        LogUtil.log(mockResponseLog);
-
-        testLogger.info("Expected log message");
-    }
-
-    @Test
-    void testLog_ErrorLog_Success() throws JsonProcessingException {
-        when(mockObjectMapper.writeValueAsString(mockErrorLog)).thenReturn("{\"error\":\"test\"}");
-
-        LogUtil.logException(mockErrorLog);
-
-        testLogger.info("Expected log message");
-    }
-
-    @Test
-    void testLog_RequestLog_JsonProcessingException() throws JsonProcessingException {
-        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenThrow(new JsonProcessingException("Test Error") {});
-
-        LogUtil.log(mockRequestLog);
-
-        testLogger.error("Expected error message");
-    }
-}
------------------
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.logging.log4j.Logger;
-
-import java.lang.reflect.Field;
-
-class LogUtilTestHelper {
-
-    static void setLogger(Logger mockLogger) {
-        setFinalStatic(LogUtil.class, "logger", mockLogger);
-    }
-
-    static void setObjectMapper(ObjectMapper mockObjectMapper) {
-        setFinalStatic(LogUtil.class, "OBJECT_MAPPER", mockObjectMapper);
-    }
-
-    private static void setFinalStatic(Class<?> clazz, String fieldName, Object newValue) {
-        try {
-            Field field = clazz.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
-            field.set(null, newValue);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set static field", e);
-        }
-    }
-}
-------------------------------------------
-import static org.mockito.Mockito.*;
-import static org.powermock.api.mockito.PowerMockito.*;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.modules.junit4.PowerMockRunnerDelegate;
-
-@ExtendWith(PowerMockRunner.class)
-@PowerMockRunnerDelegate(org.junit.jupiter.api.extension.ExtendWith.class)
-@PrepareForTest({ LogUtil.class, LogManager.class })
-class LogUtilTest {
-
-    @Mock
-    private ObjectMapper mockObjectMapper;
-
-    @Mock
-    private RequestLog mockRequestLog;
-
-    @Mock
-    private ResponseLog mockResponseLog;
-
-    @Mock
-    private ErrorLog mockErrorLog;
-
-    private Logger mockLogger;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        // Mock static LogManager
-        mockLogger = mock(Logger.class);
-        mockStatic(LogManager.class);
-        when(LogManager.getLogger(LogUtil.class)).thenReturn(mockLogger);
-    }
-
-    @Test
-    void testLog_RequestLog_Success() throws JsonProcessingException {
-        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenReturn("{\"request\":\"test\"}");
-
-        LogUtil.log(mockRequestLog);
-
-        verify(mockLogger).info(eq("Request: {}"), anyString());
-    }
-
-    @Test
-    void testLog_ResponseLog_Success() throws JsonProcessingException {
-        when(mockObjectMapper.writeValueAsString(mockResponseLog)).thenReturn("{\"response\":\"test\"}");
-
-        LogUtil.log(mockResponseLog);
-
-        verify(mockLogger).info(eq("Response: {}"), anyString());
-    }
-
-    @Test
-    void testLog_ErrorLog_Success() throws JsonProcessingException {
-        when(mockObjectMapper.writeValueAsString(mockErrorLog)).thenReturn("{\"error\":\"test\"}");
-
-        LogUtil.logException(mockErrorLog);
-
-        verify(mockLogger).info(eq("Error: {}"), anyString());
-    }
-
-    @Test
-    void testLog_RequestLog_JsonProcessingException() throws JsonProcessingException {
-        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenThrow(new JsonProcessingException("Test Error") {});
-
-        LogUtil.log(mockRequestLog);
-
-        verify(mockLogger).error(eq("Error logging request: {}"), anyString(), any(JsonProcessingException.class));
-    }
-}
-----------------------------
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-core</artifactId>
-    <version>5.5.0</version>
-    <scope>test</scope>
-</dependency>
-
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-inline</artifactId>
-    <version>5.2.0</version>
-    <scope>test</scope>
-</dependency>
-
-<dependency>
-    <groupId>org.powermock</groupId>
-    <artifactId>powermock-api-mockito2</artifactId>
-    <version>2.0.9</version>
-    <scope>test</scope>
-</dependency>
-
-<dependency>
-    <groupId>org.powermock</groupId>
-    <artifactId>powermock-module-junit4</artifactId>
-    <version>2.0.9</version>
-    <scope>test</scope>
-</dependency>
