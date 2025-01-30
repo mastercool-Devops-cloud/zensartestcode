@@ -84,3 +84,41 @@ void testBuildRequestLog_ValidRequest() throws IOException {
         assertEquals("TestEnv", baseLogDetails.getHeaders().get("environment"));
     }
 }
+
+org.mockito.exceptions.misusing.PotentialStubbingProblem: 
+Strict stubbing argument mismatch. Please check:
+ - this invocation of 'getHeader' method:
+    mockRequest.getHeader("X-Forwarded-For");
+    -> at com.sb.fedssimplification.utilitymodules.loggingutility.util.IpAddressUtil.getClientIpAddress(IpAddressUtil.java:23)
+ - has following stubbing(s) with different arguments:
+    1. mockRequest.getHeader("User-Agent");
+      -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_ValidRequest(HttpRequestLogHelperTest.java:54)
+Typically, stubbing argument mismatch indicates user mistake when writing tests.
+Mockito fails early so that you can debug potential problem easily.
+However, there are legit scenarios when this exception generates false negative signal:
+  - stubbing the same method multiple times using 'given().will()' or 'when().then()' API
+    Please use 'will().given()' or 'doReturn().when()' API for stubbing.
+  - stubbed method is intentionally invoked with different arguments by code under test
+    Please use default or 'silent' JUnit Rule (equivalent of Strictness.LENIENT).
+For more information see javadoc for PotentialStubbingProblem class.
+
+	at com.sb.fedssimplification.utilitymodules.loggingutility.util.IpAddressUtil.getClientIpAddress(IpAddressUtil.java:23)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_ValidRequest(HttpRequestLogHelperTest.java:55)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+--------------------------------------
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_EmptyHeaders(HttpRequestLogHelperTest.java:66)
+  2. -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_EmptyHeaders(HttpRequestLogHelperTest.java:67)
+  3. -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_EmptyHeaders(HttpRequestLogHelperTest.java:68)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:197)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
