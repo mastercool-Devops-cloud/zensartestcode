@@ -1,33 +1,65 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-org.opentest4j.AssertionFailedError: Unexpected exception type thrown, 
-Expected :class java.lang.IllegalArgumentException
-Actual   :class java.lang.NullPointerException
-<Click to see difference>
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
+import java.util.*;
 
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
-	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
-	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.factory.LogProcessorFactoryTest.testGetLogProcessor_WithNull_ThrowsException(LogProcessorFactoryTest.java:36)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-Caused by: java.lang.NullPointerException: Cannot invoke "com.sb.fedssimplification.utilitymodules.loggingutility.enums.LogType.ordinal()" because "logType" is null
-	at com.sb.fedssimplification.utilitymodules.loggingutility.factory.LogProcessorFactory.getLogProcessor(LogProcessorFactory.java:12)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.factory.LogProcessorFactoryTest.lambda$testGetLogProcessor_WithNull_ThrowsException$0(LogProcessorFactoryTest.java:37)
-	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
-	... 6 more
+class HttpRequestLoggingHelperTest {
 
-@Test
-    void testGetLogProcessor_WithNull_ThrowsException() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            LogProcessorFactory.getLogProcessor(null);
-        });
+    @Mock
+    private HttpServletRequest mockRequest;
 
-        assertEquals("Unknown log type: null", exception.getMessage());
+    private Map<String, String> mapData;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mapData = new HashMap<>();
+        mapData.put("applicationName", "TestApp");
+        mapData.put("environment", "TestEnv");
     }
 
-  if (logType == null) {
-        throw new IllegalArgumentException("Unknown log type: null");
+    @Test
+    void testBuildRequestLog_ValidRequest() {
+        // Mock request data
+        when(mockRequest.getMethod()).thenReturn("POST");
+        when(mockRequest.getRequestURI()).thenReturn("/test");
+        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList("User-Agent", "Accept")));
+        when(mockRequest.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
+        when(mockRequest.getHeader("Accept")).thenReturn("application/json");
+
+        // Act
+        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
+
+        // Verify interactions
+        verify(mockRequest, times(1)).getMethod();
+        verify(mockRequest, times(1)).getRequestURI();
+        verify(mockRequest, times(1)).getHeaderNames();
+        verify(mockRequest, times(1)).getHeader("User-Agent");
+        verify(mockRequest, times(1)).getHeader("Accept");
     }
+
+    @Test
+    void testBuildRequestLog_NullRequest_LogsWarning() {
+        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(null, mapData));
+    }
+
+    @Test
+    void testGetBaseMessageInfo_ReturnsValidBaseLogDetails() {
+        // Arrange
+        Map<String, String> headers = new HashMap<>();
+        headers.put("application-name", "TestApp");
+
+        // Act
+        var baseLogDetails = HttpRequestLoggingHelper.getBaseMessageInfo(headers);
+
+        // Assert
+        assertNotNull(baseLogDetails);
+        assertEquals("TestApp", baseLogDetails.getApplicationName());
+    }
+}
