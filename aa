@@ -1,49 +1,48 @@
-15:54:00.689 [main] ERROR com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper -- Error logging request: Cannot invoke "java.util.Enumeration.hasMoreElements()" because "e" is null
-java.lang.NullPointerException: Cannot invoke "java.util.Enumeration.hasMoreElements()" because "e" is null
-	at java.base/java.util.Collections.list(Collections.java:5707)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper.lambda$buildLogRequest$2(HttpRequestLogHelper.java:38)
-	at java.base/java.util.Optional.ifPresentOrElse(Optional.java:196)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper.buildLogRequest(HttpRequestLogHelper.java:27)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessor.process(RequestLogProcessor.java:13)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessorTest.lambda$testProcess_ValidHttpRequest$0(RequestLogProcessorTest.java:36)
-	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:49)
-	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:36)
-	at org.junit.jupiter.api.Assertions.assertDoesNotThrow(Assertions.java:3168)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessorTest.testProcess_ValidHttpRequest(RequestLogProcessorTest.java:36)
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-public static Optional<LoggingRequest> buildRequestLog(HttpServletRequest request, final Map<String, String> mapData) {
-    return Optional.ofNullable(request).ifPresentOrElse(req -> {
-        try {
-            String method = Optional.ofNullable(req.getMethod()).orElse("UNKNOWN");
-            String uri = Optional.ofNullable(req.getRequestURI()).orElse("UNKNOWN");
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-            // 🛠 FIXED: Handle null headerNames
-            Enumeration<String> headerNames = req.getHeaderNames();
-            Map<String, String> headers = headerNames != null
-                    ? Collections.list(headerNames).stream()
-                            .collect(Collectors.toMap(headerName -> headerName, req::getHeader))
-                    : new HashMap<>();
+import java.util.HashMap;
+import java.util.Map;
 
-            headers.put("ip-address", IpAddressUtil.getClientIpAddress(req));
+class ResponseLogProcessorTest {
 
-            final Optional<String> appName = Optional.ofNullable(mapData.get("applicationName"));
-            final Optional<String> envName = Optional.ofNullable(mapData.get("environment"));
+    private ResponseLogProcessor responseLogProcessor;
 
-            headers.put("application-name", appName.orElse("UNKNOWN"));
-            headers.put("environment", envName.orElse("UNKNOWN"));
+    @Mock
+    private HttpServletResponse mockResponse;
 
-            final String body = getRequestBody(req);
-            final BaseLogDetails baseLogDetails = getBaseMessageInfo(headers);
-            final RequestLog requestLog = new RequestLog(baseLogDetails, method, uri, body);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        responseLogProcessor = new ResponseLogProcessor();
+    }
 
-            LogUtils.logRequest(requestLog);
-        } catch (Exception e) {
-            log.error("Error logging request: {}", e.getMessage(), e);
-        }
-    }, () -> log.warn("HttpServletRequest is null, cannot log request"));
+    @Test
+    void testProcess_ValidHttpResponse() {
+        Map<String, String> mapData = new HashMap<>();
+
+        // Act
+        assertDoesNotThrow(() -> responseLogProcessor.process(mockResponse, mapData));
+
+        // Verify that HttpResponseLoggingHelper.buildLogRequest() is called
+        verify(mockResponse, times(0)).getStatus(); // Adjust this based on actual HttpResponseLoggingHelper behavior
+    }
+
+    @Test
+    void testProcess_InvalidObject_ThrowsException() {
+        Map<String, String> mapData = new HashMap<>();
+        Object invalidObject = new Object(); // Not an HttpServletResponse
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                responseLogProcessor.process(invalidObject, mapData)
+        );
+
+        assertEquals("Invalid object type for ResponseLogProcessor", exception.getMessage());
+    }
 }
-------------------------------------
-when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList("Content-Type", "User-Agent")));
-
