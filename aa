@@ -10,3 +10,73 @@ Caused by: java.lang.NoSuchFieldException: modifiers
 	at java.base/java.lang.Class.getDeclaredField(Class.java:2782)
 	at com.sb.fedssimplification.utilitymodules.loggingutility.util.LogUtilsTestHelper.setFinalStatic(LogUtilsTestHelper.java:22)
 	... 5 more
+import static org.mockito.Mockito.*;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.junit.LoggerContextRule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+class LogUtilTest {
+
+    private static final Logger testLogger = LogManager.getLogger(LogUtil.class);
+
+    @Mock
+    private ObjectMapper mockObjectMapper;
+
+    @Mock
+    private RequestLog mockRequestLog;
+
+    @Mock
+    private ResponseLog mockResponseLog;
+
+    @Mock
+    private ErrorLog mockErrorLog;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        LogUtilTestHelper.setObjectMapper(mockObjectMapper);
+    }
+
+    @Test
+    void testLog_RequestLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenReturn("{\"request\":\"test\"}");
+
+        LogUtil.log(mockRequestLog);
+
+        testLogger.info("Expected log message"); // Simulate a log event
+    }
+
+    @Test
+    void testLog_ResponseLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockResponseLog)).thenReturn("{\"response\":\"test\"}");
+
+        LogUtil.log(mockResponseLog);
+
+        testLogger.info("Expected log message");
+    }
+
+    @Test
+    void testLog_ErrorLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockErrorLog)).thenReturn("{\"error\":\"test\"}");
+
+        LogUtil.logException(mockErrorLog);
+
+        testLogger.info("Expected log message");
+    }
+
+    @Test
+    void testLog_RequestLog_JsonProcessingException() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenThrow(new JsonProcessingException("Test Error") {});
+
+        LogUtil.log(mockRequestLog);
+
+        testLogger.error("Expected error message");
+    }
+}
