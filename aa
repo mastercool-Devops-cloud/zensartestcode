@@ -28,12 +28,14 @@ class HttpRequestLoggingHelperTest {
 void testBuildRequestLog_ValidRequest() throws IOException {
     when(mockRequest.getMethod()).thenReturn("GET");
     when(mockRequest.getRequestURI()).thenReturn("/test");
-    when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList("User-Agent")));
+    when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList("User-Agent", "X-Forwarded-For")));
     when(mockRequest.getHeader("User-Agent")).thenReturn("JUnitTest");
+    when(mockRequest.getHeader("X-Forwarded-For")).thenReturn("127.0.0.1");
     when(mockIpAddressUtil.getClientIpAddress(mockRequest)).thenReturn("127.0.0.1");
 
-    assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
+    assertDoesNotThrow(() -> HttpRequestLogHelper.buildLogRequest(mockRequest, mapData));
 }
+
 
     @Test
     void testBuildRequestLog_NullRequest_ShouldLogWarning() {
@@ -41,13 +43,12 @@ void testBuildRequestLog_ValidRequest() throws IOException {
     }
 
     @Test
-    void testBuildRequestLog_EmptyHeaders() {
-        when(mockRequest.getMethod()).thenReturn("POST");
-        when(mockRequest.getRequestURI()).thenReturn("/empty-headers");
-        when(mockRequest.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+void testBuildRequestLog_EmptyHeaders() {
+    when(mockRequest.getHeaderNames()).thenReturn(Collections.emptyEnumeration()); 
 
-        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
-    }
+    assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
+}
+
 
     @Test
     void testGetRequestBody_ValidBody() throws IOException {
