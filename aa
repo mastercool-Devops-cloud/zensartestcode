@@ -53,3 +53,18 @@ Never wanted here:
 -> at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessorTest.testProcess_ValidHttpRequest(RequestLogProcessorTest.java:33)
 But invoked here:
 -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper.lambda$buildlogRequest$2(HttpRequestLogHelper.java:30) with arguments: []
+
+-----------------------------------------
+@Test
+    void testProcess_ValidHttpRequest() {
+        Map<String, String> mapData = new HashMap<>();
+        
+        // Stub the request behavior
+        when(mockRequest.getRequestURI()).thenReturn("/test-uri");
+
+        // Act
+        assertDoesNotThrow(() -> requestLogProcessor.process(mockRequest, mapData));
+
+        // Verify that getRequestURI() was called at least once
+        verify(mockRequest, atLeastOnce()).getRequestURI();
+    }
