@@ -191,3 +191,31 @@ class LogUtilTest {
         verify(mockLogger).error(eq("Error logging request: {}"), anyString(), any(JsonProcessingException.class));
     }
 }
+----------------------------
+<dependency>
+    <groupId>org.mockito</groupId>
+    <artifactId>mockito-core</artifactId>
+    <version>5.5.0</version>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.mockito</groupId>
+    <artifactId>mockito-inline</artifactId>
+    <version>5.2.0</version>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.powermock</groupId>
+    <artifactId>powermock-api-mockito2</artifactId>
+    <version>2.0.9</version>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.powermock</groupId>
+    <artifactId>powermock-module-junit4</artifactId>
+    <version>2.0.9</version>
+    <scope>test</scope>
+</dependency>
