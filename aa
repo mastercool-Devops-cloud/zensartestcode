@@ -109,3 +109,85 @@ class LogUtilTestHelper {
         }
     }
 }
+------------------------------------------
+import static org.mockito.Mockito.*;
+import static org.powermock.api.mockito.PowerMockito.*;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.modules.junit4.PowerMockRunnerDelegate;
+
+@ExtendWith(PowerMockRunner.class)
+@PowerMockRunnerDelegate(org.junit.jupiter.api.extension.ExtendWith.class)
+@PrepareForTest({ LogUtil.class, LogManager.class })
+class LogUtilTest {
+
+    @Mock
+    private ObjectMapper mockObjectMapper;
+
+    @Mock
+    private RequestLog mockRequestLog;
+
+    @Mock
+    private ResponseLog mockResponseLog;
+
+    @Mock
+    private ErrorLog mockErrorLog;
+
+    private Logger mockLogger;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        // Mock static LogManager
+        mockLogger = mock(Logger.class);
+        mockStatic(LogManager.class);
+        when(LogManager.getLogger(LogUtil.class)).thenReturn(mockLogger);
+    }
+
+    @Test
+    void testLog_RequestLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenReturn("{\"request\":\"test\"}");
+
+        LogUtil.log(mockRequestLog);
+
+        verify(mockLogger).info(eq("Request: {}"), anyString());
+    }
+
+    @Test
+    void testLog_ResponseLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockResponseLog)).thenReturn("{\"response\":\"test\"}");
+
+        LogUtil.log(mockResponseLog);
+
+        verify(mockLogger).info(eq("Response: {}"), anyString());
+    }
+
+    @Test
+    void testLog_ErrorLog_Success() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockErrorLog)).thenReturn("{\"error\":\"test\"}");
+
+        LogUtil.logException(mockErrorLog);
+
+        verify(mockLogger).info(eq("Error: {}"), anyString());
+    }
+
+    @Test
+    void testLog_RequestLog_JsonProcessingException() throws JsonProcessingException {
+        when(mockObjectMapper.writeValueAsString(mockRequestLog)).thenThrow(new JsonProcessingException("Test Error") {});
+
+        LogUtil.log(mockRequestLog);
+
+        verify(mockLogger).error(eq("Error logging request: {}"), anyString(), any(JsonProcessingException.class));
+    }
+}
