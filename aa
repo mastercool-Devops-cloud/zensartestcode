@@ -1,125 +1,53 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
-class HttpRequestLoggingHelperTest {
+class ErrorLogHelperTest {
 
     @Mock
-    private HttpServletRequest mockRequest;
+    private LogUtils mockLogUtils;
 
     @Mock
-    private CachedBodyHttpServletRequestWapper cachedRequest;
+    private TimeUtil mockTimeUtil;
 
-    @Mock
-    private Enumeration<String> mockHeaders;
-
-    @Mock
-    private ServletInputStream mockInputStream;
-
-    @Mock
-    private IpAddressUtil mockIpAddressUtil;
-
-    private final Map<String, String> mapData = new HashMap<>();
+    private Map<String, String> mapData;
 
     @BeforeEach
     void setUp() {
+        mapData = new HashMap<>();
         mapData.put("applicationName", "TestApp");
         mapData.put("environment", "TestEnv");
     }
 
-   @Test
-void testBuildRequestLog_ValidRequest() throws IOException {
-    when(mockRequest.getMethod()).thenReturn("GET");
-    when(mockRequest.getRequestURI()).thenReturn("/test");
-    when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList("User-Agent", "X-Forwarded-For")));
-    when(mockRequest.getHeader("User-Agent")).thenReturn("JUnitTest");
-    when(mockRequest.getHeader("X-Forwarded-For")).thenReturn("127.0.0.1");
-    when(mockIpAddressUtil.getClientIpAddress(mockRequest)).thenReturn("127.0.0.1");
-
-    assertDoesNotThrow(() -> HttpRequestLogHelper.buildLogRequest(mockRequest, mapData));
-}
-
-
     @Test
-    void testBuildRequestLog_NullRequest_ShouldLogWarning() {
-        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(null, mapData));
+    void testBuildLogException_WithValidException() {
+        Exception exception = new RuntimeException("Test exception");
+        
+        assertDoesNotThrow(() -> ErrorLogHelper.buildLogException(exception, mapData));
+        
+        // Verify that logException was called
+        verify(mockLogUtils, times(1)).logException(any(ErrorLog.class));
     }
 
     @Test
-void testBuildRequestLog_EmptyHeaders() {
-    when(mockRequest.getHeaderNames()).thenReturn(Collections.emptyEnumeration()); 
-
-    assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
-}
-
-
-    @Test
-    void testGetRequestBody_ValidBody() throws IOException {
-        byte[] mockContent = "Test Request Body".getBytes(StandardCharsets.UTF_8);
-        when(cachedRequest.getInputStream()).thenReturn(new DelegatingServletInputStream(new ByteArrayInputStream(mockContent)));
-
-        String body = HttpRequestLoggingHelper.getRequestBody(cachedRequest);
-        assertEquals("Test Request Body", body);
+    void testBuildLogException_WithNullException() {
+        assertDoesNotThrow(() -> ErrorLogHelper.buildLogException(null, mapData));
     }
 
     @Test
-    void testGetRequestBody_NullRequest_ShouldReturnDefaultMessage() {
-        String body = HttpRequestLoggingHelper.getRequestBody(null);
-        assertEquals("Request body not available or request not wrapped with ContentCachingRequestWrapper.", body);
-    }
-
-    @Test
-    void testGetRequestBody_IOException_ShouldThrowRuntimeException() throws IOException {
-        when(cachedRequest.getInputStream()).thenThrow(new IOException("Stream error"));
-
-        assertThrows(RuntimeException.class, () -> HttpRequestLoggingHelper.getRequestBody(cachedRequest));
-    }
-
-    @Test
-    void testGetBaseMessageInfo() {
-        Map<String, String> headers = new HashMap<>();
-        headers.put("application-name", "TestApp");
-        headers.put("environment", "TestEnv");
-
-        BaseLogDetails baseLogDetails = HttpRequestLoggingHelper.getBaseMessageInfo(headers);
-
-        assertEquals("REQUEST", baseLogDetails.getMessageType());
-        assertEquals("TestApp", baseLogDetails.getApplicationName());
-        assertEquals("TestEnv", baseLogDetails.getHeaders().get("environment"));
+    void testBuildLogException_WithNullMapData() {
+        Exception exception = new RuntimeException("Test exception");
+        
+        assertDoesNotThrow(() -> ErrorLogHelper.buildLogException(exception, null));
     }
 }
-
-org.mockito.exceptions.misusing.PotentialStubbingProblem: 
-Strict stubbing argument mismatch. Please check:
- - this invocation of 'getHeader' method:
-    mockRequest.getHeader("X-Forwarded-For");
-    -> at com.sb.fedssimplification.utilitymodules.loggingutility.util.IpAddressUtil.getClientIpAddress(IpAddressUtil.java:23)
- - has following stubbing(s) with different arguments:
-    1. mockRequest.getHeader("User-Agent");
-      -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_ValidRequest(HttpRequestLogHelperTest.java:54)
-Typically, stubbing argument mismatch indicates user mistake when writing tests.
-Mockito fails early so that you can debug potential problem easily.
-However, there are legit scenarios when this exception generates false negative signal:
-  - stubbing the same method multiple times using 'given().will()' or 'when().then()' API
-    Please use 'will().given()' or 'doReturn().when()' API for stubbing.
-  - stubbed method is intentionally invoked with different arguments by code under test
-    Please use default or 'silent' JUnit Rule (equivalent of Strictness.LENIENT).
-For more information see javadoc for PotentialStubbingProblem class.
-
-	at com.sb.fedssimplification.utilitymodules.loggingutility.util.IpAddressUtil.getClientIpAddress(IpAddressUtil.java:23)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_ValidRequest(HttpRequestLogHelperTest.java:55)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
---------------------------------------
-org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
-Unnecessary stubbings detected.
-Clean & maintainable test code requires zero unnecessary code.
-Following stubbings are unnecessary (click to navigate to relevant line of code):
-  1. -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_EmptyHeaders(HttpRequestLogHelperTest.java:66)
-  2. -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_EmptyHeaders(HttpRequestLogHelperTest.java:67)
-  3. -> at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelperTest.testBuildRequestLog_EmptyHeaders(HttpRequestLogHelperTest.java:68)
-Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
-
-	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:197)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
