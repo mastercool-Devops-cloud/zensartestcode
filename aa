@@ -1,7 +1,7 @@
-15:38:40.260 [main] ERROR com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper -- Error logging request: Cannot invoke "java.util.Enumeration.hasMoreElements()" because "e" is null
+15:54:00.689 [main] ERROR com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper -- Error logging request: Cannot invoke "java.util.Enumeration.hasMoreElements()" because "e" is null
 java.lang.NullPointerException: Cannot invoke "java.util.Enumeration.hasMoreElements()" because "e" is null
 	at java.base/java.util.Collections.list(Collections.java:5707)
-	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper.lambda$buildLogRequest$2(HttpRequestLogHelper.java:31)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper.lambda$buildLogRequest$2(HttpRequestLogHelper.java:38)
 	at java.base/java.util.Optional.ifPresentOrElse(Optional.java:196)
 	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper.buildLogRequest(HttpRequestLogHelper.java:27)
 	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessor.process(RequestLogProcessor.java:13)
@@ -10,11 +10,6 @@ java.lang.NullPointerException: Cannot invoke "java.util.Enumeration.hasMoreElem
 	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:36)
 	at org.junit.jupiter.api.Assertions.assertDoesNotThrow(Assertions.java:3168)
 	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessorTest.testProcess_ValidHttpRequest(RequestLogProcessorTest.java:36)
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:10
-Map<String, String> headers = Optional.ofNullable(Collections.list(req.getHeaderNames()))
-                        .map(list -> list.stream()
-                                .collect(Collectors.toMap(
-                                        headerName -> headerName,
-                                        req::getHeader
-                                )))
-                        .orElse(Collections.emptyMap());
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	
