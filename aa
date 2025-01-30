@@ -81,3 +81,17 @@ org.opentest4j.AssertionFailedError: expected: <Invalid object type for RequestL
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+------------------------------------------------
+@Test
+void testProcess_InvalidObject_ThrowsException() {
+    Map<String, String> mapData = new HashMap<>();
+    Object invalidObject = new Object(); // Not an HttpServletRequest
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            requestLogProcessor.process(invalidObject, mapData)
+    );
+
+    // Ensure correct exception message
+    assertEquals("Invalid object type for RequestLogProcessor", exception.getMessage()); // ✅ This should now match
+}
+
