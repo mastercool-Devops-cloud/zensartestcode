@@ -1,50 +1,13 @@
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import java.util.HashMap;
-import java.util.Map;
-
-class ExceptionLogProcessorTest {
-
-    private ExceptionLogProcessor exceptionLogProcessor;
-
-    @Mock
-    private ErrorLoggingHelper mockErrorLoggingHelper;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        exceptionLogProcessor = new ExceptionLogProcessor();
-    }
-
-    @Test
-    void testProcess_ValidException() {
-        // Arrange
-        Exception exception = new RuntimeException("Test exception");
-        Map<String, String> mapData = new HashMap<>();
-
-        // Act
-        assertDoesNotThrow(() -> exceptionLogProcessor.process(exception, mapData));
-
-        // Verify that buildLogException is called with the correct parameters
-        // Since ErrorLoggingHelper is static, you need PowerMockito to mock static methods (not included here)
-    }
-
-    @Test
-    void testProcess_InvalidInput_ThrowsException() {
-        // Arrange
-        Map<String, String> mapData = new HashMap<>();
-        Object invalidObject = new Object(); // Not an Exception
-
-        // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                exceptionLogProcessor.process(invalidObject, mapData)
-        );
-
-        assertEquals("Invalid input for ExceptionLogProcessor", exception.getMessage());
-    }
-}
+15:38:40.260 [main] ERROR com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper -- Error logging request: Cannot invoke "java.util.Enumeration.hasMoreElements()" because "e" is null
+java.lang.NullPointerException: Cannot invoke "java.util.Enumeration.hasMoreElements()" because "e" is null
+	at java.base/java.util.Collections.list(Collections.java:5707)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper.lambda$buildLogRequest$2(HttpRequestLogHelper.java:31)
+	at java.base/java.util.Optional.ifPresentOrElse(Optional.java:196)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpRequestLogHelper.buildLogRequest(HttpRequestLogHelper.java:27)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessor.process(RequestLogProcessor.java:13)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessorTest.lambda$testProcess_ValidHttpRequest$0(RequestLogProcessorTest.java:36)
+	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:49)
+	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:36)
+	at org.junit.jupiter.api.Assertions.assertDoesNotThrow(Assertions.java:3168)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessorTest.testProcess_ValidHttpRequest(RequestLogProcessorTest.java:36)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:10
