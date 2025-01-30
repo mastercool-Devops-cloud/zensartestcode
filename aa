@@ -27,3 +27,7 @@ Caused by: java.lang.NullPointerException: Cannot invoke "com.sb.fedssimplificat
 
         assertEquals("Unknown log type: null", exception.getMessage());
     }
+
+  if (logType == null) {
+        throw new IllegalArgumentException("Unknown log type: null");
+    }
