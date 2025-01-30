@@ -80,3 +80,32 @@ class LogUtilTest {
         testLogger.error("Expected error message");
     }
 }
+-----------------
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.Logger;
+
+import java.lang.reflect.Field;
+
+class LogUtilTestHelper {
+
+    static void setLogger(Logger mockLogger) {
+        setFinalStatic(LogUtil.class, "logger", mockLogger);
+    }
+
+    static void setObjectMapper(ObjectMapper mockObjectMapper) {
+        setFinalStatic(LogUtil.class, "OBJECT_MAPPER", mockObjectMapper);
+    }
+
+    private static void setFinalStatic(Class<?> clazz, String fieldName, Object newValue) {
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
+            field.set(null, newValue);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set static field", e);
+        }
+    }
+}
