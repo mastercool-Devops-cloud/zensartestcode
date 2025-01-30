@@ -1,119 +1,86 @@
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-class HttpResponseLogHelperTest {
+@ExtendWith(MockitoExtension.class)
+class HttpRequestLoggingHelperTest {
 
     @Mock
-    private HttpServletResponse mockResponse;
+    private HttpServletRequest mockRequest;
 
-    private Map<String, String> mapData;
+    @Mock
+    private CachedBodyHttpServletRequestWapper cachedRequest;
+
+    @Mock
+    private Enumeration<String> mockHeaders;
+
+    @Mock
+    private ServletInputStream mockInputStream;
+
+    @Mock
+    private IpAddressUtil mockIpAddressUtil;
+
+    private final Map<String, String> mapData = new HashMap<>();
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mapData = new HashMap<>();
         mapData.put("applicationName", "TestApp");
         mapData.put("environment", "TestEnv");
     }
 
     @Test
-    void testBuildLogResponse_ValidContentCachingResponseWrapper() throws IOException {
-        // Arrange
-        MockHttpServletResponse mockHttpResponse = new MockHttpServletResponse();
-        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockHttpResponse);
+    void testBuildRequestLog_ValidRequest() throws IOException {
+        when(mockRequest.getMethod()).thenReturn("GET");
+        when(mockRequest.getRequestURI()).thenReturn("/test");
+        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(List.of("User-Agent")));
+        when(mockRequest.getHeader("User-Agent")).thenReturn("JUnitTest");
+        when(mockIpAddressUtil.getClientIpAddress(mockRequest)).thenReturn("127.0.0.1");
 
-        // Simulate response content
-        responseWrapper.getWriter().write("Test response body");
-        responseWrapper.setStatus(200);
-        responseWrapper.copyBodyToResponse();
-
-        // Act
-        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(responseWrapper, mapData));
+        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
     }
 
     @Test
-    void testBuildLogResponse_NullResponse_LogsWarning() {
-        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(null, mapData));
+    void testBuildRequestLog_NullRequest_ShouldLogWarning() {
+        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(null, mapData));
     }
 
     @Test
-    void testBuildLogResponse_NonCachingResponse_LogsWarning() {
-        // Act
-        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(mockResponse, mapData));
+    void testBuildRequestLog_EmptyHeaders() {
+        when(mockRequest.getMethod()).thenReturn("POST");
+        when(mockRequest.getRequestURI()).thenReturn("/empty-headers");
+        when(mockRequest.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+
+        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
     }
 
     @Test
-    void testHandleLoggingException_JsonProcessingException() {
-        Exception jsonException = new com.fasterxml.jackson.core.JsonProcessingException("JSON Error") {};
-        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(jsonException));
+    void testGetRequestBody_ValidBody() throws IOException {
+        byte[] mockContent = "Test Request Body".getBytes(StandardCharsets.UTF_8);
+        when(cachedRequest.getInputStream()).thenReturn(new DelegatingServletInputStream(new ByteArrayInputStream(mockContent)));
+
+        String body = HttpRequestLoggingHelper.getRequestBody(cachedRequest);
+        assertEquals("Test Request Body", body);
     }
 
     @Test
-    void testHandleLoggingException_IOException() {
-        Exception ioException = new IOException("IO Error");
-        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(ioException));
+    void testGetRequestBody_NullRequest_ShouldReturnDefaultMessage() {
+        String body = HttpRequestLoggingHelper.getRequestBody(null);
+        assertEquals("Request body not available or request not wrapped with ContentCachingRequestWrapper.", body);
     }
 
     @Test
-    void testHandleLoggingException_UnexpectedException() {
-        Exception runtimeException = new RuntimeException("Unexpected Error");
-        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(runtimeException));
+    void testGetRequestBody_IOException_ShouldThrowRuntimeException() throws IOException {
+        when(cachedRequest.getInputStream()).thenThrow(new IOException("Stream error"));
+
+        assertThrows(RuntimeException.class, () -> HttpRequestLoggingHelper.getRequestBody(cachedRequest));
     }
-@Test
-void testBuildLogResponse_EmptyResponseBody() throws IOException {
-    MockHttpServletResponse mockHttpResponse = new MockHttpServletResponse();
-    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockHttpResponse);
 
-    responseWrapper.setStatus(200);
-    responseWrapper.copyBodyToResponse(); // Ensures body is processed
+    @Test
+    void testGetBaseMessageInfo() {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("application-name", "TestApp");
+        headers.put("environment", "TestEnv");
 
-    assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(responseWrapper, mapData));
-}
-@Test
-void testBuildLogResponse_Non200Status() throws IOException {
-    MockHttpServletResponse mockHttpResponse = new MockHttpServletResponse();
-    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockHttpResponse);
+        BaseLogDetails baseLogDetails = HttpRequestLoggingHelper.getBaseMessageInfo(headers);
 
-    responseWrapper.getWriter().write("Error occurred");
-    responseWrapper.setStatus(500); // Simulating a server error
-    responseWrapper.copyBodyToResponse();
-
-    assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(responseWrapper, mapData));
-}
-@Test
-void testBuildLogResponse_MissingHeaders() throws IOException {
-    MockHttpServletResponse mockHttpResponse = new MockHttpServletResponse();
-    ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(mockHttpResponse);
-
-    responseWrapper.getWriter().write("Response without headers");
-    responseWrapper.setStatus(200);
-    responseWrapper.copyBodyToResponse();
-
-    mapData.clear(); // Removing all headers
-
-    assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(responseWrapper, mapData));
-}
-@Test
-void testHandleLoggingException_DifferentExceptions() {
-    Exception jsonException = new com.fasterxml.jackson.core.JsonProcessingException("JSON Error") {};
-    Exception ioException = new IOException("IO Error");
-    Exception runtimeException = new RuntimeException("Unexpected Error");
-
-    assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(jsonException));
-    assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(ioException));
-    assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(runtimeException));
-}
-
+        assertEquals("REQUEST", baseLogDetails.getMessageType());
+        assertEquals("TestApp", baseLogDetails.getApplicationName());
+        assertEquals("TestEnv", baseLogDetails.getHeaders().get("environment"));
+    }
 }
