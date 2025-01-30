@@ -24,16 +24,16 @@ class HttpRequestLoggingHelperTest {
         mapData.put("environment", "TestEnv");
     }
 
-    @Test
-    void testBuildRequestLog_ValidRequest() throws IOException {
-        when(mockRequest.getMethod()).thenReturn("GET");
-        when(mockRequest.getRequestURI()).thenReturn("/test");
-        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(List.of("User-Agent")));
-        when(mockRequest.getHeader("User-Agent")).thenReturn("JUnitTest");
-        when(mockIpAddressUtil.getClientIpAddress(mockRequest)).thenReturn("127.0.0.1");
+   @Test
+void testBuildRequestLog_ValidRequest() throws IOException {
+    when(mockRequest.getMethod()).thenReturn("GET");
+    when(mockRequest.getRequestURI()).thenReturn("/test");
+    when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList("User-Agent")));
+    when(mockRequest.getHeader("User-Agent")).thenReturn("JUnitTest");
+    when(mockIpAddressUtil.getClientIpAddress(mockRequest)).thenReturn("127.0.0.1");
 
-        assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
-    }
+    assertDoesNotThrow(() -> HttpRequestLoggingHelper.buildRequestLog(mockRequest, mapData));
+}
 
     @Test
     void testBuildRequestLog_NullRequest_ShouldLogWarning() {
