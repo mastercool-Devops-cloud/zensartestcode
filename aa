@@ -11,3 +11,10 @@ java.lang.NullPointerException: Cannot invoke "java.util.Enumeration.hasMoreElem
 	at org.junit.jupiter.api.Assertions.assertDoesNotThrow(Assertions.java:3168)
 	at com.sb.fedssimplification.utilitymodules.loggingutility.processor.RequestLogProcessorTest.testProcess_ValidHttpRequest(RequestLogProcessorTest.java:36)
 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:10
+Map<String, String> headers = Optional.ofNullable(Collections.list(req.getHeaderNames()))
+                        .map(list -> list.stream()
+                                .collect(Collectors.toMap(
+                                        headerName -> headerName,
+                                        req::getHeader
+                                )))
+                        .orElse(Collections.emptyMap());
