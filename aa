@@ -60,23 +60,29 @@ class HttpRequestLogHelperTest {
     }
 
     @Test
-    void testGetRequestBody_ValidJsonBody() throws IOException {
-        // Create a JSON body
-        String jsonBody = "{\"key1\":\"value1\", \"key2\":\"value2\"}";
+void testGetRequestBody_ValidJsonBody() throws IOException {
+    // Create a JSON body
+    String jsonBody = "{\"key1\":\"value1\", \"key2\":\"value2\"}";
 
-        // Mock the request with a body
-        MockHttpServletRequest mockServletRequest = new MockHttpServletRequest();
-        mockServletRequest.setContent(jsonBody.getBytes(StandardCharsets.UTF_8));
-        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(mockServletRequest);
+    // Mock the request with a body
+    MockHttpServletRequest mockServletRequest = new MockHttpServletRequest();
+    mockServletRequest.setContent(jsonBody.getBytes(StandardCharsets.UTF_8));
 
-        // Call the method
-        Map<String, String> requestBodyMap = HttpRequestLogHelper.getRequestBody(requestWrapper);
+    // Read input stream to trigger caching
+    mockServletRequest.getInputStream().readAllBytes();
 
-        // Assertions
-        assertNotNull(requestBodyMap);
-        assertEquals("value1", requestBodyMap.get("key1"));
-        assertEquals("value2", requestBodyMap.get("key2"));
-    }
+    // Wrap it in ContentCachingRequestWrapper
+    ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(mockServletRequest);
+
+    // Call the method
+    Map<String, String> requestBodyMap = HttpRequestLogHelper.getRequestBody(requestWrapper);
+
+    // Assertions
+    assertNotNull(requestBodyMap);
+    assertEquals("value1", requestBodyMap.get("key1"));
+    assertEquals("value2", requestBodyMap.get("key2"));
+}
+
 
     @Test
     void testGetRequestBody_EmptyBody() throws IOException {
