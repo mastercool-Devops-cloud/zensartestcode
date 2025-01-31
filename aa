@@ -1,53 +1,107 @@
-public static Map<String, String> getRequestBodyAsMap(final HttpServletRequest request) {
-    Map<String, String> requestBodyMap = new HashMap<>();
-
-    Optional.ofNullable(request)
-        .filter(req -> req instanceof CachedBodyHttpServletRequestWapper)
-        .ifPresent(req -> {
-            CachedBodyHttpServletRequestWapper wrappedRequest = (CachedBodyHttpServletRequestWapper) req;
-            try {
-                byte[] content = wrappedRequest.getInputStream().readAllBytes();
-                String body = new String(content, StandardCharsets.UTF_8);
-
-                // Assuming request body is JSON, convert it into a Map
-                ObjectMapper objectMapper = new ObjectMapper();
-                requestBodyMap.putAll(objectMapper.readValue(body, new TypeReference<Map<String, String>>() {}));
-            } catch (IOException e) {
-                throw new RuntimeException("Error reading request body", e);
-            }
-        });
-
-    return requestBodyMap;
-}
-------------------------------------
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.web.util.ContentCachingResponseWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ResponseHelper {
-    
-    public static Map<String, String> extractResponseBodyAsMap(final ContentCachingResponseWrapper responseWrapper) {
-        Map<String, String> responseBodyMap = new HashMap<>();
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-        try {
-            String responseBody = new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
+@ExtendWith(MockitoExtension.class)
+class HttpRequestLogHelperTest {
 
-            // Assuming the response body is JSON, convert it into a Map
-            if (responseBody != null && !responseBody.isEmpty()) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                responseBodyMap = objectMapper.readValue(responseBody, new TypeReference<Map<String, String>>() {});
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error reading response body", e);
-        }
+    @Mock
+    private HttpServletRequest mockRequest;
 
-        return responseBodyMap;
+    @Mock
+    private IpAddressUtil mockIpAddressUtil;
+
+    @InjectMocks
+    private HttpRequestLogHelper httpRequestLogHelper;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private Map<String, String> mapData;
+
+    @BeforeEach
+    void setUp() {
+        mapData = new HashMap<>();
+        mapData.put("applicationName", "TestApp");
+        mapData.put("environment", "TestEnv");
+    }
+
+    @Test
+    void testBuildLogRequest_ValidRequest() {
+        when(mockRequest.getMethod()).thenReturn("GET");
+        when(mockRequest.getRequestURI()).thenReturn("/test");
+        when(mockRequest.getHeaderNames()).thenReturn(Collections.enumeration(Collections.singleton("User-Agent")));
+        when(mockRequest.getHeader("User-Agent")).thenReturn("JUnitTest");
+        when(mockIpAddressUtil.getClientIpAddress(mockRequest)).thenReturn("127.0.0.1");
+
+        assertDoesNotThrow(() -> HttpRequestLogHelper.buildLogRequest(mockRequest, mapData));
+    }
+
+    @Test
+    void testBuildLogRequest_NullRequest() {
+        assertDoesNotThrow(() -> HttpRequestLogHelper.buildLogRequest(null, mapData));
+    }
+
+    @Test
+    void testGetRequestBody_ValidJsonBody() throws IOException {
+        // Create a JSON body
+        String jsonBody = "{\"key1\":\"value1\", \"key2\":\"value2\"}";
+
+        // Mock the request with a body
+        MockHttpServletRequest mockServletRequest = new MockHttpServletRequest();
+        mockServletRequest.setContent(jsonBody.getBytes(StandardCharsets.UTF_8));
+        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(mockServletRequest);
+
+        // Call the method
+        Map<String, String> requestBodyMap = HttpRequestLogHelper.getRequestBody(requestWrapper);
+
+        // Assertions
+        assertNotNull(requestBodyMap);
+        assertEquals("value1", requestBodyMap.get("key1"));
+        assertEquals("value2", requestBodyMap.get("key2"));
+    }
+
+    @Test
+    void testGetRequestBody_EmptyBody() throws IOException {
+        // Mock an empty body request
+        MockHttpServletRequest mockServletRequest = new MockHttpServletRequest();
+        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(mockServletRequest);
+
+        // Call the method
+        Map<String, String> requestBodyMap = HttpRequestLogHelper.getRequestBody(requestWrapper);
+
+        // Assertions
+        assertNotNull(requestBodyMap);
+        assertTrue(requestBodyMap.isEmpty());
+    }
+
+    @Test
+    void testGetRequestBody_InvalidJson() {
+        // Mock an invalid JSON request
+        String invalidJson = "Invalid JSON";
+
+        MockHttpServletRequest mockServletRequest = new MockHttpServletRequest();
+        mockServletRequest.setContent(invalidJson.getBytes(StandardCharsets.UTF_8));
+        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(mockServletRequest);
+
+        // Expect an exception when parsing an invalid JSON
+        assertThrows(RuntimeException.class, () -> HttpRequestLogHelper.getRequestBody(requestWrapper));
     }
 }
-Caused by: com.fasterxml.jackson.databind.exc.MismatchedInputException: Cannot deserialize value of type `java.lang.String` from Object value (token `JsonToken.START_OBJECT`)
- at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 18] (through reference chain: java.util.LinkedHashMap["fxContractDto"])
