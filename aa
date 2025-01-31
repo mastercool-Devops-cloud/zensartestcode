@@ -105,3 +105,176 @@ class HttpRequestLogHelperTest {
         assertThrows(RuntimeException.class, () -> HttpRequestLogHelper.getRequestBody(requestWrapper));
     }
 }
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+-----------------------------------------------------------
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+class HttpResponseLogHelperTest {
+    
+    @Mock
+    private ContentCachingResponseWrapper mockResponse;
+    
+    @Mock
+    private HttpServletResponse rawResponse;
+    
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    
+    private Map<String, String> mapData;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mapData = new HashMap<>();
+        mapData.put("applicationName", "TestApp");
+        mapData.put("environment", "TestEnv");
+    }
+    
+    @Test
+    void testBuildLogResponse_ValidResponse() throws IOException {
+        when(mockResponse.getContentAsByteArray()).thenReturn("{\"key\":\"value\"}".getBytes(StandardCharsets.UTF_8));
+        when(mockResponse.getStatus()).thenReturn(HttpStatus.OK.value());
+        
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(mockResponse, mapData));
+    }
+
+    @Test
+    void testBuildLogResponse_NullResponse() {
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(null, mapData));
+    }
+
+    @Test
+    void testBuildLogResponse_InvalidResponseWrapper() {
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(rawResponse, mapData));
+    }
+    
+    @Test
+    void testExtractResponseBodyAsMap_ValidJson() throws Exception {
+        when(mockResponse.getContentAsByteArray()).thenReturn("{\"testKey\":\"testValue\"}".getBytes(StandardCharsets.UTF_8));
+        Map<String, Object> responseBody = HttpResponseLogHelper.extractResponseBodyAsMap(mockResponse);
+        
+        assertNotNull(responseBody);
+        assertEquals("testValue", responseBody.get("testKey"));
+    }
+    
+    @Test
+    void testExtractResponseBodyAsMap_InvalidJson() {
+        when(mockResponse.getContentAsByteArray()).thenReturn("Invalid JSON".getBytes(StandardCharsets.UTF_8));
+        assertThrows(RuntimeException.class, () -> HttpResponseLogHelper.extractResponseBodyAsMap(mockResponse));
+    }
+    
+    @Test
+    void testHandleLoggingException_JsonProcessingException() {
+        Exception exception = new JsonProcessingException("JSON error") {};
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(exception));
+    }
+    
+    @Test
+    void testHandleLoggingException_IOException() {
+        Exception exception = new IOException("IO error");
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(exception));
+    }
+    
+    @Test
+    void testHandleLoggingException_GenericException() {
+        Exception exception = new RuntimeException("Unexpected error");
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(exception));
+    }
+}
+-----------------------------------------------
+@ExtendWith(MockitoExtension.class)
+class HttpResponseLogHelperTest {
+
+    @Mock
+    private ContentCachingResponseWrapper mockResponseWrapper;
+
+    @Mock
+    private HttpServletResponse mockHttpServletResponse;
+
+    @Mock
+    private Map<String, String> mockMapData;
+
+    @Captor
+    private ArgumentCaptor<ResponseLog> responseLogCaptor;
+
+    @Test
+    void testBuildLogResponse_ValidResponse() throws IOException {
+        // Mock response body
+        String responseBody = "{\"message\":\"success\"}";
+        byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
+        
+        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(responseBytes);
+        when(mockResponseWrapper.getStatus()).thenReturn(200);
+
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(mockResponseWrapper, mockMapData));
+        
+        verify(mockResponseWrapper).copyBodyToResponse();
+    }
+
+    @Test
+    void testBuildLogResponse_NullResponse() {
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(null, mockMapData));
+        verifyNoInteractions(mockResponseWrapper);
+    }
+
+    @Test
+    void testBuildLogResponse_NonWrappedResponse() {
+        assertDoesNotThrow(() -> HttpResponseLogHelper.buildLogResponse(mockHttpServletResponse, mockMapData));
+        verify(mockHttpServletResponse, never()).getWriter();
+    }
+
+    @Test
+    void testExtractResponseBody_EmptyResponse() {
+        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(new byte[0]);
+
+        Map<String, Object> responseBody = HttpResponseLogHelper.extractResponseBodyAsMap(mockResponseWrapper);
+
+        assertNotNull(responseBody);
+        assertTrue(responseBody.isEmpty());
+    }
+
+    @Test
+    void testExtractResponseBody_InvalidJson() {
+        String invalidJson = "{invalidJson";
+        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(invalidJson.getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(RuntimeException.class, () -> HttpResponseLogHelper.extractResponseBodyAsMap(mockResponseWrapper));
+    }
+
+    @Test
+    void testHandleLoggingException_JsonProcessingException() {
+        Exception jsonException = new JsonProcessingException("JSON error") {};
+
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(jsonException));
+    }
+
+    @Test
+    void testHandleLoggingException_IOException() {
+        Exception ioException = new IOException("IO error");
+
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(ioException));
+    }
+
+    @Test
+    void testHandleLoggingException_GenericException() {
+        Exception genericException = new Exception("General error");
+
+        assertDoesNotThrow(() -> HttpResponseLogHelper.handleLoggingException(genericException));
+    }
+}
