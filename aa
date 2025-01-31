@@ -1,4 +1,32 @@
-HttpRequestLogHelper.java → Extracts request details (headers, method, body, etc.).
-HttpResponseLogHelper.java → Extracts response details (status, headers, body, etc.).
-2️⃣ com.example.logging.util → Contains reusable static utility classes
-LoggingHelper.java → Logs RequestLog, ResponseLog, and ErrorLog objects in JSON format.
+Request: {
+  "baseLogDetails" : {
+    "timestamp" : "2025-01-31T20:23:16.632",
+    "level" : null,
+    "source" : "cashflow-calculator",
+    "message" : "Request Message",
+    "metadata" : {
+      "application-name" : "cashflow-calculator",
+      "content-length" : "306",
+      "ip-address" : "127.0.0.1",
+      "environment" : "default",
+      "host" : "localhost:8237",
+      "content-type" : "application/json",
+      "user-agent" : "insomnia/9.3.2",
+      "accept" : "*/*"
+    }
+  },
+  "httpMethod" : "POST",
+  "url" : "/foreign-exchange-contract",
+  "body" : {
+    "nettedAmount" : "574521.00",
+    "purchaseSaleIndicator" : "B",
+    "buyCurrencyAmount" : "30000.00",
+    "storeAmount" : "0.00",
+    "sellCurrencyAmount" : "574521.00",
+    "contractNumber" : "99C7BV5D",
+    "valueDate" : "2024-10-30",
+    "fecNumber" : "99C75W5P",
+    "contractTypeCode" : "DE",
+    "parentContractNumber" : "99C75W5P"
+  }
+}
