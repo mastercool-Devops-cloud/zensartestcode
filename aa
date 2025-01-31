@@ -1,32 +1,210 @@
-Request: {
-  "baseLogDetails" : {
-    "timestamp" : "2025-01-31T20:23:16.632",
-    "level" : null,
-    "source" : "cashflow-calculator",
-    "message" : "Request Message",
-    "metadata" : {
-      "application-name" : "cashflow-calculator",
-      "content-length" : "306",
-      "ip-address" : "127.0.0.1",
-      "environment" : "default",
-      "host" : "localhost:8237",
-      "content-type" : "application/json",
-      "user-agent" : "insomnia/9.3.2",
-      "accept" : "*/*"
+package com.example.logging.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class BaseLogDetails {
+    private String timestamp;
+    private String level;
+    private String source;
+    private String message;
+    private Map<String, Object> metadata;
+}
+------------------------------------
+package com.example.logging.model;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+public class RestLog extends BaseLogDetails {
+    private String httpMethod;
+    private String url;
+    private Object body;
+    private int statusCode;
+    private long latencyMs;
+
+    public RestLog(BaseLogDetails baseDetails, String httpMethod, String url, Object body, int statusCode, long latencyMs) {
+        super(baseDetails.getTimestamp(), baseDetails.getLevel(), baseDetails.getSource(), baseDetails.getMessage(), baseDetails.getMetadata());
+        this.httpMethod = httpMethod;
+        this.url = url;
+        this.body = body;
+        this.statusCode = statusCode;
+        this.latencyMs = latencyMs;
     }
-  },
-  "httpMethod" : "POST",
-  "url" : "/foreign-exchange-contract",
-  "body" : {
-    "nettedAmount" : "574521.00",
-    "purchaseSaleIndicator" : "B",
-    "buyCurrencyAmount" : "30000.00",
-    "storeAmount" : "0.00",
-    "sellCurrencyAmount" : "574521.00",
-    "contractNumber" : "99C7BV5D",
-    "valueDate" : "2024-10-30",
-    "fecNumber" : "99C75W5P",
-    "contractTypeCode" : "DE",
-    "parentContractNumber" : "99C75W5P"
-  }
+}
+----------------------
+package com.example.logging.model;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+public class ErrorLog extends BaseLogDetails {
+    private String errorCode;
+    private String errorMessage;
+    private String stackTrace;
+
+    public ErrorLog(BaseLogDetails baseDetails, String errorCode, String errorMessage, String stackTrace) {
+        super(baseDetails.getTimestamp(), baseDetails.getLevel(), baseDetails.getSource(), baseDetails.getMessage(), baseDetails.getMetadata());
+        this.errorCode = errorCode;
+        this.errorMessage = errorMessage;
+        this.stackTrace = stackTrace;
+    }
+}
+---------------------------
+package com.example.logging.factory;
+
+import com.example.logging.model.BaseLogDetails;
+import com.example.logging.model.ErrorLog;
+import com.example.logging.model.RestLog;
+
+public class LogFactory {
+
+    public static RestLog createRestLog(BaseLogDetails baseDetails, String httpMethod, String url, Object body, int statusCode, long latencyMs) {
+        return new RestLog(baseDetails, httpMethod, url, body, statusCode, latencyMs);
+    }
+
+    public static ErrorLog createErrorLog(BaseLogDetails baseDetails, String errorCode, String errorMessage, String stackTrace) {
+        return new ErrorLog(baseDetails, errorCode, errorMessage, stackTrace);
+    }
+}
+------------------------------------
+package com.example.logging.processor;
+
+import com.example.logging.model.BaseLogDetails;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
+public class LogProcessorFactory {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .enable(SerializationFeature.INDENT_OUTPUT); // Pretty-print JSON
+
+    public static void processLog(BaseLogDetails logDetails, String logType) {
+        try {
+            String logJson = OBJECT_MAPPER.writeValueAsString(logDetails);
+            log.info("{}:\n{}", logType, logJson);
+        } catch (Exception e) {
+            log.error("Error processing log: {}", e.getMessage(), e);
+        }
+    }
+}
+--------------------------------------
+package com.example.filter;
+
+import com.example.logging.factory.LogFactory;
+import com.example.logging.model.BaseLogDetails;
+import com.example.logging.model.RestLog;
+import com.example.logging.processor.LogProcessorFactory;
+import com.example.util.IpAddress;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.stereotype.Component;
+
+import javax.servlet.*;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+@Log4j2
+@WebFilter(urlPatterns = "/*")
+@Component
+public class RequestLogFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        if (request instanceof HttpServletRequest) {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
+
+            // Capture metadata
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("application-name", "cashflow-calculator");
+            metadata.put("content-length", httpRequest.getHeader("Content-Length"));
+            metadata.put("ip-address", IpAddress.getClientIpAddress(httpRequest));
+            metadata.put("environment", "default");
+            metadata.put("host", httpRequest.getHeader("Host"));
+            metadata.put("content-type", httpRequest.getContentType());
+            metadata.put("user-agent", httpRequest.getHeader("User-Agent"));
+            metadata.put("accept", httpRequest.getHeader("Accept"));
+
+            // Base Log Details
+            BaseLogDetails baseDetails = new BaseLogDetails(Instant.now().toString(), "INFO", "cashflow-calculator", "Request Message", metadata);
+
+            // Create RestLog
+            RestLog restLog = LogFactory.createRestLog(baseDetails, httpRequest.getMethod(), httpRequest.getRequestURI(), "Request Body", 0, 0);
+
+            // Log request
+            LogProcessorFactory.processLog(restLog, "Request");
+        }
+
+        // Continue filter chain
+        chain.doFilter(request, response);
+    }
+}
+-----------------------------------------
+package com.example.filter;
+
+import com.example.logging.factory.LogFactory;
+import com.example.logging.model.BaseLogDetails;
+import com.example.logging.model.RestLog;
+import com.example.logging.processor.LogProcessorFactory;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.stereotype.Component;
+
+import javax.servlet.*;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+@Log4j2
+@WebFilter(urlPatterns = "/*")
+@Component
+public class ResponseLogFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        long startTime = System.currentTimeMillis();
+
+        chain.doFilter(request, response);
+
+        if (response instanceof HttpServletResponse) {
+            HttpServletResponse httpResponse = (HttpServletResponse) response;
+            long latencyMs = System.currentTimeMillis() - startTime;
+
+            // Capture metadata
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("status", httpResponse.getStatus());
+
+            // Base Log Details
+            BaseLogDetails baseDetails = new BaseLogDetails(Instant.now().toString(), "INFO", "cashflow-calculator", "Response Message", metadata);
+
+            // Create RestLog
+            RestLog restLog = LogFactory.createRestLog(baseDetails, "POST", "/foreign-exchange-contract", "Response Body", httpResponse.getStatus(), latencyMs);
+
+            // Log response
+            LogProcessorFactory.processLog(restLog, "Response");
+        }
+    }
 }
