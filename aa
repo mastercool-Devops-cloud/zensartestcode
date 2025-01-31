@@ -297,3 +297,29 @@ org.opentest4j.AssertionFailedError: expected: <value2> but was: <null>
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+------------------------------------------------
+@Test
+void testGetRequestBody_ValidJsonBody() throws IOException {
+    // Create a JSON body
+    String jsonBody = "{\"key1\":\"value1\", \"key2\":\"value2\"}";
+
+    // Mock the request with a body
+    MockHttpServletRequest mockServletRequest = new MockHttpServletRequest();
+    mockServletRequest.setMethod("POST");
+    mockServletRequest.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    mockServletRequest.setContent(jsonBody.getBytes(StandardCharsets.UTF_8));
+
+    // Wrap it in ContentCachingRequestWrapper
+    ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(mockServletRequest);
+
+    // *** Force reading the request body to ensure caching ***
+    requestWrapper.getReader().lines().collect(Collectors.joining());
+
+    // Call the method
+    Map<String, String> requestBodyMap = HttpRequestLogHelper.getRequestBody(requestWrapper);
+
+    // Assertions
+    assertNotNull(requestBodyMap, "Request body map should not be null");
+    assertEquals("value1", requestBodyMap.get("key1"));
+    assertEquals("value2", requestBodyMap.get("key2"));
+}
