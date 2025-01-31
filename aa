@@ -1,53 +1,21 @@
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+public static Map<String, String> getRequestBodyAsMap(final HttpServletRequest request) {
+    Map<String, String> requestBodyMap = new HashMap<>();
 
-import java.util.HashMap;
-import java.util.Map;
+    Optional.ofNullable(request)
+        .filter(req -> req instanceof CachedBodyHttpServletRequestWapper)
+        .ifPresent(req -> {
+            CachedBodyHttpServletRequestWapper wrappedRequest = (CachedBodyHttpServletRequestWapper) req;
+            try {
+                byte[] content = wrappedRequest.getInputStream().readAllBytes();
+                String body = new String(content, StandardCharsets.UTF_8);
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+                // Assuming request body is JSON, convert it into a Map
+                ObjectMapper objectMapper = new ObjectMapper();
+                requestBodyMap.putAll(objectMapper.readValue(body, new TypeReference<Map<String, String>>() {}));
+            } catch (IOException e) {
+                throw new RuntimeException("Error reading request body", e);
+            }
+        });
 
-@ExtendWith(MockitoExtension.class)
-class ErrorLogHelperTest {
-
-    @Mock
-    private LogUtils mockLogUtils;
-
-    @Mock
-    private TimeUtil mockTimeUtil;
-
-    private Map<String, String> mapData;
-
-    @BeforeEach
-    void setUp() {
-        mapData = new HashMap<>();
-        mapData.put("applicationName", "TestApp");
-        mapData.put("environment", "TestEnv");
-    }
-
-    @Test
-    void testBuildLogException_WithValidException() {
-        Exception exception = new RuntimeException("Test exception");
-        
-        assertDoesNotThrow(() -> ErrorLogHelper.buildLogException(exception, mapData));
-        
-        // Verify that logException was called
-        verify(mockLogUtils, times(1)).logException(any(ErrorLog.class));
-    }
-
-    @Test
-    void testBuildLogException_WithNullException() {
-        assertDoesNotThrow(() -> ErrorLogHelper.buildLogException(null, mapData));
-    }
-
-    @Test
-    void testBuildLogException_WithNullMapData() {
-        Exception exception = new RuntimeException("Test exception");
-        
-        assertDoesNotThrow(() -> ErrorLogHelper.buildLogException(exception, null));
-    }
+    return requestBodyMap;
 }
