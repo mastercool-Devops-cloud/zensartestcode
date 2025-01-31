@@ -49,3 +49,5 @@ public class ResponseHelper {
         return responseBodyMap;
     }
 }
+Caused by: com.fasterxml.jackson.databind.exc.MismatchedInputException: Cannot deserialize value of type `java.lang.String` from Object value (token `JsonToken.START_OBJECT`)
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 18] (through reference chain: java.util.LinkedHashMap["fxContractDto"])
