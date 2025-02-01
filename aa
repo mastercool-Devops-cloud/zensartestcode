@@ -208,3 +208,43 @@ public class ResponseLogFilter implements Filter {
         }
     }
 }
+----------------------------------
+package com.example.logging.processor;
+
+import com.example.logging.model.BaseLogDetails;
+import com.example.logging.model.ErrorLog;
+import com.example.logging.model.RestLog;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
+public class LogProcessorFactory {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public static void processLog(Object log, String logType) {
+        try {
+            String logMessage = OBJECT_MAPPER.writeValueAsString(log);
+
+            switch (logType) {
+                case "Request":
+                    log.info("Request Log: {}", logMessage);
+                    break;
+
+                case "Response":
+                    log.info("Response Log: {}", logMessage);
+                    break;
+
+                case "Error":
+                    log.error("Error Log: {}", logMessage);
+                    break;
+
+                default:
+                    log.warn("Unknown Log Type: {}", logType);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process log: {}", e.getMessage(), e);
+        }
+    }
+}
+----------------------------------
