@@ -286,3 +286,4 @@ public class ResponseBodyExtractor {
                 ));
     }
 }
+private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
