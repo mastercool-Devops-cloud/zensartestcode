@@ -101,3 +101,91 @@ class RequestLogFilterTest {
     <version>5.9.2</version>
     <scope>test</scope>
 </dependency>
+------------------
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+class RequestLogFilterTest {
+
+    private static final String APPLICATION_NAME = "TestApp";
+    private static final String ENVIRONMENT = "test";
+
+    private RequestLogFilter requestLogFilter;
+
+    @Mock
+    private HttpServletRequest httpRequest;
+
+    @Mock
+    private HttpServletResponse httpResponse;
+
+    @Mock
+    private FilterChain filterChain;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        requestLogFilter = new RequestLogFilter(APPLICATION_NAME, ENVIRONMENT);
+    }
+
+    @Test
+    void testDoFilter_Success() throws IOException, ServletException {
+        // Mock HTTP request attributes
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+        when(httpRequest.getHeader("Content-Length")).thenReturn("200");
+        when(httpRequest.getContentType()).thenReturn("application/json");
+        when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit Test");
+        when(httpResponse.getStatus()).thenReturn(200);
+
+        // Mock request body
+        Map<String, String> requestBody = Collections.singletonMap("key", "value");
+        when(HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
+
+        // Use try-with-resources to mock static method
+        try (MockedStatic<LogProcessorFactory> mockedStatic = Mockito.mockStatic(LogProcessorFactory.class)) {
+            // Call the filter
+            requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+
+            // Verify that processLog was called once with any RestLog and REQUEST log type
+            mockedStatic.verify(() -> LogProcessorFactory.processLog(any(RestLog.class), eq(LogType.REQUEST)), times(1));
+        }
+
+        // Verify that filterChain.doFilter was called
+        verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+    }
+
+    @Test
+    void testDoFilter_ExceptionThrown() throws IOException, ServletException {
+        when(httpRequest.getMethod()).thenReturn("GET");
+        when(httpRequest.getRequestURI()).thenReturn("/error-endpoint");
+
+        // Simulate an exception being thrown
+        doThrow(new RuntimeException("Test Exception")).when(filterChain).doFilter(any(), any());
+
+        // Use try-with-resources to mock static method
+        try (MockedStatic<LogProcessorFactory> mockedStatic = Mockito.mockStatic(LogProcessorFactory.class)) {
+            try {
+                requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+            } catch (Exception e) {
+                // Expected exception
+            }
+
+            // Verify that processLog was called once with any ErrorLog and ERROR log type
+            mockedStatic.verify(() -> LogProcessorFactory.processLog(any(ErrorLog.class), eq(LogType.ERROR)), times(1));
+        }
+    }
+}
