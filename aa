@@ -131,3 +131,20 @@ For more information see javadoc for PotentialStubbingProblem class.
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+-----------------------------------
+@Test
+void testDoFilter_Success() throws Exception {
+    when(httpServletRequest.getMethod()).thenReturn("POST");
+    when(httpServletRequest.getRequestURI()).thenReturn("/test");
+    when(httpServletRequest.getHeader("Content-Length")).thenReturn("100");
+    when(httpServletRequest.getHeader("Host")).thenReturn("localhost");
+    when(httpServletRequest.getContentType()).thenReturn("application/json");
+    when(httpServletRequest.getHeader("User-Agent")).thenReturn("JUnit-Test");
+    when(httpServletRequest.getHeader("Accept")).thenReturn("application/json");
+    when(httpServletRequest.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1"); // <-- Add this line
+    
+    requestLogFilter.doFilter(httpServletRequest, servletResponse, filterChain);
+    
+    verify(filterChain, times(1)).doFilter(Mockito.any(), Mockito.eq(servletResponse));
+}
+
