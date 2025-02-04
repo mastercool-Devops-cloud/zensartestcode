@@ -1,58 +1,49 @@
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.core.env.Environment;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class EnvironmentNameTest {
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.context.SpringBootTest;
 
-    private Environment environment;
+@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+class LoggingFilterConfigTest {
+
+    @Mock
+    private ApplicationProperties applicationProperties;
+
+    @Mock
     private EnvironmentName environmentName;
+
+    @InjectMocks
+    private LoggingFilterConfig loggingFilterConfig;
 
     @BeforeEach
     void setUp() {
-        environment = mock(Environment.class);
-        environmentName = new EnvironmentName(environment);
+        when(applicationProperties.getApplication()).thenReturn("test-app");
+        when(environmentName.getActiveProfile()).thenReturn("test-profile");
     }
 
     @Test
-    void testGetActiveProfile_WhenActiveProfileExists() {
-        when(environment.getActiveProfiles()).thenReturn(new String[]{"dev"});
+    void testRequestLogFilterBeanCreation() {
+        RequestLogFilter requestLogFilter = loggingFilterConfig.requestLogFilter();
 
-        String profile = environmentName.getActiveProfile();
-
-        assertEquals("dev", profile);
+        assertNotNull(requestLogFilter);
+        assertEquals("test-app", requestLogFilter.getApplicationName());
+        assertEquals("test-profile", requestLogFilter.getEnvironment());
     }
 
     @Test
-    void testGetActiveProfile_WhenNoActiveProfile() {
-        when(environment.getActiveProfiles()).thenReturn(new String[]{});
+    void testResponseLogFilterBeanCreation() {
+        ResponseLogFilter responseLogFilter = loggingFilterConfig.responseLogFilter();
 
-        String profile = environmentName.getActiveProfile();
-
-        assertEquals("default", profile);
-    }
-}
--------------------------------------
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(properties = "spring.application.name=test-app")
-class ApplicationPropertiesTest {
-
-    @Value("${spring.application.name}")
-    private String applicationName;
-
-    @Test
-    void testApplicationNameProperty() {
-        assertEquals("test-app", applicationName);
+        assertNotNull(responseLogFilter);
+        assertEquals("test-app", responseLogFilter.getApplicationName());
+        assertEquals("test-profile", responseLogFilter.getEnvironment());
     }
 }
