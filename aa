@@ -1,10 +1,109 @@
-org.opentest4j.AssertionFailedError: Expected java.lang.IllegalArgumentException to be thrown, but nothing was thrown.
+import static org.mockito.Mockito.*;
 
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
-	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:73)
-	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
-	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
-	at com.sb.fedssimplification.utilitymodules.secretsmanager.helper.HttpResponseLogHelperTest.testGetStatusInfo_InvalidCode_ThrowsException(HttpResponseLogHelperTest.java:76)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import nl.altindag.log.LogCaptor;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@ExtendWith(MockitoExtension.class)
+class LogProcessorFactoryTest {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    private LogCaptor logCaptor;
+
+    @BeforeEach
+    void setUp() {
+        logCaptor = LogCaptor.forClass(LogProcessorFactory.class);
+    }
+
+    @Test
+    void testProcessLog_RequestLog() throws JsonProcessingException {
+        // Arrange
+        Object mockObject = new TestObject("Test", 123);
+        String expectedLogMessage = OBJECT_MAPPER.writeValueAsString(mockObject);
+
+        // Act
+        LogProcessorFactory.processLog(mockObject, "Request");
+
+        // Assert
+        assertThat(logCaptor.getInfoLogs()).contains("Request Log: " + expectedLogMessage);
+    }
+
+    @Test
+    void testProcessLog_ResponseLog() throws JsonProcessingException {
+        // Arrange
+        Object mockObject = new TestObject("ResponseTest", 456);
+        String expectedLogMessage = OBJECT_MAPPER.writeValueAsString(mockObject);
+
+        // Act
+        LogProcessorFactory.processLog(mockObject, "Response");
+
+        // Assert
+        assertThat(logCaptor.getInfoLogs()).contains("Response Log: " + expectedLogMessage);
+    }
+
+    @Test
+    void testProcessLog_ErrorLog() throws JsonProcessingException {
+        // Arrange
+        Object mockObject = new TestObject("ErrorTest", 789);
+        String expectedLogMessage = OBJECT_MAPPER.writeValueAsString(mockObject);
+
+        // Act
+        LogProcessorFactory.processLog(mockObject, "Error");
+
+        // Assert
+        assertThat(logCaptor.getErrorLogs()).contains("Error Log: " + expectedLogMessage);
+    }
+
+    @Test
+    void testProcessLog_UnknownLogType() throws JsonProcessingException {
+        // Arrange
+        Object mockObject = new TestObject("UnknownTest", 999);
+        String expectedLogMessage = OBJECT_MAPPER.writeValueAsString(mockObject);
+
+        // Act
+        LogProcessorFactory.processLog(mockObject, "Unknown");
+
+        // Assert
+        assertThat(logCaptor.getWarnLogs()).contains("Unknown Log Type: Unknown");
+    }
+
+    @Test
+    void testProcessLog_JsonProcessingException() throws JsonProcessingException {
+        // Arrange
+        Object mockObject = mock(Object.class);
+        ObjectMapper objectMapperMock = mock(ObjectMapper.class);
+        when(objectMapperMock.writeValueAsString(mockObject)).thenThrow(new JsonProcessingException("Mock Error") {});
+
+        // Act
+        LogProcessorFactory.processLog(mockObject, "Request");
+
+        // Assert
+        assertThat(logCaptor.getErrorLogs()).anyMatch(log -> log.contains("Failed to process log: Mock Error"));
+    }
+
+    // Sample test object class
+    static class TestObject {
+        private final String name;
+        private final int value;
+
+        public TestObject(String name, int value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+}
