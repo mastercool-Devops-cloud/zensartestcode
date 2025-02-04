@@ -3,10 +3,16 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import nl.altindag.log.LogCaptor;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,11 +21,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LogProcessorFactoryTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-    private LogCaptor logCaptor;
+    private Logger logger;
+    private Appender mockAppender;
+    private ArgumentCaptor<LogEvent> logCaptor;
 
     @BeforeEach
     void setUp() {
-        logCaptor = LogCaptor.forClass(LogProcessorFactory.class);
+        // Get Log4j2 logger
+        LoggerContext context = LoggerContext.getContext(false);
+        Configuration config = context.getConfiguration();
+        logger = context.getLogger(LogProcessorFactory.class);
+
+        // Mock the Appender
+        mockAppender = mock(Appender.class);
+        when(mockAppender.getName()).thenReturn("MockAppender");
+        when(mockAppender.isStarted()).thenReturn(true);
+
+        // Capture Log Events
+        logCaptor = ArgumentCaptor.forClass(LogEvent.class);
+
+        // Add mock Appender to logger
+        LoggerConfig loggerConfig = config.getLoggerConfig(logger.getName());
+        loggerConfig.addAppender(mockAppender, null, null);
+        context.updateLoggers();
     }
 
     @Test
@@ -31,8 +55,11 @@ class LogProcessorFactoryTest {
         // Act
         LogProcessorFactory.processLog(mockObject, "Request");
 
+        // Verify log captured
+        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
+
         // Assert
-        assertThat(logCaptor.getInfoLogs()).contains("Request Log: " + expectedLogMessage);
+        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Request Log: " + expectedLogMessage);
     }
 
     @Test
@@ -44,8 +71,11 @@ class LogProcessorFactoryTest {
         // Act
         LogProcessorFactory.processLog(mockObject, "Response");
 
+        // Verify
+        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
+
         // Assert
-        assertThat(logCaptor.getInfoLogs()).contains("Response Log: " + expectedLogMessage);
+        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Response Log: " + expectedLogMessage);
     }
 
     @Test
@@ -57,35 +87,47 @@ class LogProcessorFactoryTest {
         // Act
         LogProcessorFactory.processLog(mockObject, "Error");
 
+        // Verify
+        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
+
         // Assert
-        assertThat(logCaptor.getErrorLogs()).contains("Error Log: " + expectedLogMessage);
+        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Error Log: " + expectedLogMessage);
     }
 
     @Test
     void testProcessLog_UnknownLogType() throws JsonProcessingException {
         // Arrange
         Object mockObject = new TestObject("UnknownTest", 999);
-        String expectedLogMessage = OBJECT_MAPPER.writeValueAsString(mockObject);
 
         // Act
         LogProcessorFactory.processLog(mockObject, "Unknown");
 
+        // Verify
+        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
+
         // Assert
-        assertThat(logCaptor.getWarnLogs()).contains("Unknown Log Type: Unknown");
+        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Unknown Log Type: Unknown");
     }
 
     @Test
-    void testProcessLog_JsonProcessingException() throws JsonProcessingException {
+    void testProcessLog_JsonProcessingException() {
         // Arrange
         Object mockObject = mock(Object.class);
         ObjectMapper objectMapperMock = mock(ObjectMapper.class);
-        when(objectMapperMock.writeValueAsString(mockObject)).thenThrow(new JsonProcessingException("Mock Error") {});
+
+        try {
+            when(objectMapperMock.writeValueAsString(mockObject)).thenThrow(new JsonProcessingException("Mock Error") {});
+        } catch (JsonProcessingException ignored) {
+        }
 
         // Act
         LogProcessorFactory.processLog(mockObject, "Request");
 
+        // Verify
+        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
+
         // Assert
-        assertThat(logCaptor.getErrorLogs()).anyMatch(log -> log.contains("Failed to process log: Mock Error"));
+        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Failed to process log: Mock Error");
     }
 
     // Sample test object class
