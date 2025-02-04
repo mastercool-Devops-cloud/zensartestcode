@@ -265,6 +265,87 @@ java.lang.NullPointerException: Cannot invoke "jakarta.servlet.ServletInputStrea
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
+import jakarta.servlet.ServletInputStream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.*;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Map;
+
+class RequestLogFilterTest {
+
+    private RequestLogFilter requestLogFilter;
+    private HttpServletRequest httpRequest;
+    private HttpServletResponse httpResponse;
+    private FilterChain filterChain;
+
+    @BeforeEach
+    void setUp() {
+        // Initialize the objects needed for the test
+        requestLogFilter = new RequestLogFilter("testApp", "dev");
+        httpRequest = mock(HttpServletRequest.class);
+        httpResponse = mock(HttpServletResponse.class);
+        filterChain = mock(FilterChain.class);
+    }
+
+    @Test
+    void testDoFilter_Success() throws IOException, ServletException {
+        // Prepare the mock objects for the request and response
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+        when(httpResponse.getStatus()).thenReturn(200);
+        when(httpRequest.getHeader("Content-Length")).thenReturn("200");
+        when(httpRequest.getContentType()).thenReturn("application/json");
+
+        // Mock the behavior of getInputStream to return a valid input stream
+        byte[] mockRequestBody = "{\"key\":\"value\"}".getBytes();
+        ServletInputStream mockInputStream = new ServletInputStream() {
+            private final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(mockRequestBody);
+
+            @Override
+            public int read() throws IOException {
+                return byteArrayInputStream.read();
+            }
+
+            @Override
+            public int read(byte[] b) throws IOException {
+                return byteArrayInputStream.read(b);
+            }
+        };
+
+        // Mock the wrapped request to return the mock input stream
+        CachedBodyHttpServletRequestWrapper wrappedRequest = mock(CachedBodyHttpServletRequestWrapper.class);
+        when(wrappedRequest.getInputStream()).thenReturn(mockInputStream);
+
+        Map<String, String> requestBody = Map.of("key", "value");
+
+        try (MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class);
+             MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class)) {
+
+            // Mock static methods to return desired behavior
+            mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(wrappedRequest)).thenReturn(requestBody);
+
+            // Run the filter method
+            requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+
+            // Verify the log method was called
+            mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
+                argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
+            ), times(1));
+
+            // Verify filterChain.doFilter was called
+            verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+        }
+    }
+}
 
 ---------------------
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
