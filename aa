@@ -187,6 +187,49 @@ Due to the nature of the syntax above problem might occur because:
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
+import jakarta.servlet.ServletInputStream;
+import org.mockito.Mockito;
+
+import static org.mockito.Mockito.mock;
+
+@Test
+void testDoFilter_Success() throws IOException, ServletException {
+    // Mock ServletInputStream
+    ServletInputStream inputStream = mock(ServletInputStream.class);
+    
+    // Mocking request and response
+    when(httpRequest.getMethod()).thenReturn("POST");
+    when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+    when(httpResponse.getStatus()).thenReturn(200);
+    when(httpRequest.getHeader("Content-Length")).thenReturn("200");
+    when(httpRequest.getContentType()).thenReturn("application/json");
+
+    // Mocking the CachedBodyHttpServletRequestWrapper to return the mocked ServletInputStream
+    CachedBodyHttpServletRequestWrapper wrappedRequest = mock(CachedBodyHttpServletRequestWrapper.class);
+    when(wrappedRequest.getInputStream()).thenReturn(inputStream);
+    
+    Map<String, String> requestBody = Collections.singletonMap("key", "value");
+
+    try (
+        MockedStatic<CachedBodyHttpServletRequestWrapper> mockWrapper = mockStatic(CachedBodyHttpServletRequestWrapper.class);
+        MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class);
+        MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
+    ) {
+        // Mock constructor call for CachedBodyHttpServletRequestWrapper
+        mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest)).thenReturn(wrappedRequest);
+        mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
+
+        requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+
+        mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
+            argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
+        ), times(1));
+
+        verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+    }
+}
+
+
 ---------------------
 org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
 Unnecessary stubbings detected.
