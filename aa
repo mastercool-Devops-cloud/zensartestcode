@@ -27,6 +27,12 @@ class RequestLogFilterTest {
     @Mock
     private FilterChain filterChain;
     
+    @Mock
+    private CachedBodyHttpServletRequestWrapper wrappedRequest;
+    
+    @Mock
+    private BaseLogDetails baseLogDetails;
+    
     private RequestLogFilter requestLogFilter;
     
     private final String applicationName = "TestApp";
@@ -87,4 +93,3 @@ class RequestLogFilterTest {
         assert requestLogFilter.metadata.equals(expectedMetadata);
     }
 }
-
