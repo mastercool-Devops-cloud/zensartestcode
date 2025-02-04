@@ -287,3 +287,43 @@ public class ResponseBodyExtractor {
     }
 }
 private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+------------------------------------------------
+import lombok.extern.log4j.Log4j2;
+import javax.servlet.*;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@Log4j2
+@WebFilter(urlPatterns = "/*")
+public class ResponseLogFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        long latencyMs = 0L; // Default latency
+
+        if (request instanceof HttpServletRequest) {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
+
+            // Retrieve start time from request
+            Long startTime = (Long) httpRequest.getAttribute("startTime");
+            if (startTime != null) {
+                latencyMs = System.currentTimeMillis() - startTime;
+            }
+        }
+
+        // Continue filter chain
+        chain.doFilter(request, response);
+
+        if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
+            HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+            // Log response with latency
+            log.info("Response: Method={}, URL={}, Status={}, Latency={}ms",
+                    httpRequest.getMethod(), httpRequest.getRequestURI(), httpResponse.getStatus(), latencyMs);
+        }
+    }
+}
