@@ -1,78 +1,54 @@
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-import java.io.IOException;
-import java.util.Map;
-import static org.mockito.Mockito.*;
-
-class ResponseLogFilterTest {
-
-    @Mock private HttpServletRequest mockRequest;
-    @Mock private HttpServletResponse mockResponse;
-    @Mock private FilterChain mockFilterChain;
-
-    @InjectMocks private ResponseLogFilter responseLogFilter;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        responseLogFilter = new ResponseLogFilter("TestApp", "DEV");
+14:19:29.336 [main] INFO com.sb.fedssimplification.utilitymodules.loggingutility.logprocessor.LogProcessorFactory -- Response Log: {
+  "baseLogDetails" : {
+    "timestamp" : "2025-02-04T14:19:28.986",
+    "level" : "SUCCESS",
+    "source" : "TestApp",
+    "message" : "Response Message",
+    "metadata" : {
+      "content-length" : null,
+      "environment" : "DEV",
+      "host" : null,
+      "content-type" : null,
+      "user-agent" : null,
+      "accept" : null
     }
-
-    @Test
-    void testDoFilter_Success() throws ServletException, IOException {
-        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
-        when(mockRequest.getMethod()).thenReturn("GET");
-        when(mockRequest.getRequestURI()).thenReturn("/api/test");
-        when(mockResponse.getStatus()).thenReturn(200);
-
-        ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
-        doNothing().when(mockFilterChain).doFilter(mockRequest, wrappedResponse);
-
-        responseLogFilter.doFilter(mockRequest, mockResponse, mockFilterChain);
-
-        verify(mockFilterChain, times(1)).doFilter(mockRequest, wrappedResponse);
-    }
-
-    @Test
-    void testDoFilter_ExceptionHandling() throws ServletException, IOException {
-        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
-        when(mockRequest.getMethod()).thenReturn("POST");
-        when(mockRequest.getRequestURI()).thenReturn("/api/error");
-        when(mockResponse.getStatus()).thenReturn(500);
-
-        doThrow(new IOException("Test Exception")).when(mockFilterChain).doFilter(mockRequest, mockResponse);
-
-        try {
-            responseLogFilter.doFilter(mockRequest, mockResponse, mockFilterChain);
-        } catch (Exception e) {
-            verify(mockFilterChain, times(1)).doFilter(mockRequest, mockResponse);
-            verify(mockResponse, never()).getWriter(); // Ensure no response is written in error scenario
-        }
-    }
-
-    @Test
-    void testGetHttpResponseMetaData() {
-        when(mockRequest.getHeader("Content-Length")).thenReturn("100");
-        when(mockRequest.getHeader("Host")).thenReturn("localhost");
-        when(mockRequest.getContentType()).thenReturn("application/json");
-        when(mockRequest.getHeader("User-Agent")).thenReturn("TestAgent");
-        when(mockRequest.getHeader("Accept")).thenReturn("*/*");
-
-        responseLogFilter.getHttpResponseMetaData(mockRequest);
-
-        Map<String, String> metadata = responseLogFilter.getMetadata();
-        assert metadata.get("content-length").equals("100");
-        assert metadata.get("host").equals("localhost");
-        assert metadata.get("content-type").equals("application/json");
-        assert metadata.get("user-agent").equals("TestAgent");
-        assert metadata.get("accept").equals("*/*");
-    }
+  },
+  "httpMethod" : "GET",
+  "url" : "/api/test",
+  "body" : { },
+  "statusCode" : 200,
+  "latencyMs" : 24
 }
+
+
+Argument(s) are different! Wanted:
+mockFilterChain.doFilter(
+    mockRequest,
+    org.springframework.web.util.ContentCachingResponseWrapper@49c675f0
+);
+-> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_Success(ResponseLogFilterTest.java:44)
+Actual invocations have different arguments at position [1]:
+mockFilterChain.doFilter(
+    mockRequest,
+    org.springframework.web.util.ContentCachingResponseWrapper@14823f76
+);
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilter.doFilter(ResponseLogFilter.java:56)
+
+Argument(s) are different! Wanted:
+mockFilterChain.doFilter(
+    mockRequest,
+    org.springframework.web.util.ContentCachingResponseWrapper@49c675f0
+);
+-> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_Success(ResponseLogFilterTest.java:44)
+Actual invocations have different arguments at position [1]:
+mockFilterChain.doFilter(
+    mockRequest,
+    org.springframework.web.util.ContentCachingResponseWrapper@14823f76
+);
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilter.doFilter(ResponseLogFilter.java:56)
+
+	at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_Success(ResponseLogFilterTest.java:44)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
