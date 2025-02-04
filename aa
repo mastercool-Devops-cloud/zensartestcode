@@ -1,16 +1,90 @@
-@Test
-    public void testDoFilter_Success() throws Exception {
-        // Arrange
-        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-        ArgumentCaptor<ServletResponse> responseCaptor = ArgumentCaptor.forClass(ServletResponse.class);
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Map;
 
-        // Act
-        responseLogFilter.doFilter(mockRequest, mockResponse, mockFilterChain);
+public class HttpRequestLogHelperTest {
 
-        // Assert
-        verify(mockFilterChain).doFilter(eq(mockRequest), responseCaptor.capture());
+    @Mock
+    private CachedBodyHttpServletRequestWrapper mockRequest;
 
-        // Ensure it is an instance of ContentCachingResponseWrapper
-        assertTrue(responseCaptor.getValue() instanceof ContentCachingResponseWrapper);
+    @Mock
+    private ServletInputStream mockInputStream;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
+
+    @Test
+    void testGetRequestBody_Success() throws IOException {
+        // Mock JSON request body
+        String jsonBody = "{ \"key1\": \"value1\", \"key2\": \"value2\" }";
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(jsonBody.getBytes());
+
+        // Mock ServletInputStream behavior
+        ServletInputStream servletInputStream = new ServletInputStream() {
+            @Override
+            public int read() {
+                return byteArrayInputStream.read();
+            }
+        };
+
+        // Mock HttpServletRequest methods
+        when(mockRequest.getInputStream()).thenReturn(servletInputStream);
+
+        // Call method under test
+        Map<String, String> result = HttpRequestLogHelper.getRequestBody(mockRequest);
+
+        // Assertions
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("value1", result.get("key1"));
+        assertEquals("value2", result.get("key2"));
+    }
+
+    @Test
+    void testGetRequestBody_NullRequest_ReturnsEmptyMap() {
+        // Call method with null request
+        Map<String, String> result = HttpRequestLogHelper.getRequestBody(null);
+
+        // Assertions
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetRequestBody_InvalidJson_ThrowsException() throws IOException {
+        // Mock invalid JSON body
+        String invalidJsonBody = "{ key1: value1, key2: ";  // Malformed JSON
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(invalidJsonBody.getBytes());
+
+        // Mock ServletInputStream behavior
+        ServletInputStream servletInputStream = new ServletInputStream() {
+            @Override
+            public int read() {
+                return byteArrayInputStream.read();
+            }
+        };
+
+        // Mock HttpServletRequest methods
+        when(mockRequest.getInputStream()).thenReturn(servletInputStream);
+
+        // Exception handling
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            HttpRequestLogHelper.getRequestBody(mockRequest);
+        });
+
+        assertTrue(exception.getMessage().contains("Error reading request body"));
+    }
+}
