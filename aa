@@ -217,4 +217,31 @@ Mocking methods declared on non-public parent classes is not supported.
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+@Test
+void testDoFilter_Success() throws IOException, ServletException {
+    // Mock HTTP request attributes
+    when(httpRequest.getMethod()).thenReturn("POST");
+    when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+    when(httpRequest.getHeader("Content-Length")).thenReturn("200");
+    when(httpRequest.getContentType()).thenReturn("application/json");
+    when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit Test");
+    when(httpResponse.getStatus()).thenReturn(200);
+
+    // Mock request body
+    Map<String, String> requestBody = Collections.singletonMap("key", "value");
+    when(HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
+
+    try (MockedStatic<LogProcessorFactory> mockedStatic = Mockito.mockStatic(LogProcessorFactory.class)) {
+        // Call the filter
+        requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+
+        // Verify processLog() call using argThat()
+        mockedStatic.verify(() -> LogProcessorFactory.processLog(
+            argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
+        ), times(1));
+    }
+
+    // Verify that filterChain.doFilter was called
+    verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+}
 
