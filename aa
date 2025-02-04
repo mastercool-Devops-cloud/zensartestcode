@@ -1,103 +1,10 @@
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+org.opentest4j.AssertionFailedError: Expected java.lang.IllegalArgumentException to be thrown, but nothing was thrown.
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
-public class HttpResponseLogHelperTest {
-
-    @Mock
-    private ContentCachingResponseWrapper mockResponseWrapper;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testGetResponseBody_Success() throws IOException {
-        // Mock JSON response body
-        String jsonResponse = "{ \"status\": \"success\", \"message\": \"OK\" }";
-        byte[] responseBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
-
-        // Mock response behavior
-        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(responseBytes);
-
-        // Call method under test
-        Map<String, String> result = HttpResponseLogHelper.getResponseBody(mockResponseWrapper);
-
-        // Assertions
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("success", result.get("status"));
-        assertEquals("OK", result.get("message"));
-    }
-
-    @Test
-    void testGetResponseBody_EmptyResponse_ReturnsEmptyMap() {
-        // Mock empty response body
-        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(new byte[0]);
-
-        // Call method under test
-        Map<String, String> result = HttpResponseLogHelper.getResponseBody(mockResponseWrapper);
-
-        // Assertions
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testGetResponseBody_InvalidJson_ThrowsException() {
-        // Mock invalid JSON response
-        String invalidJsonResponse = "{ status: success, message: "; // Malformed JSON
-        byte[] responseBytes = invalidJsonResponse.getBytes(StandardCharsets.UTF_8);
-
-        // Mock response behavior
-        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(responseBytes);
-
-        // Exception handling
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            HttpResponseLogHelper.getResponseBody(mockResponseWrapper);
-        });
-
-        assertTrue(exception.getMessage().contains("Error reading response body"));
-    }
-
-    @Test
-    void testGetStatusInfo_ValidCode() {
-        HttpStatus status = HttpResponseLogHelper.getStatusInfo(200);
-        assertEquals(HttpStatus.OK, status);
-    }
-
-    @Test
-    void testGetStatusInfo_InvalidCode_ThrowsException() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            HttpResponseLogHelper.getStatusInfo(999); // Invalid status code
-        });
-    }
-}
-----------------------------
-org.opentest4j.AssertionFailedError: expected: <INFO> but was: <SUCCESS>
-
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at com.sb.fedssimplification.utilitymodules.secretsmanager.helper.HttpResponseLogHelperTest.testGetStatusInfo_ValidCode(HttpResponseLogHelperTest.java:71)
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:73)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at com.sb.fedssimplification.utilitymodules.secretsmanager.helper.HttpResponseLogHelperTest.testGetStatusInfo_InvalidCode_ThrowsException(HttpResponseLogHelperTest.java:76)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
-
