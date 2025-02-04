@@ -1,50 +1,82 @@
-import static org.junit.jupiter.api.Assertions.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
-class LogFactoryTest {
+import static org.mockito.Mockito.*;
 
-    @Test
-    void testCreateRestLog() {
-        BaseLogDetails baseLogDetails = new BaseLogDetails();
-        baseLogDetails.setTimestamp(System.currentTimeMillis());
-        baseLogDetails.setSource("test-source");
-        baseLogDetails.setMessage("Test request log");
+class RequestLogFilterTest {
 
-        String httpMethod = "POST";
-        String url = "/test-endpoint";
-        Map<String, String> body = Map.of("key1", "value1");
-        int statusCode = 200;
-        long latencyMs = 150;
+    private static final String APPLICATION_NAME = "TestApp";
+    private static final String ENVIRONMENT = "test";
 
-        RestLog restLog = LogFactory.createRestLog(baseLogDetails, httpMethod, url, body, statusCode, latencyMs);
+    @InjectMocks
+    private RequestLogFilter requestLogFilter;
 
-        assertNotNull(restLog);
-        assertEquals(baseLogDetails, restLog.getBaseLogDetails());
-        assertEquals(httpMethod, restLog.getHttpMethod());
-        assertEquals(url, restLog.getUrl());
-        assertEquals(body, restLog.getBody());
-        assertEquals(statusCode, restLog.getStatusCode());
-        assertEquals(latencyMs, restLog.getLatencyMs());
+    @Mock
+    private HttpServletRequest httpRequest;
+
+    @Mock
+    private HttpServletResponse httpResponse;
+
+    @Mock
+    private FilterChain filterChain;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        requestLogFilter = new RequestLogFilter(APPLICATION_NAME, ENVIRONMENT);
     }
 
     @Test
-    void testCreateErrorLog() {
-        BaseLogDetails baseLogDetails = new BaseLogDetails();
-        baseLogDetails.setTimestamp(System.currentTimeMillis());
-        baseLogDetails.setSource("test-source");
-        baseLogDetails.setMessage("Test error log");
+    void testDoFilter_Success() throws IOException, ServletException {
+        // Mock HTTP request attributes
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+        when(httpRequest.getHeader("Content-Length")).thenReturn("200");
+        when(httpRequest.getContentType()).thenReturn("application/json");
+        when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit Test");
+        when(httpResponse.getStatus()).thenReturn(200);
+        
+        // Mock request body
+        Map<String, String> requestBody = Collections.singletonMap("key", "value");
+        when(HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
 
-        String errorCode = "500";
-        String errorMessage = "Internal Server Error";
-        String stackTrace = "Exception at line 42";
+        // Call the filter
+        requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
 
-        ErrorLog errorLog = LogFactory.createErrorLog(baseLogDetails, errorCode, errorMessage, stackTrace);
+        // Verify that filterChain.doFilter was called
+        verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
 
-        assertNotNull(errorLog);
-        assertEquals(baseLogDetails, errorLog.getBaseLogDetails());
-        assertEquals(errorCode, errorLog.getErrorCode());
-        assertEquals(errorMessage, errorLog.getErrorMessage());
-        assertEquals(stackTrace, errorLog.getStackTrace());
+        // Verify that logging methods were called
+        verifyStatic(LogProcessorFactory.class, times(1));
+        LogProcessorFactory.processLog(any(RestLog.class), eq(LogType.REQUEST));
+    }
+
+    @Test
+    void testDoFilter_ExceptionThrown() throws IOException, ServletException {
+        when(httpRequest.getMethod()).thenReturn("GET");
+        when(httpRequest.getRequestURI()).thenReturn("/error-endpoint");
+
+        // Simulate an exception being thrown
+        doThrow(new RuntimeException("Test Exception")).when(filterChain).doFilter(any(), any());
+
+        // Call the filter and expect an exception
+        try {
+            requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+        } catch (Exception e) {
+            // Expected exception
+        }
+
+        // Verify that the error log method was called
+        verifyStatic(LogProcessorFactory.class, times(1));
+        LogProcessorFactory.processLog(any(ErrorLog.class), eq(LogType.ERROR));
     }
 }
