@@ -107,3 +107,33 @@ class RequestLogFilterTest {
         }
     }
 }
+org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
+CachedBodyHttpServletRequestWrapper cannot be returned by getInputStream()
+getInputStream() should return ServletInputStream
+***
+If you're unsure why you're getting above error read on.
+Due to the nature of the syntax above problem might occur because:
+1. This exception *might* occur in wrongly written multi-threaded tests.
+   Please refer to Mockito FAQ on limitations of concurrency testing.
+2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
+   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
+
+
+	at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_Success(RequestLogFilterTest.java:71)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+--------------------------
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_ExceptionHandling(RequestLogFilterTest.java:94)
+  2. -> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_ExceptionHandling(RequestLogFilterTest.java:95)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:197)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
