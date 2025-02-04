@@ -1,26 +1,23 @@
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import java.io.ByteArrayInputStream;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-public class HttpRequestLogHelperTest {
+public class HttpResponseLogHelperTest {
 
     @Mock
-    private CachedBodyHttpServletRequestWrapper mockRequest;
-
-    @Mock
-    private ServletInputStream mockInputStream;
+    private ContentCachingResponseWrapper mockResponseWrapper;
 
     @BeforeEach
     void setUp() {
@@ -28,36 +25,31 @@ public class HttpRequestLogHelperTest {
     }
 
     @Test
-    void testGetRequestBody_Success() throws IOException {
-        // Mock JSON request body
-        String jsonBody = "{ \"key1\": \"value1\", \"key2\": \"value2\" }";
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(jsonBody.getBytes());
+    void testGetResponseBody_Success() throws IOException {
+        // Mock JSON response body
+        String jsonResponse = "{ \"status\": \"success\", \"message\": \"OK\" }";
+        byte[] responseBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
 
-        // Mock ServletInputStream behavior
-        ServletInputStream servletInputStream = new ServletInputStream() {
-            @Override
-            public int read() {
-                return byteArrayInputStream.read();
-            }
-        };
-
-        // Mock HttpServletRequest methods
-        when(mockRequest.getInputStream()).thenReturn(servletInputStream);
+        // Mock response behavior
+        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(responseBytes);
 
         // Call method under test
-        Map<String, String> result = HttpRequestLogHelper.getRequestBody(mockRequest);
+        Map<String, String> result = HttpResponseLogHelper.getResponseBody(mockResponseWrapper);
 
         // Assertions
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals("value1", result.get("key1"));
-        assertEquals("value2", result.get("key2"));
+        assertEquals("success", result.get("status"));
+        assertEquals("OK", result.get("message"));
     }
 
     @Test
-    void testGetRequestBody_NullRequest_ReturnsEmptyMap() {
-        // Call method with null request
-        Map<String, String> result = HttpRequestLogHelper.getRequestBody(null);
+    void testGetResponseBody_EmptyResponse_ReturnsEmptyMap() {
+        // Mock empty response body
+        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(new byte[0]);
+
+        // Call method under test
+        Map<String, String> result = HttpResponseLogHelper.getResponseBody(mockResponseWrapper);
 
         // Assertions
         assertNotNull(result);
@@ -65,27 +57,32 @@ public class HttpRequestLogHelperTest {
     }
 
     @Test
-    void testGetRequestBody_InvalidJson_ThrowsException() throws IOException {
-        // Mock invalid JSON body
-        String invalidJsonBody = "{ key1: value1, key2: ";  // Malformed JSON
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(invalidJsonBody.getBytes());
+    void testGetResponseBody_InvalidJson_ThrowsException() {
+        // Mock invalid JSON response
+        String invalidJsonResponse = "{ status: success, message: "; // Malformed JSON
+        byte[] responseBytes = invalidJsonResponse.getBytes(StandardCharsets.UTF_8);
 
-        // Mock ServletInputStream behavior
-        ServletInputStream servletInputStream = new ServletInputStream() {
-            @Override
-            public int read() {
-                return byteArrayInputStream.read();
-            }
-        };
-
-        // Mock HttpServletRequest methods
-        when(mockRequest.getInputStream()).thenReturn(servletInputStream);
+        // Mock response behavior
+        when(mockResponseWrapper.getContentAsByteArray()).thenReturn(responseBytes);
 
         // Exception handling
         Exception exception = assertThrows(RuntimeException.class, () -> {
-            HttpRequestLogHelper.getRequestBody(mockRequest);
+            HttpResponseLogHelper.getResponseBody(mockResponseWrapper);
         });
 
-        assertTrue(exception.getMessage().contains("Error reading request body"));
+        assertTrue(exception.getMessage().contains("Error reading response body"));
+    }
+
+    @Test
+    void testGetStatusInfo_ValidCode() {
+        HttpStatus status = HttpResponseLogHelper.getStatusInfo(200);
+        assertEquals(HttpStatus.OK, status);
+    }
+
+    @Test
+    void testGetStatusInfo_InvalidCode_ThrowsException() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            HttpResponseLogHelper.getStatusInfo(999); // Invalid status code
+        });
     }
 }
