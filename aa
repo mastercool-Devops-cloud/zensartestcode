@@ -1,54 +1,16 @@
-14:19:29.336 [main] INFO com.sb.fedssimplification.utilitymodules.loggingutility.logprocessor.LogProcessorFactory -- Response Log: {
-  "baseLogDetails" : {
-    "timestamp" : "2025-02-04T14:19:28.986",
-    "level" : "SUCCESS",
-    "source" : "TestApp",
-    "message" : "Response Message",
-    "metadata" : {
-      "content-length" : null,
-      "environment" : "DEV",
-      "host" : null,
-      "content-type" : null,
-      "user-agent" : null,
-      "accept" : null
+@Test
+    public void testDoFilter_Success() throws Exception {
+        // Arrange
+        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
+
+        ArgumentCaptor<ServletResponse> responseCaptor = ArgumentCaptor.forClass(ServletResponse.class);
+
+        // Act
+        responseLogFilter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+        // Assert
+        verify(mockFilterChain).doFilter(eq(mockRequest), responseCaptor.capture());
+
+        // Ensure it is an instance of ContentCachingResponseWrapper
+        assertTrue(responseCaptor.getValue() instanceof ContentCachingResponseWrapper);
     }
-  },
-  "httpMethod" : "GET",
-  "url" : "/api/test",
-  "body" : { },
-  "statusCode" : 200,
-  "latencyMs" : 24
-}
-
-
-Argument(s) are different! Wanted:
-mockFilterChain.doFilter(
-    mockRequest,
-    org.springframework.web.util.ContentCachingResponseWrapper@49c675f0
-);
--> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_Success(ResponseLogFilterTest.java:44)
-Actual invocations have different arguments at position [1]:
-mockFilterChain.doFilter(
-    mockRequest,
-    org.springframework.web.util.ContentCachingResponseWrapper@14823f76
-);
--> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilter.doFilter(ResponseLogFilter.java:56)
-
-Argument(s) are different! Wanted:
-mockFilterChain.doFilter(
-    mockRequest,
-    org.springframework.web.util.ContentCachingResponseWrapper@49c675f0
-);
--> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_Success(ResponseLogFilterTest.java:44)
-Actual invocations have different arguments at position [1]:
-mockFilterChain.doFilter(
-    mockRequest,
-    org.springframework.web.util.ContentCachingResponseWrapper@14823f76
-);
--> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilter.doFilter(ResponseLogFilter.java:56)
-
-	at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_Success(ResponseLogFilterTest.java:44)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
