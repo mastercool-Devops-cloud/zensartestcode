@@ -48,19 +48,27 @@ class LoggingFilterConfigTest {
     }
 }
 --------------------
-org.opentest4j.AssertionFailedError: 
-Expected :test-app
-Actual   :null
-<Click to see difference>
+@SpringBootTest
+@ExtendWith(SpringExtension.class)
+class LoggingFilterConfigTest {
 
+    @MockBean
+    private EnvironmentName environmentName;
 
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at com.sb.fedssimplification.cashflowcalculator.config.LoggingFilterConfigTest.testResponseLogFilterBeanCreation(LoggingFilterConfigTest.java:49)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+    @Autowired
+    private ApplicationProperties applicationProperties;
+
+    @Autowired
+    private LoggingFilterConfig loggingFilterConfig;
+
+    @Test
+    void testResponseLogFilterBeanCreation() {
+        when(environmentName.getActiveProfile()).thenReturn("test");
+        
+        ResponseLogFilter responseLogFilter = loggingFilterConfig.responseLogFilter();
+
+        assertNotNull(responseLogFilter);
+        assertEquals("test-app", responseLogFilter.getApplicationName()); // Ensure property is loaded
+    }
+}
+
