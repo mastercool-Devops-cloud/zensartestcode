@@ -1,142 +1,78 @@
-import static org.mockito.Mockito.*;
-
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
-
-@ExtendWith(MockitoExtension.class)
-class RequestLogFilterTest {
-    
-    @Mock
-    private HttpServletRequest httpServletRequest;
-    
-    @Mock
-    private ServletResponse servletResponse;
-    
-    @Mock
-    private FilterChain filterChain;
-    
-    @Mock
-    private CachedBodyHttpServletRequestWrapper wrappedRequest;
-    
-    @Mock
-    private BaseLogDetails baseLogDetails;
-    
-    private RequestLogFilter requestLogFilter;
-    
-    private final String applicationName = "TestApp";
-    private final String environment = "TestEnv";
-    
-    @BeforeEach
-    void setUp() {
-        requestLogFilter = new RequestLogFilter(applicationName, environment);
-    }
-    
-    @Test
-    void testDoFilter_Success() throws Exception {
-        when(httpServletRequest.getMethod()).thenReturn("POST");
-        when(httpServletRequest.getRequestURI()).thenReturn("/test");
-        when(httpServletRequest.getHeader("Content-Length")).thenReturn("100");
-        when(httpServletRequest.getHeader("Host")).thenReturn("localhost");
-        when(httpServletRequest.getContentType()).thenReturn("application/json");
-        when(httpServletRequest.getHeader("User-Agent")).thenReturn("JUnit-Test");
-        when(httpServletRequest.getHeader("Accept")).thenReturn("application/json");
-        
-        requestLogFilter.doFilter(httpServletRequest, servletResponse, filterChain);
-        
-        verify(filterChain, times(1)).doFilter(Mockito.any(), Mockito.eq(servletResponse));
-    }
-    
-    @Test
-    void testDoFilter_ExceptionHandling() throws Exception {
-        when(httpServletRequest.getMethod()).thenReturn("POST");
-        when(httpServletRequest.getRequestURI()).thenReturn("/test");
-        
-        doThrow(new IOException("Test Exception")).when(filterChain).doFilter(any(ServletRequest.class), any(ServletResponse.class));
-        
-        try {
-            requestLogFilter.doFilter(httpServletRequest, servletResponse, filterChain);
-        } catch (IOException e) {
-            verify(filterChain, times(1)).doFilter(Mockito.any(), Mockito.eq(servletResponse));
-        }
-    }
-    
-    @Test
-    void testGetHttpRequestMetaData() {
-        when(httpServletRequest.getHeader("Content-Length")).thenReturn("100");
-        when(httpServletRequest.getHeader("Host")).thenReturn("localhost");
-        when(httpServletRequest.getContentType()).thenReturn("application/json");
-        when(httpServletRequest.getHeader("User-Agent")).thenReturn("JUnit-Test");
-        when(httpServletRequest.getHeader("Accept")).thenReturn("application/json");
-        
-        requestLogFilter.getHttpRequestMetaData(httpServletRequest);
-        
-        Map<String, String> expectedMetadata = new HashMap<>();
-        expectedMetadata.put("environment", environment);
-        expectedMetadata.put("content-length", "100");
-        expectedMetadata.put("host", "localhost");
-        expectedMetadata.put("content-type", "application/json");
-        expectedMetadata.put("user-agent", "JUnit-Test");
-        expectedMetadata.put("accept", "application/json");
-        
-        assert requestLogFilter.metadata.equals(expectedMetadata);
-    }
-}
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ReadListener;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import static org.mockito.Mockito.*;
 
-@Test
-void testDoFilter_ExceptionHandling() throws Exception {
-    // Mock request attributes
-    when(httpServletRequest.getMethod()).thenReturn("POST");
-    when(httpServletRequest.getRequestURI()).thenReturn("/test");
-    when(httpServletRequest.getContentType()).thenReturn("application/json");
+class ResponseLogFilterTest {
 
-    // Mock InputStream with sample JSON body
-    String requestBody = "{\"error\":\"test\"}";
-    ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(requestBody.getBytes());
-    
-    ServletInputStream servletInputStream = new ServletInputStream() {
-        @Override
-        public boolean isFinished() {
-            return byteArrayInputStream.available() == 0;
+    @Mock private HttpServletRequest mockRequest;
+    @Mock private HttpServletResponse mockResponse;
+    @Mock private FilterChain mockFilterChain;
+
+    @InjectMocks private ResponseLogFilter responseLogFilter;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        responseLogFilter = new ResponseLogFilter("TestApp", "DEV");
+    }
+
+    @Test
+    void testDoFilter_Success() throws ServletException, IOException {
+        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
+        when(mockRequest.getMethod()).thenReturn("GET");
+        when(mockRequest.getRequestURI()).thenReturn("/api/test");
+        when(mockResponse.getStatus()).thenReturn(200);
+
+        ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
+        doNothing().when(mockFilterChain).doFilter(mockRequest, wrappedResponse);
+
+        responseLogFilter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+        verify(mockFilterChain, times(1)).doFilter(mockRequest, wrappedResponse);
+    }
+
+    @Test
+    void testDoFilter_ExceptionHandling() throws ServletException, IOException {
+        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
+        when(mockRequest.getMethod()).thenReturn("POST");
+        when(mockRequest.getRequestURI()).thenReturn("/api/error");
+        when(mockResponse.getStatus()).thenReturn(500);
+
+        doThrow(new IOException("Test Exception")).when(mockFilterChain).doFilter(mockRequest, mockResponse);
+
+        try {
+            responseLogFilter.doFilter(mockRequest, mockResponse, mockFilterChain);
+        } catch (Exception e) {
+            verify(mockFilterChain, times(1)).doFilter(mockRequest, mockResponse);
+            verify(mockResponse, never()).getWriter(); // Ensure no response is written in error scenario
         }
+    }
 
-        @Override
-        public boolean isReady() {
-            return true;
-        }
+    @Test
+    void testGetHttpResponseMetaData() {
+        when(mockRequest.getHeader("Content-Length")).thenReturn("100");
+        when(mockRequest.getHeader("Host")).thenReturn("localhost");
+        when(mockRequest.getContentType()).thenReturn("application/json");
+        when(mockRequest.getHeader("User-Agent")).thenReturn("TestAgent");
+        when(mockRequest.getHeader("Accept")).thenReturn("*/*");
 
-        @Override
-        public void setReadListener(ReadListener listener) {
-            throw new UnsupportedOperationException();
-        }
+        responseLogFilter.getHttpResponseMetaData(mockRequest);
 
-        @Override
-        public int read() throws IOException {
-            return byteArrayInputStream.read();
-        }
-    };
-
-    when(httpServletRequest.getInputStream()).thenReturn(servletInputStream); // Ensure this is NOT null
-
-    // Execute the filter
-    requestLogFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
-
-    // Verify filter execution
-    verify(filterChain, times(1)).doFilter(any(), eq(httpServletResponse));
+        Map<String, String> metadata = responseLogFilter.getMetadata();
+        assert metadata.get("content-length").equals("100");
+        assert metadata.get("host").equals("localhost");
+        assert metadata.get("content-type").equals("application/json");
+        assert metadata.get("user-agent").equals("TestAgent");
+        assert metadata.get("accept").equals("*/*");
+    }
 }
