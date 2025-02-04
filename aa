@@ -1,329 +1,50 @@
-package com.example.logging.model;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 import java.util.Map;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class BaseLogDetails {
-    private String timestamp;
-    private String level;
-    private String source;
-    private String message;
-    private Map<String, Object> metadata;
-}
-------------------------------------
-package com.example.logging.model;
+class LogFactoryTest {
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+    @Test
+    void testCreateRestLog() {
+        BaseLogDetails baseLogDetails = new BaseLogDetails();
+        baseLogDetails.setTimestamp(System.currentTimeMillis());
+        baseLogDetails.setSource("test-source");
+        baseLogDetails.setMessage("Test request log");
 
-@Data
-@NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-public class RestLog extends BaseLogDetails {
-    private String httpMethod;
-    private String url;
-    private Object body;
-    private int statusCode;
-    private long latencyMs;
+        String httpMethod = "POST";
+        String url = "/test-endpoint";
+        Map<String, String> body = Map.of("key1", "value1");
+        int statusCode = 200;
+        long latencyMs = 150;
 
-    public RestLog(BaseLogDetails baseDetails, String httpMethod, String url, Object body, int statusCode, long latencyMs) {
-        super(baseDetails.getTimestamp(), baseDetails.getLevel(), baseDetails.getSource(), baseDetails.getMessage(), baseDetails.getMetadata());
-        this.httpMethod = httpMethod;
-        this.url = url;
-        this.body = body;
-        this.statusCode = statusCode;
-        this.latencyMs = latencyMs;
-    }
-}
-----------------------
-package com.example.logging.model;
+        RestLog restLog = LogFactory.createRestLog(baseLogDetails, httpMethod, url, body, statusCode, latencyMs);
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-
-@Data
-@NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-public class ErrorLog extends BaseLogDetails {
-    private String errorCode;
-    private String errorMessage;
-    private String stackTrace;
-
-    public ErrorLog(BaseLogDetails baseDetails, String errorCode, String errorMessage, String stackTrace) {
-        super(baseDetails.getTimestamp(), baseDetails.getLevel(), baseDetails.getSource(), baseDetails.getMessage(), baseDetails.getMetadata());
-        this.errorCode = errorCode;
-        this.errorMessage = errorMessage;
-        this.stackTrace = stackTrace;
-    }
-}
----------------------------
-package com.example.logging.factory;
-
-import com.example.logging.model.BaseLogDetails;
-import com.example.logging.model.ErrorLog;
-import com.example.logging.model.RestLog;
-
-public class LogFactory {
-
-    public static RestLog createRestLog(BaseLogDetails baseDetails, String httpMethod, String url, Object body, int statusCode, long latencyMs) {
-        return new RestLog(baseDetails, httpMethod, url, body, statusCode, latencyMs);
+        assertNotNull(restLog);
+        assertEquals(baseLogDetails, restLog.getBaseLogDetails());
+        assertEquals(httpMethod, restLog.getHttpMethod());
+        assertEquals(url, restLog.getUrl());
+        assertEquals(body, restLog.getBody());
+        assertEquals(statusCode, restLog.getStatusCode());
+        assertEquals(latencyMs, restLog.getLatencyMs());
     }
 
-    public static ErrorLog createErrorLog(BaseLogDetails baseDetails, String errorCode, String errorMessage, String stackTrace) {
-        return new ErrorLog(baseDetails, errorCode, errorMessage, stackTrace);
-    }
-}
-------------------------------------
-package com.example.logging.processor;
+    @Test
+    void testCreateErrorLog() {
+        BaseLogDetails baseLogDetails = new BaseLogDetails();
+        baseLogDetails.setTimestamp(System.currentTimeMillis());
+        baseLogDetails.setSource("test-source");
+        baseLogDetails.setMessage("Test error log");
 
-import com.example.logging.model.BaseLogDetails;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import lombok.extern.log4j.Log4j2;
+        String errorCode = "500";
+        String errorMessage = "Internal Server Error";
+        String stackTrace = "Exception at line 42";
 
-@Log4j2
-public class LogProcessorFactory {
+        ErrorLog errorLog = LogFactory.createErrorLog(baseLogDetails, errorCode, errorMessage, stackTrace);
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .enable(SerializationFeature.INDENT_OUTPUT); // Pretty-print JSON
-
-    public static void processLog(BaseLogDetails logDetails, String logType) {
-        try {
-            String logJson = OBJECT_MAPPER.writeValueAsString(logDetails);
-            log.info("{}:\n{}", logType, logJson);
-        } catch (Exception e) {
-            log.error("Error processing log: {}", e.getMessage(), e);
-        }
-    }
-}
---------------------------------------
-package com.example.filter;
-
-import com.example.logging.factory.LogFactory;
-import com.example.logging.model.BaseLogDetails;
-import com.example.logging.model.RestLog;
-import com.example.logging.processor.LogProcessorFactory;
-import com.example.util.IpAddress;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Component;
-
-import javax.servlet.*;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
-@Log4j2
-@WebFilter(urlPatterns = "/*")
-@Component
-public class RequestLogFilter implements Filter {
-
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        if (request instanceof HttpServletRequest) {
-            HttpServletRequest httpRequest = (HttpServletRequest) request;
-
-            // Capture metadata
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("application-name", "cashflow-calculator");
-            metadata.put("content-length", httpRequest.getHeader("Content-Length"));
-            metadata.put("ip-address", IpAddress.getClientIpAddress(httpRequest));
-            metadata.put("environment", "default");
-            metadata.put("host", httpRequest.getHeader("Host"));
-            metadata.put("content-type", httpRequest.getContentType());
-            metadata.put("user-agent", httpRequest.getHeader("User-Agent"));
-            metadata.put("accept", httpRequest.getHeader("Accept"));
-
-            // Base Log Details
-            BaseLogDetails baseDetails = new BaseLogDetails(Instant.now().toString(), "INFO", "cashflow-calculator", "Request Message", metadata);
-
-            // Create RestLog
-            RestLog restLog = LogFactory.createRestLog(baseDetails, httpRequest.getMethod(), httpRequest.getRequestURI(), "Request Body", 0, 0);
-
-            // Log request
-            LogProcessorFactory.processLog(restLog, "Request");
-        }
-
-        // Continue filter chain
-        chain.doFilter(request, response);
-    }
-}
------------------------------------------
-package com.example.filter;
-
-import com.example.logging.factory.LogFactory;
-import com.example.logging.model.BaseLogDetails;
-import com.example.logging.model.RestLog;
-import com.example.logging.processor.LogProcessorFactory;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Component;
-
-import javax.servlet.*;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
-@Log4j2
-@WebFilter(urlPatterns = "/*")
-@Component
-public class ResponseLogFilter implements Filter {
-
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        long startTime = System.currentTimeMillis();
-
-        chain.doFilter(request, response);
-
-        if (response instanceof HttpServletResponse) {
-            HttpServletResponse httpResponse = (HttpServletResponse) response;
-            long latencyMs = System.currentTimeMillis() - startTime;
-
-            // Capture metadata
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("status", httpResponse.getStatus());
-
-            // Base Log Details
-            BaseLogDetails baseDetails = new BaseLogDetails(Instant.now().toString(), "INFO", "cashflow-calculator", "Response Message", metadata);
-
-            // Create RestLog
-            RestLog restLog = LogFactory.createRestLog(baseDetails, "POST", "/foreign-exchange-contract", "Response Body", httpResponse.getStatus(), latencyMs);
-
-            // Log response
-            LogProcessorFactory.processLog(restLog, "Response");
-        }
-    }
-}
-----------------------------------
-package com.example.logging.processor;
-
-import com.example.logging.model.BaseLogDetails;
-import com.example.logging.model.ErrorLog;
-import com.example.logging.model.RestLog;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.log4j.Log4j2;
-
-@Log4j2
-public class LogProcessorFactory {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    public static void processLog(Object log, String logType) {
-        try {
-            String logMessage = OBJECT_MAPPER.writeValueAsString(log);
-
-            switch (logType) {
-                case "Request":
-                    log.info("Request Log: {}", logMessage);
-                    break;
-
-                case "Response":
-                    log.info("Response Log: {}", logMessage);
-                    break;
-
-                case "Error":
-                    log.error("Error Log: {}", logMessage);
-                    break;
-
-                default:
-                    log.warn("Unknown Log Type: {}", logType);
-            }
-        } catch (Exception e) {
-            log.error("Failed to process log: {}", e.getMessage(), e);
-        }
-    }
-}
-----------------------------------
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-public class ResponseBodyExtractor {
-
-    public static Map<String, String> extractResponseBodyAsMap(final ContentCachingResponseWrapper responseWrapper) {
-        Map<String, Object> responseBodyMap = new HashMap<>();
-        final ObjectMapper objectMapper = new ObjectMapper();
-
-        try {
-            // Get response body as String and handle null using Optional
-            String responseBody = Optional.ofNullable(new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8))
-                                          .filter(body -> !body.isEmpty()) // Ensure it's not empty
-                                          .orElse("{}"); // Default to empty JSON
-
-            // Parse JSON into Map if it's not an empty JSON
-            responseBodyMap = objectMapper.readValue(responseBody, new TypeReference<Map<String, Object>>() {});
-        } catch (final Exception e) {
-            throw new RuntimeException("Error reading response body", e);
-        }
-
-        // Convert Map<String, Object> to Map<String, String> using Java 8 Streams
-        return responseBodyMap.entrySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> Optional.ofNullable(entry.getValue()) // Handle null values
-                                        .map(Object::toString) // Convert to String
-                                        .orElse("null") // Default for null values
-                ));
-    }
-}
-private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
-------------------------------------------------
-import lombok.extern.log4j.Log4j2;
-import javax.servlet.*;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
-@Log4j2
-@WebFilter(urlPatterns = "/*")
-public class ResponseLogFilter implements Filter {
-
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        long latencyMs = 0L; // Default latency
-
-        if (request instanceof HttpServletRequest) {
-            HttpServletRequest httpRequest = (HttpServletRequest) request;
-
-            // Retrieve start time from request
-            Long startTime = (Long) httpRequest.getAttribute("startTime");
-            if (startTime != null) {
-                latencyMs = System.currentTimeMillis() - startTime;
-            }
-        }
-
-        // Continue filter chain
-        chain.doFilter(request, response);
-
-        if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
-            HttpServletRequest httpRequest = (HttpServletRequest) request;
-            HttpServletResponse httpResponse = (HttpServletResponse) response;
-
-            // Log response with latency
-            log.info("Response: Method={}, URL={}, Status={}, Latency={}ms",
-                    httpRequest.getMethod(), httpRequest.getRequestURI(), httpResponse.getStatus(), latencyMs);
-        }
+        assertNotNull(errorLog);
+        assertEquals(baseLogDetails, errorLog.getBaseLogDetails());
+        assertEquals(errorCode, errorLog.getErrorCode());
+        assertEquals(errorMessage, errorLog.getErrorMessage());
+        assertEquals(stackTrace, errorLog.getStackTrace());
     }
 }
