@@ -1,151 +1,37 @@
-import static org.mockito.Mockito.*;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.core.env.Environment;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-class LogProcessorFactoryTest {
+class EnvironmentNameTest {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-    private Logger logger;
-    private Appender mockAppender;
-    private ArgumentCaptor<LogEvent> logCaptor;
+    private Environment environment;
+    private EnvironmentName environmentName;
 
     @BeforeEach
     void setUp() {
-        // Get Log4j2 logger
-        LoggerContext context = LoggerContext.getContext(false);
-        Configuration config = context.getConfiguration();
-        logger = context.getLogger(LogProcessorFactory.class);
-
-        // Mock the Appender
-        mockAppender = mock(Appender.class);
-        when(mockAppender.getName()).thenReturn("MockAppender");
-        when(mockAppender.isStarted()).thenReturn(true);
-
-        // Capture Log Events
-        logCaptor = ArgumentCaptor.forClass(LogEvent.class);
-
-        // Add mock Appender to logger
-        LoggerConfig loggerConfig = config.getLoggerConfig(logger.getName());
-        loggerConfig.addAppender(mockAppender, null, null);
-        context.updateLoggers();
+        environment = mock(Environment.class);
+        environmentName = new EnvironmentName(environment);
     }
 
     @Test
-    void testProcessLog_RequestLog() throws JsonProcessingException {
-        // Arrange
-        Object mockObject = new TestObject("Test", 123);
-        String expectedLogMessage = OBJECT_MAPPER.writeValueAsString(mockObject);
+    void testGetActiveProfile_WhenActiveProfileExists() {
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"dev"});
 
-        // Act
-        LogProcessorFactory.processLog(mockObject, "Request");
+        String profile = environmentName.getActiveProfile();
 
-        // Verify log captured
-        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
-
-        // Assert
-        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Request Log: " + expectedLogMessage);
+        assertEquals("dev", profile);
     }
 
     @Test
-    void testProcessLog_ResponseLog() throws JsonProcessingException {
-        // Arrange
-        Object mockObject = new TestObject("ResponseTest", 456);
-        String expectedLogMessage = OBJECT_MAPPER.writeValueAsString(mockObject);
+    void testGetActiveProfile_WhenNoActiveProfile() {
+        when(environment.getActiveProfiles()).thenReturn(new String[]{});
 
-        // Act
-        LogProcessorFactory.processLog(mockObject, "Response");
+        String profile = environmentName.getActiveProfile();
 
-        // Verify
-        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
-
-        // Assert
-        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Response Log: " + expectedLogMessage);
-    }
-
-    @Test
-    void testProcessLog_ErrorLog() throws JsonProcessingException {
-        // Arrange
-        Object mockObject = new TestObject("ErrorTest", 789);
-        String expectedLogMessage = OBJECT_MAPPER.writeValueAsString(mockObject);
-
-        // Act
-        LogProcessorFactory.processLog(mockObject, "Error");
-
-        // Verify
-        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
-
-        // Assert
-        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Error Log: " + expectedLogMessage);
-    }
-
-    @Test
-    void testProcessLog_UnknownLogType() throws JsonProcessingException {
-        // Arrange
-        Object mockObject = new TestObject("UnknownTest", 999);
-
-        // Act
-        LogProcessorFactory.processLog(mockObject, "Unknown");
-
-        // Verify
-        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
-
-        // Assert
-        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Unknown Log Type: Unknown");
-    }
-
-    @Test
-    void testProcessLog_JsonProcessingException() {
-        // Arrange
-        Object mockObject = mock(Object.class);
-        ObjectMapper objectMapperMock = mock(ObjectMapper.class);
-
-        try {
-            when(objectMapperMock.writeValueAsString(mockObject)).thenThrow(new JsonProcessingException("Mock Error") {});
-        } catch (JsonProcessingException ignored) {
-        }
-
-        // Act
-        LogProcessorFactory.processLog(mockObject, "Request");
-
-        // Verify
-        verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
-
-        // Assert
-        assertThat(logCaptor.getValue().getMessage().getFormattedMessage()).contains("Failed to process log: Mock Error");
-    }
-
-    // Sample test object class
-    static class TestObject {
-        private final String name;
-        private final int value;
-
-        public TestObject(String name, int value) {
-            this.name = name;
-            this.value = value;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public int getValue() {
-            return value;
-        }
+        assertEquals("default", profile);
     }
 }
