@@ -1,128 +1,26 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-
-import static org.mockito.Mockito.*;
-
-class RequestLogFilterTest {
-
-    private static final String APPLICATION_NAME = "TestApp";
-    private static final String ENVIRONMENT = "test";
-
-    @InjectMocks
-    private RequestLogFilter requestLogFilter;
-
-    @Mock
-    private HttpServletRequest httpRequest;
-
-    @Mock
-    private HttpServletResponse httpResponse;
-
-    @Mock
-    private FilterChain filterChain;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        requestLogFilter = new RequestLogFilter(APPLICATION_NAME, ENVIRONMENT);
-    }
-
-    @Test
-    void testDoFilter_Success() throws IOException, ServletException {
-        // Mock HTTP request attributes
-        when(httpRequest.getMethod()).thenReturn("POST");
-        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
-        when(httpRequest.getHeader("Content-Length")).thenReturn("200");
-        when(httpRequest.getContentType()).thenReturn("application/json");
-        when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit Test");
-        when(httpResponse.getStatus()).thenReturn(200);
-        
-        // Mock request body
-        Map<String, String> requestBody = Collections.singletonMap("key", "value");
-        when(HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
-
-        // Call the filter
-        requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
-
-        // Verify that filterChain.doFilter was called
-        verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
-
-        // Verify that logging methods were called
-        verifyStatic(LogProcessorFactory.class, times(1));
-        LogProcessorFactory.processLog(any(RestLog.class), eq(LogType.REQUEST));
-    }
-
-    @Test
-    void testDoFilter_ExceptionThrown() throws IOException, ServletException {
-        when(httpRequest.getMethod()).thenReturn("GET");
-        when(httpRequest.getRequestURI()).thenReturn("/error-endpoint");
-
-        // Simulate an exception being thrown
-        doThrow(new RuntimeException("Test Exception")).when(filterChain).doFilter(any(), any());
-
-        // Call the filter and expect an exception
-        try {
-            requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
-        } catch (Exception e) {
-            // Expected exception
-        }
-
-        // Verify that the error log method was called
-        verifyStatic(LogProcessorFactory.class, times(1));
-        LogProcessorFactory.processLog(any(ErrorLog.class), eq(LogType.ERROR));
-    }
-}
-
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-core</artifactId>
-    <version>5.7.0</version>
-    <scope>test</scope>
-</dependency>
-
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-junit-jupiter</artifactId>
-    <version>5.7.0</version>
-    <scope>test</scope>
-</dependency>
-
-<dependency>
-    <groupId>org.junit.jupiter</groupId>
-    <artifactId>junit-jupiter-api</artifactId>
-    <version>5.9.2</version>
-    <scope>test</scope>
-</dependency>
-------------------
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
+@ExtendWith(MockitoExtension.class)
 class RequestLogFilterTest {
-
-    private static final String APPLICATION_NAME = "TestApp";
-    private static final String ENVIRONMENT = "test";
 
     private RequestLogFilter requestLogFilter;
 
@@ -135,15 +33,17 @@ class RequestLogFilterTest {
     @Mock
     private FilterChain filterChain;
 
+    @Mock
+    private CachedBodyHttpServletRequestWrapper cachedRequestWrapper;
+
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        requestLogFilter = new RequestLogFilter(APPLICATION_NAME, ENVIRONMENT);
+        requestLogFilter = new RequestLogFilter("test-app", "test-env");
     }
 
     @Test
     void testDoFilter_Success() throws IOException, ServletException {
-        // Mock HTTP request attributes
+        // Mock HTTP request behavior
         when(httpRequest.getMethod()).thenReturn("POST");
         when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
         when(httpRequest.getHeader("Content-Length")).thenReturn("200");
@@ -151,97 +51,59 @@ class RequestLogFilterTest {
         when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit Test");
         when(httpResponse.getStatus()).thenReturn(200);
 
-        // Mock request body
+        // Mock request body retrieval
         Map<String, String> requestBody = Collections.singletonMap("key", "value");
-        when(HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
 
-        // Use try-with-resources to mock static method
-        try (MockedStatic<LogProcessorFactory> mockedStatic = Mockito.mockStatic(LogProcessorFactory.class)) {
-            // Call the filter
+        try (
+            MockedStatic<CachedBodyHttpServletRequestWrapper> mockWrapper = mockStatic(CachedBodyHttpServletRequestWrapper.class);
+            MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class);
+            MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
+        ) {
+            // Mock behavior for CachedBodyHttpServletRequestWrapper
+            mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest)).thenReturn(cachedRequestWrapper);
+
+            // Mock behavior for extracting request body
+            mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
+
+            // Execute filter
             requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
 
-            // Verify that processLog was called once with any RestLog and REQUEST log type
-            mockedStatic.verify(() -> LogProcessorFactory.processLog(any(RestLog.class), eq(LogType.REQUEST)), times(1));
-        }
+            // Verify that CachedBodyHttpServletRequestWrapper is used
+            mockWrapper.verify(() -> new CachedBodyHttpServletRequestWrapper(httpRequest), times(1));
 
-        // Verify that filterChain.doFilter was called
-        verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+            // Verify that request log is created
+            mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
+                argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
+            ), times(1));
+
+            // Ensure filter chain continues execution
+            verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+        }
     }
 
     @Test
-    void testDoFilter_ExceptionThrown() throws IOException, ServletException {
-        when(httpRequest.getMethod()).thenReturn("GET");
-        when(httpRequest.getRequestURI()).thenReturn("/error-endpoint");
+    void testDoFilter_ExceptionHandling() throws IOException, ServletException {
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
 
-        // Simulate an exception being thrown
-        doThrow(new RuntimeException("Test Exception")).when(filterChain).doFilter(any(), any());
+        try (
+            MockedStatic<CachedBodyHttpServletRequestWrapper> mockWrapper = mockStatic(CachedBodyHttpServletRequestWrapper.class);
+            MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
+        ) {
+            // Simulate exception during filter processing
+            mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest))
+                       .thenThrow(new RuntimeException("Test Exception"));
 
-        // Use try-with-resources to mock static method
-        try (MockedStatic<LogProcessorFactory> mockedStatic = Mockito.mockStatic(LogProcessorFactory.class)) {
-            try {
-                requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
-            } catch (Exception e) {
-                // Expected exception
-            }
+            Exception exception = assertThrows(RuntimeException.class, () -> 
+                requestLogFilter.doFilter(httpRequest, httpResponse, filterChain)
+            );
 
-            // Verify that processLog was called once with any ErrorLog and ERROR log type
-            mockedStatic.verify(() -> LogProcessorFactory.processLog(any(ErrorLog.class), eq(LogType.ERROR)), times(1));
+            assertEquals("Test Exception", exception.getMessage());
+
+            // Verify error logging
+            mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
+                argThat(log -> log instanceof ErrorLog), eq(LogType.ERROR)
+            ), times(1));
         }
     }
 }
-
-------------------------------------------------
-org.mockito.exceptions.misusing.InvalidUseOfMatchersException: 
-Misplaced or misused argument matcher detected here:
-
--> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_Success(RequestLogFilterTest.java:59)
-
-You cannot use argument matchers outside of verification or stubbing.
-Examples of correct usage of argument matchers:
-    when(mock.get(anyInt())).thenReturn(null);
-    doThrow(new RuntimeException()).when(mock).someVoidMethod(any());
-    verify(mock).someMethod(contains("foo"))
-
-This message may appear after an NullPointerException if the last matcher is returning an object 
-like any() but the stubbed method signature expect a primitive argument, in this case,
-use primitive alternatives.
-    when(mock.get(any())); // bad use, will raise NPE
-    when(mock.get(anyInt())); // correct usage use
-
-Also, this error might show up because you use argument matchers with methods that cannot be mocked.
-Following methods *cannot* be stubbed/verified: final/private/equals()/hashCode().
-Mocking methods declared on non-public parent classes is not supported.
-
-
-	at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_Success(RequestLogFilterTest.java:59)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-@Test
-void testDoFilter_Success() throws IOException, ServletException {
-    // Mock HTTP request attributes
-    when(httpRequest.getMethod()).thenReturn("POST");
-    when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
-    when(httpRequest.getHeader("Content-Length")).thenReturn("200");
-    when(httpRequest.getContentType()).thenReturn("application/json");
-    when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit Test");
-    when(httpResponse.getStatus()).thenReturn(200);
-
-    // Mock request body
-    Map<String, String> requestBody = Collections.singletonMap("key", "value");
-    when(HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
-
-    try (MockedStatic<LogProcessorFactory> mockedStatic = Mockito.mockStatic(LogProcessorFactory.class)) {
-        // Call the filter
-        requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
-
-        // Verify processLog() call using argThat()
-        mockedStatic.verify(() -> LogProcessorFactory.processLog(
-            argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
-        ), times(1));
-    }
-
-    // Verify that filterChain.doFilter was called
-    verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
-}
-
