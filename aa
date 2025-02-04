@@ -188,44 +188,71 @@ Due to the nature of the syntax above problem might occur because:
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
 import jakarta.servlet.ServletInputStream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import static org.mockito.Mockito.*;
 
-import static org.mockito.Mockito.mock;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Map;
 
-@Test
-void testDoFilter_Success() throws IOException, ServletException {
-    // Mock ServletInputStream
-    ServletInputStream inputStream = mock(ServletInputStream.class);
-    
-    // Mocking request and response
-    when(httpRequest.getMethod()).thenReturn("POST");
-    when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
-    when(httpResponse.getStatus()).thenReturn(200);
-    when(httpRequest.getHeader("Content-Length")).thenReturn("200");
-    when(httpRequest.getContentType()).thenReturn("application/json");
+class RequestLogFilterTest {
 
-    // Mocking the CachedBodyHttpServletRequestWrapper to return the mocked ServletInputStream
-    CachedBodyHttpServletRequestWrapper wrappedRequest = mock(CachedBodyHttpServletRequestWrapper.class);
-    when(wrappedRequest.getInputStream()).thenReturn(inputStream);
-    
-    Map<String, String> requestBody = Collections.singletonMap("key", "value");
+    private RequestLogFilter requestLogFilter;
+    private HttpServletRequest httpRequest;
+    private HttpServletResponse httpResponse;
+    private FilterChain filterChain;
 
-    try (
-        MockedStatic<CachedBodyHttpServletRequestWrapper> mockWrapper = mockStatic(CachedBodyHttpServletRequestWrapper.class);
-        MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class);
-        MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
-    ) {
-        // Mock constructor call for CachedBodyHttpServletRequestWrapper
-        mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest)).thenReturn(wrappedRequest);
-        mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
+    @BeforeEach
+    void setUp() {
+        // Initialize the objects needed for the test
+        requestLogFilter = new RequestLogFilter("testApp", "dev");
+        httpRequest = mock(HttpServletRequest.class);
+        httpResponse = mock(HttpServletResponse.class);
+        filterChain = mock(FilterChain.class);
+    }
 
-        requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+    @Test
+    void testDoFilter_Success() throws IOException, ServletException {
+        // Prepare the mock objects for the request and response
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+        when(httpResponse.getStatus()).thenReturn(200);
+        when(httpRequest.getHeader("Content-Length")).thenReturn("200");
+        when(httpRequest.getContentType()).thenReturn("application/json");
 
-        mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
-            argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
-        ), times(1));
+        // Mock the behavior of getInputStream
+        byte[] mockRequestBody = "{\"key\":\"value\"}".getBytes();
+        ServletInputStream mockInputStream = new CachedBodyServletInputStream(mockRequestBody); // Your custom input stream
 
-        verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+        // Create a mocked wrapped request that returns the mock input stream
+        CachedBodyHttpServletRequestWrapper wrappedRequest = mock(CachedBodyHttpServletRequestWrapper.class);
+        when(wrappedRequest.getInputStream()).thenReturn(mockInputStream);
+
+        Map<String, String> requestBody = Map.of("key", "value");
+
+        try (MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class);
+             MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class)) {
+
+            // Mock static methods to return desired behavior
+            mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(wrappedRequest)).thenReturn(requestBody);
+
+            // Run the filter method
+            requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+
+            // Verify the log method was called
+            mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
+                argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
+            ), times(1));
+
+            // Verify filterChain.doFilter was called
+            verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+        }
     }
 }
 
