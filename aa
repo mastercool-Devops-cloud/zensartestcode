@@ -2,9 +2,7 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -43,15 +41,12 @@ class RequestLogFilterTest {
 
     @Test
     void testDoFilter_Success() throws IOException, ServletException {
-        // Mock HTTP request behavior
         when(httpRequest.getMethod()).thenReturn("POST");
         when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+        when(httpResponse.getStatus()).thenReturn(200);
         when(httpRequest.getHeader("Content-Length")).thenReturn("200");
         when(httpRequest.getContentType()).thenReturn("application/json");
-        when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit Test");
-        when(httpResponse.getStatus()).thenReturn(200);
 
-        // Mock request body retrieval
         Map<String, String> requestBody = Collections.singletonMap("key", "value");
 
         try (
@@ -59,24 +54,17 @@ class RequestLogFilterTest {
             MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class);
             MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
         ) {
-            // Mock behavior for CachedBodyHttpServletRequestWrapper
             mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest)).thenReturn(cachedRequestWrapper);
-
-            // Mock behavior for extracting request body
             mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(any())).thenReturn(requestBody);
 
-            // Execute filter
             requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
 
-            // Verify that CachedBodyHttpServletRequestWrapper is used
             mockWrapper.verify(() -> new CachedBodyHttpServletRequestWrapper(httpRequest), times(1));
 
-            // Verify that request log is created
             mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
                 argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
             ), times(1));
 
-            // Ensure filter chain continues execution
             verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
         }
     }
@@ -90,7 +78,6 @@ class RequestLogFilterTest {
             MockedStatic<CachedBodyHttpServletRequestWrapper> mockWrapper = mockStatic(CachedBodyHttpServletRequestWrapper.class);
             MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
         ) {
-            // Simulate exception during filter processing
             mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest))
                        .thenThrow(new RuntimeException("Test Exception"));
 
@@ -100,40 +87,85 @@ class RequestLogFilterTest {
 
             assertEquals("Test Exception", exception.getMessage());
 
-            // Verify error logging
             mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
                 argThat(log -> log instanceof ErrorLog), eq(LogType.ERROR)
             ), times(1));
         }
     }
+
+    @Test
+    void testDoFilter_NullRequestBody() throws IOException, ServletException {
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+        when(httpResponse.getStatus()).thenReturn(200);
+
+        try (
+            MockedStatic<CachedBodyHttpServletRequestWrapper> mockWrapper = mockStatic(CachedBodyHttpServletRequestWrapper.class);
+            MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class);
+            MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
+        ) {
+            mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest)).thenReturn(cachedRequestWrapper);
+            mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(any())).thenReturn(null); // Simulate null request body
+
+            requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+
+            mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
+                argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
+            ), times(1));
+
+            verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+        }
+    }
+
+    @Test
+    void testDoFilter_EmptyRequestBody() throws IOException, ServletException {
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+        when(httpResponse.getStatus()).thenReturn(200);
+
+        try (
+            MockedStatic<CachedBodyHttpServletRequestWrapper> mockWrapper = mockStatic(CachedBodyHttpServletRequestWrapper.class);
+            MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class);
+            MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
+        ) {
+            mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest)).thenReturn(cachedRequestWrapper);
+            mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(any())).thenReturn(Collections.emptyMap()); // Simulate empty request body
+
+            requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+
+            mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
+                argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
+            ), times(1));
+
+            verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+        }
+    }
+
+    @Test
+    void testDoFilter_MissingHeaders() throws IOException, ServletException {
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/test-endpoint");
+        when(httpResponse.getStatus()).thenReturn(200);
+
+        when(httpRequest.getHeader("Content-Length")).thenReturn(null);
+        when(httpRequest.getHeader("Host")).thenReturn(null);
+        when(httpRequest.getContentType()).thenReturn(null);
+
+        try (
+            MockedStatic<CachedBodyHttpServletRequestWrapper> mockWrapper = mockStatic(CachedBodyHttpServletRequestWrapper.class);
+            MockedStatic<HttpRequestLogHelper> mockLogHelper = mockStatic(HttpRequestLogHelper.class);
+            MockedStatic<LogProcessorFactory> mockLogProcessor = mockStatic(LogProcessorFactory.class)
+        ) {
+            mockWrapper.when(() -> new CachedBodyHttpServletRequestWrapper(httpRequest)).thenReturn(cachedRequestWrapper);
+            mockLogHelper.when(() -> HttpRequestLogHelper.getRequestBody(any())).thenReturn(Collections.singletonMap("key", "value"));
+
+            requestLogFilter.doFilter(httpRequest, httpResponse, filterChain);
+
+            mockLogProcessor.verify(() -> LogProcessorFactory.processLog(
+                argThat(log -> log instanceof RestLog), eq(LogType.REQUEST)
+            ), times(1));
+
+            verify(filterChain, times(1)).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
+        }
+    }
 }
-org.mockito.exceptions.misusing.WrongTypeOfReturnValue: 
-CachedBodyHttpServletRequestWrapper cannot be returned by getInputStream()
-getInputStream() should return ServletInputStream
-***
-If you're unsure why you're getting above error read on.
-Due to the nature of the syntax above problem might occur because:
-1. This exception *might* occur in wrongly written multi-threaded tests.
-   Please refer to Mockito FAQ on limitations of concurrency testing.
-2. A spy is stubbed using when(spy.foo()).then() syntax. It is safer to stub spies - 
-   - with doReturn|Throw() family of methods. More in javadocs for Mockito.spy() method.
-
-
-	at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_Success(RequestLogFilterTest.java:71)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
---------------------------
-org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
-Unnecessary stubbings detected.
-Clean & maintainable test code requires zero unnecessary code.
-Following stubbings are unnecessary (click to navigate to relevant line of code):
-  1. -> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_ExceptionHandling(RequestLogFilterTest.java:94)
-  2. -> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_ExceptionHandling(RequestLogFilterTest.java:95)
-Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
-
-	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:197)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
