@@ -1,6 +1,127 @@
 
 Lets rename the other factory to a service(which it seems to be) and in that service use the actual factory to create the log and the service can print it. This is class is handling a lot of the log logic but it is just a filter.
+----------------------------------------------
+public interface LogService {
+    void logRequest(HttpServletRequest httpRequest, long latencyMs);
+}
+
+@Service
+public class LogServiceImpl implements LogService {
+
+    private final LogFactory logFactory;
+    private final LogProcessorFactory logProcessorFactory;
+    private final String applicationName;
+
+    public LogServiceImpl(LogFactory logFactory, LogProcessorFactory logProcessorFactory, 
+                          @Value("${application.name}") String applicationName) {
+        this.logFactory = logFactory;
+        this.logProcessorFactory = logProcessorFactory;
+        this.applicationName = applicationName;
+    }
+
+    @Override
+    public void logRequest(HttpServletRequest httpRequest, long latencyMs) {
+        BaseLogDetails baseLogDetails = new BaseLogDetails(
+            TimeUtil.getCurrentTimestamp(), 
+            null, 
+            applicationName, 
+            MessageType.REQUEST.getMessageType(), 
+            metadata
+        );
+
+        Map<String, String> requestBody = HttpRequestLogHelper.getRequestBody(httpRequest);
+
+        RestLog restLog = logFactory.createRestLog(
+            baseLogDetails, 
+            httpRequest.getMethod(),
+            httpRequest.getRequestURI(), 
+            requestBody, 
+            latencyMs
+        );
+
+        logProcessorFactory.processLog(restLog, LogType.REQUEST);
+    }
+}
+
 
 This is a service and not a factory, it should perhaps use the factory to create the log and print it so the other classes can do less logging logic.
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.stereotype.Service;
+
+@Service
+@Log4j2
+public class LogProcessorService {
+
+    private final ObjectMapper objectMapper;
+
+    public LogProcessorService() {
+        this.objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    }
+
+    public void processLog(Object object, String logType) {
+        try {
+            String logMessage = objectMapper.writeValueAsString(object);
+
+            switch (logType) {
+                case "Request":
+                    log.info("Request Log: {}", logMessage);
+                    break;
+
+                case "Response":
+                    log.info("Response Log: {}", logMessage);
+                    break;
+
+                case "Error":
+                    log.error("Error Log: {}", logMessage);
+                    break;
+
+                default:
+                    log.warn("Unknown Log Type: {}", logType);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process log: {}", e.getMessage(), e);
+        }
+    }
+}
+--------------------
+@Service
+public class LogServiceImpl implements LogService {
+
+    private final LogFactory logFactory;
+    private final LogProcessorService logProcessorService;
+    private final String applicationName;
+
+    public LogServiceImpl(LogFactory logFactory, LogProcessorService logProcessorService, 
+                          @Value("${application.name}") String applicationName) {
+        this.logFactory = logFactory;
+        this.logProcessorService = logProcessorService;
+        this.applicationName = applicationName;
+    }
+
+    @Override
+    public void logRequest(HttpServletRequest httpRequest, long latencyMs) {
+        BaseLogDetails baseLogDetails = new BaseLogDetails(
+            TimeUtil.getCurrentTimestamp(), 
+            null, 
+            applicationName, 
+            MessageType.REQUEST.getMessageType(), 
+            metadata
+        );
+
+        Map<String, String> requestBody = HttpRequestLogHelper.getRequestBody(httpRequest);
+
+        RestLog restLog = logFactory.createRestLog(
+            baseLogDetails, 
+            httpRequest.getMethod(),
+            httpRequest.getRequestURI(), 
+            requestBody, 
+            latencyMs
+        );
+
+        logProcessorService.processLog(restLog, LogType.REQUEST);
+    }
+}
 
 Please don't catch just to throw a generic runtime exception. Either use a personal one or throw the one that would naturally occur here in the right context, you could also think of adding throws to the signature to force handling the runtime exception type so it does break the project at any point.
