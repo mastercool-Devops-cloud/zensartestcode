@@ -128,3 +128,6 @@ Please don't catch just to throw a generic runtime exception. Either use a perso
 
 
 Error creating bean with name 'requestLogFilter': Unsatisfied dependency expressed through field 'logService': No qualifying bean of type 'com.sb.fedssimplification.utilitymodules.loggingutility.service.LogService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@org.springframework.beans.factory.annotation.Autowired(required=true)}
+
+
+No qualifying bean of type 'com.sb.fedssimplification.utilitymodules.loggingutility.service.LogService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
