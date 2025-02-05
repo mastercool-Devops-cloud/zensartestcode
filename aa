@@ -125,3 +125,6 @@ public class LogServiceImpl implements LogService {
 }
 
 Please don't catch just to throw a generic runtime exception. Either use a personal one or throw the one that would naturally occur here in the right context, you could also think of adding throws to the signature to force handling the runtime exception type so it does break the project at any point.
+
+
+Error creating bean with name 'requestLogFilter': Unsatisfied dependency expressed through field 'logService': No qualifying bean of type 'com.sb.fedssimplification.utilitymodules.loggingutility.service.LogService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@org.springframework.beans.factory.annotation.Autowired(required=true)}
