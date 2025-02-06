@@ -1,75 +1,44 @@
-org.mockito.exceptions.misusing.InvalidUseOfMatchersException: 
-Misplaced or misused argument matcher detected here:
+@ExtendWith(MockitoExtension.class)
+class LogServiceImplTest {
 
--> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
--> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
--> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
--> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
--> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
--> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
--> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
+    @Mock
+    private LogFactory logFactory;
 
-You cannot use argument matchers outside of verification or stubbing.
-Examples of correct usage of argument matchers:
-    when(mock.get(anyInt())).thenReturn(null);
-    doThrow(new RuntimeException()).when(mock).someVoidMethod(any());
-    verify(mock).someMethod(contains("foo"))
-@Test
-void testLogRequest_ShouldProcessLogSuccessfully() {
-    // Arrange
-    long latencyMs = 100L;
-    Map<String, String> requestBody = Map.of("key", "value"); // Simulated request body
+    @Mock
+    private LogProcessorService logProcessorService;
 
-    // Mock the behavior of HttpServletRequest
-    when(httpRequest.getMethod()).thenReturn("GET");
-    when(httpRequest.getRequestURI()).thenReturn("/test/uri");
-    when(httpRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
+    private LogServiceImpl logService;
 
-    // Mock external dependencies
-    RestLog mockRestLog = mock(RestLog.class);
-    when(logFactory.createRestLog(
-            any(BaseLogDetails.class),
-            eq("GET"),
-            eq("/test/uri"),
-            eq(requestBody),
-            eq(0),
-            isNull(),
-            eq(latencyMs)
-    )).thenReturn(mockRestLog);
+    @BeforeEach
+    void setUp() {
+        logService = new LogServiceImpl(logFactory, logProcessorService);
 
-    // Ensure the logProcessorService is called
-    doNothing().when(logProcessorService).processLog(any(RestLog.class), eq(LogType.REQUEST));
+        // Inject @Value fields manually
+        ReflectionTestUtils.setField(logService, "application", "TestApp");
+        ReflectionTestUtils.setField(logService, "environment", "DEV");
+    }
 
-    // Act
-    logServiceImpl.logRequest(httpRequest, latencyMs);
+    @Test
+    void testLogException() {
+        // Given
+        Exception exception = new RuntimeException("Test exception");
+        BaseLogDetails baseLogDetails = new BaseLogDetails(
+                TimeUtil.getCurrentTimestamp(), "DEV", "TestApp", IpAddressUtil.getHostIpAddress()
+        );
+        ErrorLog errorLog = new ErrorLog(baseLogDetails, 500, "Test exception", "stacktrace");
 
-    // Assert
-    verify(logFactory, times(1)).createRestLog(
-            any(BaseLogDetails.class),
-            eq("GET"),
-            eq("/test/uri"),
-            eq(requestBody),
-            eq(0),
-            isNull(),
-            eq(latencyMs)
-    );
-    verify(logProcessorService, times(1)).processLog(eq(mockRestLog), eq(LogType.REQUEST));
+        // Mock behavior
+        Mockito.when(logFactory.createErrorLog(
+                any(BaseLogDetails.class),
+                eq(500),
+                eq("Test exception"),
+                anyString()
+        )).thenReturn(errorLog);
+
+        // When
+        logService.logException(exception);
+
+        // Then
+        Mockito.verify(logProcessorService).processLog(errorLog, LogType.ERROR);
+    }
 }
-
-
-This message may appear after an NullPointerException if the last matcher is returning an object 
-like any() but the stubbed method signature expect a primitive argument, in this case,
-use primitive alternatives.
-    when(mock.get(any())); // bad use, will raise NPE
-    when(mock.get(anyInt())); // correct usage use
-
-Also, this error might show up because you use argument matchers with methods that cannot be mocked.
-Following methods *cannot* be stubbed/verified: final/private/equals()/hashCode().
-Mocking methods declared on non-public parent classes is not supported.
-
-
-	at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
