@@ -1,102 +1,38 @@
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+org.mockito.exceptions.misusing.PotentialStubbingProblem: 
+Strict stubbing argument mismatch. Please check:
+ - this invocation of 'createRestLog' method:
+    logFactory.createRestLog(
+    "POST",
+    "/api/test",
+    {"response" = "data"},
+    200,
+    null,
+    500L
+);
+    -> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImpl.logResponse(LogServiceImpl.java:64)
+ - has following stubbing(s) with different arguments:
+    1. logFactory.createRestLog(
+    "POST",
+    "/api/test",
+    {"response" = "data"},
+    200,
+    SUCCESS,
+    500L
+);
+      -> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogResponse(LogServiceImplTest.java:75)
+Typically, stubbing argument mismatch indicates user mistake when writing tests.
+Mockito fails early so that you can debug potential problem easily.
+However, there are legit scenarios when this exception generates false negative signal:
+  - stubbing the same method multiple times using 'given().will()' or 'when().then()' API
+    Please use 'will().given()' or 'doReturn().when()' API for stubbing.
+  - stubbed method is intentionally invoked with different arguments by code under test
+    Please use default or 'silent' JUnit Rule (equivalent of Strictness.LENIENT).
+For more information see javadoc for PotentialStubbingProblem class.
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.util.ContentCachingResponseWrapper;
+	at com.sb.fedssimplification.utilitymodules.loggingutility.factory.LogFactory.createRestLog(LogFactory.java:28)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImpl.logResponse(LogServiceImpl.java:64)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogResponse(LogServiceImplTest.java:78)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-
-@ExtendWith(MockitoExtension.class)
-class LogServiceImplTest {
-
-    @Mock
-    private LogFactory logFactory;
-
-    @Mock
-    private HttpServletRequest httpRequest;
-
-    @Mock
-    private ContentCachingResponseWrapper wrappedResponse;
-
-    @InjectMocks
-    private LogServiceImpl logService;
-
-    private static final long LATENCY_MS = 500L;
-
-    @BeforeEach
-    void setup() {
-        when(httpRequest.getMethod()).thenReturn("POST");
-        when(httpRequest.getRequestURI()).thenReturn("/api/test");
-    }
-
-    @Test
-    void testLogRequest() throws Exception {
-        // Given
-        Map<String, String> requestBody = Collections.singletonMap("key", "value");
-        RestLog restLog = new RestLog(null, "POST", "/api/test", requestBody, 0, null, LATENCY_MS);
-
-        // Mock static method in HttpLogHelper
-        mockStatic(HttpLogHelper.class).when(() -> HttpLogHelper.getRequestBody(httpRequest))
-                .thenReturn(requestBody);
-
-        when(logFactory.createRestLog("POST", "/api/test", requestBody, 0, null, LATENCY_MS))
-                .thenReturn(restLog);
-
-        // When
-        logService.logRequest(httpRequest, LATENCY_MS);
-
-        // Then
-        verify(logFactory).createRestLog("POST", "/api/test", requestBody, 0, null, LATENCY_MS);
-    }
-
-    @Test
-    void testLogResponse() throws IOException {
-        // Given
-        when(wrappedResponse.getStatus()).thenReturn(HttpStatus.OK.value());
-
-        Map<String, String> responseBody = Collections.singletonMap("response", "data");
-        RestLog restLog = new RestLog(null, "POST", "/api/test", responseBody,
-                HttpStatus.OK.value(), "OK", LATENCY_MS);
-
-        // Mock static method in HttpLogHelper
-        mockStatic(HttpLogHelper.class).when(() -> HttpLogHelper.getResponseBody(wrappedResponse))
-                .thenReturn(responseBody);
-
-        when(logFactory.createRestLog("POST", "/api/test", responseBody,
-                HttpStatus.OK.value(), "OK", LATENCY_MS)).thenReturn(restLog);
-
-        // When
-        logService.logResponse(wrappedResponse, httpRequest, LATENCY_MS);
-
-        // Then
-        verify(logFactory).createRestLog("POST", "/api/test", responseBody,
-                HttpStatus.OK.value(), "OK", LATENCY_MS);
-    }
-
-    @Test
-    void testLogException() {
-        // Given
-        Exception exception = new RuntimeException("Test Exception");
-        ErrorLog errorLog = new ErrorLog(null, HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                exception.getMessage(), "Stack Trace");
-
-        when(logFactory.createErrorLog(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                exception.getMessage(), anyString())).thenReturn(errorLog);
-
-        // When
-        logService.logException(exception);
-
-        // Then
-        verify(logFactory).createErrorLog(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                exception.getMessage(), anyString());
-    }
-}
