@@ -1,3 +1,19 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
 @ExtendWith(MockitoExtension.class)
 class LogServiceImplTest {
 
@@ -7,38 +23,52 @@ class LogServiceImplTest {
     @Mock
     private LogProcessorService logProcessorService;
 
+    @Mock
+    private HttpServletRequest httpRequest;
+
+    @InjectMocks
     private LogServiceImpl logService;
+
+    @Captor
+    private ArgumentCaptor<RestLog> restLogCaptor;
 
     @BeforeEach
     void setUp() {
-        logService = new LogServiceImpl(logFactory, logProcessorService);
-
         // Inject @Value fields manually
         ReflectionTestUtils.setField(logService, "application", "TestApp");
         ReflectionTestUtils.setField(logService, "environment", "DEV");
     }
 
     @Test
-    void testLogException() {
+    void testLogRequest() {
         // Given
-        Exception exception = new RuntimeException("Test exception");
+        long latencyMs = 120L;
+
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/api/test");
+        when(HttLogHelper.getRequestBody(httpRequest)).thenReturn(Map.of("key", "value"));
+
         BaseLogDetails baseLogDetails = new BaseLogDetails(
                 TimeUtil.getCurrentTimestamp(), "DEV", "TestApp", IpAddressUtil.getHostIpAddress()
         );
-        ErrorLog errorLog = new ErrorLog(baseLogDetails, 500, "Test exception", "stacktrace");
 
-        // Mock behavior
-        Mockito.when(logFactory.createErrorLog(
-                any(BaseLogDetails.class),
-                eq(500),
-                eq("Test exception"),
-                anyString()
-        )).thenReturn(errorLog);
+        RestLog expectedRestLog = new RestLog(baseLogDetails, "POST", "/api/test", 
+            Map.of("key", "value"), 0, null, latencyMs);
+
+        when(logFactory.createRestLog(any(), anyString(), anyString(), any(), anyInt(), any(), anyLong()))
+                .thenReturn(expectedRestLog);
 
         // When
-        logService.logException(exception);
+        logService.logRequest(httpRequest, latencyMs);
 
         // Then
-        Mockito.verify(logProcessorService).processLog(errorLog, LogType.ERROR);
+        verify(logFactory).createRestLog(any(), eq("POST"), eq("/api/test"), eq(Map.of("key", "value")), eq(0), isNull(), eq(latencyMs));
+        verify(logProcessorService).processLog(restLogCaptor.capture(), eq(LogType.REQUEST));
+
+        RestLog actualRestLog = restLogCaptor.getValue();
+        assertEquals(expectedRestLog.getHttpMethod(), actualRestLog.getHttpMethod());
+        assertEquals(expectedRestLog.getUrl(), actualRestLog.getUrl());
+        assertEquals(expectedRestLog.getBody(), actualRestLog.getBody());
+        assertEquals(expectedRestLog.getLatencyMs(), actualRestLog.getLatencyMs());
     }
 }
