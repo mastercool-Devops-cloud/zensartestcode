@@ -1,14 +1,12 @@
- @Test
-    void testDoFilter_SuccessfulRequest() throws IOException, ServletException {
-        // Act
-        responseLogFilter.doFilter(mockRequest, wrappedResponse, mockFilterChain);
+org.mockito.exceptions.misusing.NotAMockException: 
+Argument passed to verify() is of type ContentCachingResponseWrapper and is not a mock!
+Make sure you place the parenthesis correctly!
+See the examples of correct verifications:
+    verify(mock).someMethod();
+    verify(mock, times(10)).someMethod();
+    verify(mock, atLeastOnce()).someMethod();
 
-        // Ensure the filter chain processes the request with a wrapped response
-        verify(mockFilterChain).doFilter(eq(mockRequest), any(ContentCachingResponseWrapper.class));
-
-        // Verify that logResponse() was called with the wrapped response
-        verify(logService).logResponse(any(ContentCachingResponseWrapper.class), eq(mockRequest), anyLong());
-
-        // Verify that getStatus() was called on wrappedResponse instead of mockResponse
-        verify(wrappedResponse, atLeastOnce()).getStatus();
-    }
+	at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:62)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
