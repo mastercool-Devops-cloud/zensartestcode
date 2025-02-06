@@ -1,115 +1,72 @@
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.Layout;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.WriterAppender;
-import org.apache.logging.log4j.core.layout.PatternLayout;
-import org.apache.logging.log4j.test.appender.ListAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
-import java.io.StringWriter;
-import java.util.List;
+import java.util.Map;
 
-@ExtendWith(MockitoExtension.class)
-class LogProcessorServiceTest {
+@ExtendWith(MockitoExtension.class) // Enables Mockito support in JUnit 5
+class LogFactoryTest {
 
-    private LogProcessorService logProcessorService;
-    private ListAppender listAppender;
-    private ObjectMapper objectMapper;
+    @Mock
+    private BaseLogDetails baseLogDetails; // Mock BaseLogDetails
+
+    @InjectMocks
+    private LogFactory logFactory; // Automatically injects the mock
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-        logProcessorService = new LogProcessorService();
-
-        // Get the root logger and attach a test appender
-        LoggerContext context = (LoggerContext) LogManager.getContext(false);
-        org.apache.logging.log4j.core.Logger logger = context.getRootLogger();
-
-        listAppender = new ListAppender("TestAppender");
-        listAppender.start();
-        logger.addAppender(listAppender);
+        when(baseLogDetails.getSource()).thenReturn("test-source");
+        when(baseLogDetails.getEnv()).thenReturn("test-env");
     }
 
     @Test
-    void testProcessLog_RequestLog() throws Exception {
-        // Arrange
-        TestLogObject testObject = new TestLogObject("Test", 123);
-        String expectedJson = objectMapper.writeValueAsString(testObject);
+    void testCreateRestLog() {
+        // Given
+        String httpMethod = "POST";
+        String url = "/api/test";
+        Map<String, String> body = Map.of("key", "value");
+        int statusCode = 200;
+        HttpStatus level = HttpStatus.OK;
+        long latencyMs = 150;
 
-        // Act
-        logProcessorService.processLog(testObject, "REQUEST");
+        // When
+        RestLog restLog = logFactory.createRestLog(httpMethod, url, body, statusCode, level, latencyMs);
 
-        // Assert
-        List<String> logs = listAppender.getMessages();
-        assertTrue(logs.stream().anyMatch(log -> log.contains("Request Log:") && log.contains(expectedJson)));
+        // Then
+        assertNotNull(restLog);
+        assertEquals("test-source", restLog.getBaseLogDetails().getSource());
+        assertEquals("test-env", restLog.getBaseLogDetails().getEnv());
+        assertEquals(httpMethod, restLog.getHttpMethod());
+        assertEquals(url, restLog.getUrl());
+        assertEquals(body, restLog.getBody());
+        assertEquals(statusCode, restLog.getStatusCode());
+        assertEquals(level, restLog.getLevel());
+        assertEquals(latencyMs, restLog.getLatencyMs());
     }
 
     @Test
-    void testProcessLog_ResponseLog() throws Exception {
-        TestLogObject testObject = new TestLogObject("ResponseTest", 456);
-        String expectedJson = objectMapper.writeValueAsString(testObject);
+    void testCreateErrorLog() {
+        // Given
+        int errorCode = 500;
+        String errorMessage = "Internal Server Error";
+        String stackTrace = "java.lang.NullPointerException at com.example.Main";
 
-        logProcessorService.processLog(testObject, "RESPONSE");
+        // When
+        ErrorLog errorLog = logFactory.createErrorLog(errorCode, errorMessage, stackTrace);
 
-        List<String> logs = listAppender.getMessages();
-        assertTrue(logs.stream().anyMatch(log -> log.contains("Response Log:") && log.contains(expectedJson)));
-    }
-
-    @Test
-    void testProcessLog_ErrorLog() throws Exception {
-        TestLogObject testObject = new TestLogObject("ErrorTest", 500);
-        String expectedJson = objectMapper.writeValueAsString(testObject);
-
-        logProcessorService.processLog(testObject, "ERROR");
-
-        List<String> logs = listAppender.getMessages();
-        assertTrue(logs.stream().anyMatch(log -> log.contains("Error Log:") && log.contains(expectedJson)));
-    }
-
-    @Test
-    void testProcessLog_UnknownType() {
-        logProcessorService.processLog("Unknown", "UNKNOWN");
-
-        List<String> logs = listAppender.getMessages();
-        assertTrue(logs.stream().anyMatch(log -> log.contains("Unknown Log Type: UNKNOWN")));
-    }
-
-    @Test
-    void testProcessLog_ExceptionHandling() {
-        LogProcessorService faultyService = new LogProcessorService() {
-            @Override
-            public void processLog(Object object, String logType) {
-                throw new RuntimeException("Serialization Error");
-            }
-        };
-
-        try {
-            faultyService.processLog(new TestLogObject("Faulty", 999), "REQUEST");
-        } catch (Exception ignored) {
-        }
-
-        List<String> logs = listAppender.getMessages();
-        assertTrue(logs.stream().anyMatch(log -> log.contains("Failed to process log: Serialization Error")));
-    }
-
-    // Dummy class for test data
-    private static class TestLogObject {
-        public String name;
-        public int id;
-
-        public TestLogObject(String name, int id) {
-            this.name = name;
-            this.id = id;
-        }
+        // Then
+        assertNotNull(errorLog);
+        assertEquals("test-source", errorLog.getBaseLogDetails().getSource());
+        assertEquals("test-env", errorLog.getBaseLogDetails().getEnv());
+        assertEquals(errorCode, errorLog.getErrorCode());
+        assertEquals(errorMessage, errorLog.getErrorMessage());
+        assertEquals(stackTrace, errorLog.getStackTrace());
     }
 }
