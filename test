@@ -1,12 +1,38 @@
-org.mockito.exceptions.misusing.NotAMockException: 
-Argument passed to verify() is of type ContentCachingResponseWrapper and is not a mock!
-Make sure you place the parenthesis correctly!
-See the examples of correct verifications:
-    verify(mock).someMethod();
-    verify(mock, times(10)).someMethod();
-    verify(mock, atLeastOnce()).someMethod();
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-	at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:62)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+class HttpStatusInfoTest {
+
+    @Test
+    void testFromStatus_SuccessRange() {
+        assertEquals(HttpStatusInfo.SUCCESS, HttpStatusInfo.fromStatus(200));
+        assertEquals(HttpStatusInfo.SUCCESS, HttpStatusInfo.fromStatus(250));
+        assertEquals(HttpStatusInfo.SUCCESS, HttpStatusInfo.fromStatus(299));
+    }
+
+    @Test
+    void testFromStatus_ClientErrorRange() {
+        assertEquals(HttpStatusInfo.CLIENT_ERROR, HttpStatusInfo.fromStatus(400));
+        assertEquals(HttpStatusInfo.CLIENT_ERROR, HttpStatusInfo.fromStatus(450));
+        assertEquals(HttpStatusInfo.CLIENT_ERROR, HttpStatusInfo.fromStatus(499));
+    }
+
+    @Test
+    void testFromStatus_ServerErrorRange() {
+        assertEquals(HttpStatusInfo.SERVER_ERROR, HttpStatusInfo.fromStatus(500));
+        assertEquals(HttpStatusInfo.SERVER_ERROR, HttpStatusInfo.fromStatus(550));
+        assertEquals(HttpStatusInfo.SERVER_ERROR, HttpStatusInfo.fromStatus(599));
+    }
+
+    @Test
+    void testFromStatus_UnknownRange() {
+        assertEquals(HttpStatusInfo.UNKNOWN, HttpStatusInfo.fromStatus(0));
+        assertEquals(HttpStatusInfo.UNKNOWN, HttpStatusInfo.fromStatus(50));
+        assertEquals(HttpStatusInfo.UNKNOWN, HttpStatusInfo.fromStatus(99));
+    }
+
+    @Test
+    void testFromStatus_InvalidStatus_ReturnsNull() {
+        assertNull(HttpStatusInfo.fromStatus(700)); // Out of any defined range
+    }
+}
