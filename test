@@ -1,79 +1,33 @@
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+org.mockito.exceptions.misusing.InvalidUseOfMatchersException: 
+Misplaced or misused argument matcher detected here:
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.*;
-import org.springframework.beans.factory.annotation.Value;
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
 
-import javax.servlet.http.HttpServletRequest;
+You cannot use argument matchers outside of verification or stubbing.
+Examples of correct usage of argument matchers:
+    when(mock.get(anyInt())).thenReturn(null);
+    doThrow(new RuntimeException()).when(mock).someVoidMethod(any());
+    verify(mock).someMethod(contains("foo"))
 
-import java.util.Map;
+This message may appear after an NullPointerException if the last matcher is returning an object 
+like any() but the stubbed method signature expect a primitive argument, in this case,
+use primitive alternatives.
+    when(mock.get(any())); // bad use, will raise NPE
+    when(mock.get(anyInt())); // correct usage use
 
-public class LogServiceImplTest {
+Also, this error might show up because you use argument matchers with methods that cannot be mocked.
+Following methods *cannot* be stubbed/verified: final/private/equals()/hashCode().
+Mocking methods declared on non-public parent classes is not supported.
 
-    @Mock
-    private LogFactory logFactory;
 
-    @Mock
-    private LogProcessorService logProcessorService;
+	at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest_ShouldProcessLogSuccessfully(LogServiceImplTest.java:53)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-    @Mock
-    private HttpServletRequest httpRequest;
-
-    @InjectMocks
-    private LogServiceImpl logServiceImpl;
-
-    @Value("${spring.application.name}")
-    private String application;
-
-    @Value("${spring.profiles.active:default}")
-    private String environment;
-
-    @BeforeEach
-    void setUp() {
-        // Initialize mocks
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testLogRequest_ShouldProcessLogSuccessfully() {
-        // Arrange
-        long latencyMs = 100L;
-        Map<String, String> requestBody = Map.of("key", "value"); // Simulated request body
-
-        // Mock the behavior of HttpServletRequest
-        when(httpRequest.getMethod()).thenReturn("GET");
-        when(httpRequest.getRequestURI()).thenReturn("/test/uri");
-        when(httpRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
-
-        // Mock external dependencies
-        when(logFactory.createRestLog(any(), any(), any(), any(), anyInt(), any(), anyLong())).thenReturn(new RestLog());
-        doNothing().when(logProcessorService).processLog(any(), eq(LogType.REQUEST));
-
-        // Act
-        logServiceImpl.logRequest(httpRequest, latencyMs);
-
-        // Assert
-        verify(logFactory, times(1)).createRestLog(any(), eq("GET"), eq("/test/uri"), eq(requestBody), eq(0), isNull(), eq(latencyMs));
-        verify(logProcessorService, times(1)).processLog(any(), eq(LogType.REQUEST));
-    }
-
-    @Test
-    void testLogRequest_WithException_ShouldCallLogException() {
-        // Arrange
-        long latencyMs = 100L;
-        Map<String, String> requestBody = Map.of("key", "value");
-
-        // Mock the behavior of HttpServletRequest to simulate an exception
-        when(httpRequest.getMethod()).thenReturn("GET");
-        when(httpRequest.getRequestURI()).thenReturn("/test/uri");
-        when(httpRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
-
-        // Mock external dependencies to throw an exception
-        when(logFactory.createRestLog(any(), any(), any(), any(), anyInt(), any(), anyLong())).thenThrow(new RuntimeException("Test Exception"));
-
-        // Act & Assert
-        assertThrows(RuntimeException.class, () -> logServiceImpl.logRequest(httpRequest, latencyMs));
-    }
-}
