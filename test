@@ -230,3 +230,70 @@ mockFilterChain.doFilter(
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import java.io.IOException;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
+
+class ResponseLogFilterTest {
+
+    @Mock
+    private LogService logService;
+
+    @Mock
+    private HttpServletRequest mockRequest;
+
+    @Mock
+    private HttpServletResponse mockResponse;
+
+    @Mock
+    private FilterChain mockFilterChain;
+
+    @InjectMocks
+    private ResponseLogFilter responseLogFilter;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        MockitoAnnotations.openMocks(this);
+
+        // Mock behavior of request
+        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis() - 100);
+    }
+
+    @Test
+    void testDoFilter_SuccessfulRequest() throws IOException, ServletException {
+        // Act
+        responseLogFilter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+        // Assert: Use argThat to match any ContentCachingResponseWrapper instance
+        verify(mockFilterChain).doFilter(eq(mockRequest), argThat(response -> response instanceof ContentCachingResponseWrapper));
+
+        verify(logService).logResponse(any(ContentCachingResponseWrapper.class), eq(mockRequest), anyLong());
+        verify(mockResponse, atLeastOnce()).getStatus(); // Ensure response processing
+    }
+
+    @Test
+    void testDoFilter_ExceptionThrown() throws IOException, ServletException {
+        // Arrange
+        doThrow(new RuntimeException("Test Exception")).when(mockFilterChain).doFilter(any(), any());
+
+        // Act & Assert
+        try {
+            responseLogFilter.doFilter(mockRequest, mockResponse, mockFilterChain);
+        } catch (Exception e) {
+            verify(logService).logException(any(RuntimeException.class)); // Exception must be logged
+        }
+    }
+}
