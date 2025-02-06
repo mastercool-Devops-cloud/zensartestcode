@@ -72,3 +72,12 @@ class RequestLogFilterTest {
         verify(logService, times(1)).logRequest(any(), eq(0L));
     }
 }
+java.lang.NullPointerException: Cannot invoke "jakarta.servlet.ServletInputStream.readAllBytes()" because the return value of "jakarta.servlet.http.HttpServletRequest.getInputStream()" is null
+
+	at com.sb.fedssimplification.utilitymodules.loggingutility.model.request.CachedBodyHttpServletRequestWrapper.<init>(CachedBodyHttpServletRequestWrapper.java:15)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.filter.RequestLogFilter.doFilter(RequestLogFilter.java:31)
+	at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.RequestLogFilterTest.testDoFilter_SuccessfulRequest(RequestLogFilterTest.java:45)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
