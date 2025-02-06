@@ -1,9 +1,10 @@
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,63 +13,108 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class LogServiceImplTest {
+class LogProcessorServiceTest {
 
-    @Mock
-    private LogFactory logFactory;
-
-    @Mock
+    @InjectMocks
     private LogProcessorService logProcessorService;
 
     @Mock
-    private HttpServletRequest httpRequest;
-
-    @InjectMocks
-    private LogServiceImpl logService;
+    private Logger mockLogger;
 
     @Captor
-    private ArgumentCaptor<RestLog> restLogCaptor;
+    private ArgumentCaptor<String> logCaptor;
+
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        // Inject @Value fields manually
-        ReflectionTestUtils.setField(logService, "application", "TestApp");
-        ReflectionTestUtils.setField(logService, "environment", "DEV");
+        objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     }
 
     @Test
-    void testLogRequest() {
-        // Given
-        long latencyMs = 120L;
+    void testProcessLog_RequestLog() throws Exception {
+        // Arrange
+        TestLogObject testObject = new TestLogObject("Test", 123);
+        String expectedJson = objectMapper.writeValueAsString(testObject);
 
-        when(httpRequest.getMethod()).thenReturn("POST");
-        when(httpRequest.getRequestURI()).thenReturn("/api/test");
-        when(HttLogHelper.getRequestBody(httpRequest)).thenReturn(Map.of("key", "value"));
+        // Act
+        logProcessorService.processLog(testObject, "REQUEST");
 
-        BaseLogDetails baseLogDetails = new BaseLogDetails(
-                TimeUtil.getCurrentTimestamp(), "DEV", "TestApp", IpAddressUtil.getHostIpAddress()
-        );
+        // Assert
+        verify(mockLogger).info(logCaptor.capture());
+        String actualLog = logCaptor.getValue();
+        assertTrue(actualLog.contains("Request Log:"));
+        assertTrue(actualLog.contains(expectedJson));
+    }
 
-        RestLog expectedRestLog = new RestLog(baseLogDetails, "POST", "/api/test", 
-            Map.of("key", "value"), 0, null, latencyMs);
+    @Test
+    void testProcessLog_ResponseLog() throws Exception {
+        TestLogObject testObject = new TestLogObject("ResponseTest", 456);
+        String expectedJson = objectMapper.writeValueAsString(testObject);
 
-        when(logFactory.createRestLog(any(), anyString(), anyString(), any(), anyInt(), any(), anyLong()))
-                .thenReturn(expectedRestLog);
+        logProcessorService.processLog(testObject, "RESPONSE");
 
-        // When
-        logService.logRequest(httpRequest, latencyMs);
+        verify(mockLogger).info(logCaptor.capture());
+        String actualLog = logCaptor.getValue();
+        assertTrue(actualLog.contains("Response Log:"));
+        assertTrue(actualLog.contains(expectedJson));
+    }
 
-        // Then
-        verify(logFactory).createRestLog(any(), eq("POST"), eq("/api/test"), eq(Map.of("key", "value")), eq(0), isNull(), eq(latencyMs));
-        verify(logProcessorService).processLog(restLogCaptor.capture(), eq(LogType.REQUEST));
+    @Test
+    void testProcessLog_ErrorLog() throws Exception {
+        TestLogObject testObject = new TestLogObject("ErrorTest", 500);
+        String expectedJson = objectMapper.writeValueAsString(testObject);
 
-        RestLog actualRestLog = restLogCaptor.getValue();
-        assertEquals(expectedRestLog.getHttpMethod(), actualRestLog.getHttpMethod());
-        assertEquals(expectedRestLog.getUrl(), actualRestLog.getUrl());
-        assertEquals(expectedRestLog.getBody(), actualRestLog.getBody());
-        assertEquals(expectedRestLog.getLatencyMs(), actualRestLog.getLatencyMs());
+        logProcessorService.processLog(testObject, "ERROR");
+
+        verify(mockLogger).error(logCaptor.capture());
+        String actualLog = logCaptor.getValue();
+        assertTrue(actualLog.contains("Error Log:"));
+        assertTrue(actualLog.contains(expectedJson));
+    }
+
+    @Test
+    void testProcessLog_UnknownType() {
+        logProcessorService.processLog("Unknown", "UNKNOWN");
+
+        verify(mockLogger).info(logCaptor.capture());
+        String actualLog = logCaptor.getValue();
+        assertTrue(actualLog.contains("Unknown Log Type: UNKNOWN"));
+    }
+
+    @Test
+    void testProcessLog_ExceptionHandling() throws Exception {
+        ObjectMapper faultyMapper = mock(ObjectMapper.class);
+        when(faultyMapper.writeValueAsString(any())).thenThrow(new RuntimeException("Serialization Error"));
+
+        LogProcessorService faultyService = new LogProcessorService() {
+            @Override
+            public void processLog(Object object, String logType) {
+                try {
+                    String logMessage = faultyMapper.writeValueAsString(object);
+                    log.info("Request Log: {}", logMessage);
+                } catch (Exception e) {
+                    log.error("Failed to process log: {}", e.getMessage(), e);
+                }
+            }
+        };
+
+        faultyService.processLog(new TestLogObject("Faulty", 999), "REQUEST");
+
+        verify(mockLogger).error(logCaptor.capture());
+        assertTrue(logCaptor.getValue().contains("Failed to process log: Serialization Error"));
+    }
+
+    // Dummy class for test data
+    private static class TestLogObject {
+        public String name;
+        public int id;
+
+        public TestLogObject(String name, int id) {
+            this.name = name;
+            this.id = id;
+        }
     }
 }
