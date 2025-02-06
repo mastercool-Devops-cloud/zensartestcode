@@ -199,3 +199,34 @@ class ResponseLogFilterTest {
         }
     }
 }
+Argument(s) are different! Wanted:
+mockFilterChain.doFilter(
+    mockRequest,
+    org.springframework.web.util.ContentCachingResponseWrapper@63ec445c
+);
+-> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:52)
+Actual invocations have different arguments at position [1]:
+mockFilterChain.doFilter(
+    mockRequest,
+    org.springframework.web.util.ContentCachingResponseWrapper@3104351d
+);
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilter.doFilter(ResponseLogFilter.java:37)
+
+Argument(s) are different! Wanted:
+mockFilterChain.doFilter(
+    mockRequest,
+    org.springframework.web.util.ContentCachingResponseWrapper@63ec445c
+);
+-> at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:52)
+Actual invocations have different arguments at position [1]:
+mockFilterChain.doFilter(
+    mockRequest,
+    org.springframework.web.util.ContentCachingResponseWrapper@3104351d
+);
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilter.doFilter(ResponseLogFilter.java:37)
+
+	at com.sb.fedssimplification.utilitymodules.secretsmanager.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:52)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
