@@ -1,75 +1,15 @@
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.web.util.ContentCachingResponseWrapper;
+Wanted but not invoked:
+mockResponse.getStatus();
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:62)
+Actually, there were zero interactions with this mock.
 
-import java.io.IOException;
+Wanted but not invoked:
+mockResponse.getStatus();
+-> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:62)
+Actually, there were zero interactions with this mock.
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
+	at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:62)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-class ResponseLogFilterTest {
-
-    @Mock
-    private LogService logService;
-
-    @Mock
-    private HttpServletRequest mockRequest;
-
-    @Mock
-    private HttpServletResponse mockResponse;
-
-    @Mock
-    private FilterChain mockFilterChain;
-
-    @InjectMocks
-    private ResponseLogFilter responseLogFilter;
-
-    private ContentCachingResponseWrapper wrappedResponse;
-
-    @BeforeEach
-    void setUp() throws IOException {
-        MockitoAnnotations.openMocks(this);
-
-        // Mock behavior of request
-        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis() - 100);
-
-        // Initialize a real ContentCachingResponseWrapper wrapping the mockResponse
-        wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
-    }
-
-    @Test
-    void testDoFilter_SuccessfulRequest() throws IOException, ServletException {
-        // Act
-        responseLogFilter.doFilter(mockRequest, wrappedResponse, mockFilterChain);
-
-        // Assert: Ensure the filter chain processes the request with a wrapped response
-        verify(mockFilterChain).doFilter(eq(mockRequest), any(ContentCachingResponseWrapper.class));
-
-        // Verify that logResponse() was called with the wrapped response
-        verify(logService).logResponse(any(ContentCachingResponseWrapper.class), eq(mockRequest), anyLong());
-
-        // Instead of verifying mockResponse.getStatus(), verify wrappedResponse.getStatus()
-        verify(mockResponse, atLeastOnce()).getStatus();
-    }
-
-    @Test
-    void testDoFilter_ExceptionThrown() throws IOException, ServletException {
-        // Arrange: Simulate an exception in the filter chain
-        doThrow(new RuntimeException("Test Exception")).when(mockFilterChain).doFilter(any(), any());
-
-        // Act & Assert
-        try {
-            responseLogFilter.doFilter(mockRequest, wrappedResponse, mockFilterChain);
-        } catch (Exception e) {
-            verify(logService).logException(any(RuntimeException.class)); // Exception must be logged
-        }
-    }
-}
