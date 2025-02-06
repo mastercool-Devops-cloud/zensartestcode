@@ -1,15 +1,14 @@
-Wanted but not invoked:
-mockResponse.getStatus();
--> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:62)
-Actually, there were zero interactions with this mock.
+ @Test
+    void testDoFilter_SuccessfulRequest() throws IOException, ServletException {
+        // Act
+        responseLogFilter.doFilter(mockRequest, wrappedResponse, mockFilterChain);
 
-Wanted but not invoked:
-mockResponse.getStatus();
--> at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:62)
-Actually, there were zero interactions with this mock.
+        // Ensure the filter chain processes the request with a wrapped response
+        verify(mockFilterChain).doFilter(eq(mockRequest), any(ContentCachingResponseWrapper.class));
 
-	at com.sb.fedssimplification.utilitymodules.loggingutility.filter.ResponseLogFilterTest.testDoFilter_SuccessfulRequest(ResponseLogFilterTest.java:62)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+        // Verify that logResponse() was called with the wrapped response
+        verify(logService).logResponse(any(ContentCachingResponseWrapper.class), eq(mockRequest), anyLong());
 
+        // Verify that getStatus() was called on wrappedResponse instead of mockResponse
+        verify(wrappedResponse, atLeastOnce()).getStatus();
+    }
