@@ -125,8 +125,45 @@ public class LogServiceImpl implements LogService {
 }
 
 Please don't catch just to throw a generic runtime exception. Either use a personal one or throw the one that would naturally occur here in the right context, you could also think of adding throws to the signature to force handling the runtime exception type so it does break the project at any point.
+public static Map<String, String> getRequestBody(final HttpServletRequest request) throws IOException {
+        final Map<String, String> requestBodyMap = new HashMap<>();
 
+        if (request instanceof CachedBodyHttpServletRequestWrapper) {
+            final CachedBodyHttpServletRequestWrapper wrappedRequest = (CachedBodyHttpServletRequestWrapper) request;
 
+            final byte[] content = wrappedRequest.getInputStream().readAllBytes();
+            final String body = new String(content, StandardCharsets.UTF_8);
+
+            final ObjectMapper objectMapper = new ObjectMapper();
+            requestBodyMap.putAll(objectMapper.readValue(body, new TypeReference<Map<String, String>>() {}));
+        }
+
+        return requestBodyMap;
+    }
+}
+public static Map<String, String> getResponseBody(final ContentCachingResponseWrapper responseWrapper) throws IOException {
+        final ObjectMapper objectMapper = new ObjectMapper();
+
+        // Read response body as a String
+        final String responseBody = new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
+        
+        // If response body is empty, return an empty map
+        if (responseBody.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // Convert JSON response into a Map
+        Map<String, Object> responseBodyMap = objectMapper.readValue(responseBody, new TypeReference<Map<String, Object>>() {});
+
+        // Convert all values in the map to Strings
+        return responseBodyMap.entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue() != null ? entry.getValue().toString() : "null"
+                ));
+    }
+}
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
