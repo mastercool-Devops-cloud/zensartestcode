@@ -1,72 +1,44 @@
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Map;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
-@ExtendWith(MockitoExtension.class) // Enables Mockito support in JUnit 5
-class LogFactoryTest {
+import static org.mockito.Mockito.*;
 
-    @Mock
-    private BaseLogDetails baseLogDetails; // Mock BaseLogDetails
+@ExtendWith(SpringExtension.class) // Enables Spring Context in JUnit 5
+@SpringBootTest(classes = BaseLogConfig.class) // Loads only BaseLogConfig for testing
+class BaseLogConfigTest {
 
-    @InjectMocks
-    private LogFactory logFactory; // Automatically injects the mock
-
-    @BeforeEach
-    void setUp() {
-        when(baseLogDetails.getSource()).thenReturn("test-source");
-        when(baseLogDetails.getEnv()).thenReturn("test-env");
-    }
+    @Autowired
+    private BaseLogConfig baseLogConfig;
 
     @Test
-    void testCreateRestLog() {
-        // Given
-        String httpMethod = "POST";
-        String url = "/api/test";
-        Map<String, String> body = Map.of("key", "value");
-        int statusCode = 200;
-        HttpStatus level = HttpStatus.OK;
-        long latencyMs = 150;
+    void testBaseLogDetailsBeanCreation() throws UnknownHostException {
+        // Given: Expected values
+        String expectedSource = "test-app";
+        String expectedEnvironment = "test-env";
+        String expectedIpAddress = InetAddress.getLocalHost().getHostAddress();
 
-        // When
-        RestLog restLog = logFactory.createRestLog(httpMethod, url, body, statusCode, level, latencyMs);
+        // Inject values into BaseLogConfig (Mocking @Value injection)
+        ReflectionTestUtils.setField(baseLogConfig, "source", expectedSource);
+        ReflectionTestUtils.setField(baseLogConfig, "environment", expectedEnvironment);
 
-        // Then
-        assertNotNull(restLog);
-        assertEquals("test-source", restLog.getBaseLogDetails().getSource());
-        assertEquals("test-env", restLog.getBaseLogDetails().getEnv());
-        assertEquals(httpMethod, restLog.getHttpMethod());
-        assertEquals(url, restLog.getUrl());
-        assertEquals(body, restLog.getBody());
-        assertEquals(statusCode, restLog.getStatusCode());
-        assertEquals(level, restLog.getLevel());
-        assertEquals(latencyMs, restLog.getLatencyMs());
-    }
+        // When: Creating the bean
+        BaseLogDetails baseLogDetails = baseLogConfig.baseLogDetails(expectedSource, expectedEnvironment);
 
-    @Test
-    void testCreateErrorLog() {
-        // Given
-        int errorCode = 500;
-        String errorMessage = "Internal Server Error";
-        String stackTrace = "java.lang.NullPointerException at com.example.Main";
-
-        // When
-        ErrorLog errorLog = logFactory.createErrorLog(errorCode, errorMessage, stackTrace);
-
-        // Then
-        assertNotNull(errorLog);
-        assertEquals("test-source", errorLog.getBaseLogDetails().getSource());
-        assertEquals("test-env", errorLog.getBaseLogDetails().getEnv());
-        assertEquals(errorCode, errorLog.getErrorCode());
-        assertEquals(errorMessage, errorLog.getErrorMessage());
-        assertEquals(stackTrace, errorLog.getStackTrace());
+        // Then: Validate the bean properties
+        assertNotNull(baseLogDetails);
+        assertEquals(expectedSource, baseLogDetails.getSource());
+        assertEquals(expectedEnvironment, baseLogDetails.getEnv());
+        assertEquals(expectedIpAddress, baseLogDetails.getIpAddress()); // Validate generated IP
+        assertNotNull(baseLogDetails.getTimestamp()); // Ensure timestamp is set
     }
 }
