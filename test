@@ -1,18 +1,16 @@
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
+
+import javax.servlet.http.HttpServletRequest;
 
 import java.util.Map;
 
-@SpringBootTest
-class LogServiceImplTest {
+public class LogServiceImplTest {
 
     @Mock
     private LogFactory logFactory;
@@ -21,10 +19,16 @@ class LogServiceImplTest {
     private LogProcessorService logProcessorService;
 
     @Mock
-    private HttpServletRequest mockRequest;
+    private HttpServletRequest httpRequest;
 
     @InjectMocks
-    private LogServiceImpl logService;
+    private LogServiceImpl logServiceImpl;
+
+    @Value("${spring.application.name}")
+    private String application;
+
+    @Value("${spring.profiles.active:default}")
+    private String environment;
 
     @BeforeEach
     void setUp() {
@@ -33,47 +37,43 @@ class LogServiceImplTest {
     }
 
     @Test
-    void logRequest_success() {
-        // Given
-        String application = "testApp";
-        String environment = "testEnv";
-        String requestUri = "/test/uri";
-        String method = "GET";
-        long latencyMs = 200;
+    void testLogRequest_ShouldProcessLogSuccessfully() {
+        // Arrange
+        long latencyMs = 100L;
+        Map<String, String> requestBody = Map.of("key", "value"); // Simulated request body
 
-        // Mock the behavior of the request
-        when(mockRequest.getMethod()).thenReturn(method);
-        when(mockRequest.getRequestURI()).thenReturn(requestUri);
-        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
+        // Mock the behavior of HttpServletRequest
+        when(httpRequest.getMethod()).thenReturn("GET");
+        when(httpRequest.getRequestURI()).thenReturn("/test/uri");
+        when(httpRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
 
-        // Mock LogFactory and LogProcessorService behavior
-        RestLog restLog = mock(RestLog.class);
-        when(logFactory.createRestLog(any(), any(), any(), any(), anyInt(), any(), anyLong())).thenReturn(restLog);
+        // Mock external dependencies
+        when(logFactory.createRestLog(any(), any(), any(), any(), anyInt(), any(), anyLong())).thenReturn(new RestLog());
+        doNothing().when(logProcessorService).processLog(any(), eq(LogType.REQUEST));
 
-        // When
-        logService.logRequest(mockRequest, latencyMs);
+        // Act
+        logServiceImpl.logRequest(httpRequest, latencyMs);
 
-        // Then
-        verify(logFactory, times(1)).createRestLog(any(), eq(method), eq(requestUri), any(Map.class), eq(0), any(), eq(latencyMs));
-        verify(logProcessorService, times(1)).processLog(eq(restLog), eq(LogType.REQUEST));
+        // Assert
+        verify(logFactory, times(1)).createRestLog(any(), eq("GET"), eq("/test/uri"), eq(requestBody), eq(0), isNull(), eq(latencyMs));
+        verify(logProcessorService, times(1)).processLog(any(), eq(LogType.REQUEST));
     }
 
     @Test
-    void logRequest_withException() {
-        // Given
-        String application = "testApp";
-        String environment = "testEnv";
-        long latencyMs = 200;
+    void testLogRequest_WithException_ShouldCallLogException() {
+        // Arrange
+        long latencyMs = 100L;
+        Map<String, String> requestBody = Map.of("key", "value");
 
-        // Mock the behavior of the request
-        when(mockRequest.getMethod()).thenReturn("GET");
-        when(mockRequest.getRequestURI()).thenReturn("/test/uri");
+        // Mock the behavior of HttpServletRequest to simulate an exception
+        when(httpRequest.getMethod()).thenReturn("GET");
+        when(httpRequest.getRequestURI()).thenReturn("/test/uri");
+        when(httpRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
 
-        // Simulate an exception in logFactory.createRestLog
-        when(logFactory.createRestLog(any(), any(), any(), any(), anyInt(), any(), anyLong()))
-            .thenThrow(new RuntimeException("Log creation failed"));
+        // Mock external dependencies to throw an exception
+        when(logFactory.createRestLog(any(), any(), any(), any(), anyInt(), any(), anyLong())).thenThrow(new RuntimeException("Test Exception"));
 
-        // When & Then
-        assertThrows(RuntimeException.class, () -> logService.logRequest(mockRequest, latencyMs));
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> logServiceImpl.logRequest(httpRequest, latencyMs));
     }
 }
