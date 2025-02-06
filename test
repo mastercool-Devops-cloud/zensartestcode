@@ -42,3 +42,13 @@ class BaseLogConfigTest {
         assertNotNull(baseLogDetails.getTimestamp()); // Ensure timestamp is set
     }
 }
+java.lang.IllegalArgumentException: Could not find field 'source' of type [null] on target object [com.sb.fedssimplification.utilitymodules.loggingutility.config.BaseLogConfig$$SpringCGLIB$$0@ea52184] or target class [class com.sb.fedssimplification.utilitymodules.loggingutility.config.BaseLogConfig$$SpringCGLIB$$0]
+
+	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:190)
+	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:107)
+	at org.springframework.test.util.ReflectionTestUtils.setField(ReflectionTestUtils.java:91)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.config.BaseLogConfigTest.testBaseLogDetailsBeanCreation(BaseLogConfigTest.java:29)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
