@@ -1,38 +1,79 @@
-import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-class HttpStatusInfoTest {
+import javax.servlet.http.HttpServletRequest;
 
-    @Test
-    void testFromStatus_SuccessRange() {
-        assertEquals(HttpStatusInfo.SUCCESS, HttpStatusInfo.fromStatus(200));
-        assertEquals(HttpStatusInfo.SUCCESS, HttpStatusInfo.fromStatus(250));
-        assertEquals(HttpStatusInfo.SUCCESS, HttpStatusInfo.fromStatus(299));
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.Map;
+
+@SpringBootTest
+class LogServiceImplTest {
+
+    @Mock
+    private LogFactory logFactory;
+
+    @Mock
+    private LogProcessorService logProcessorService;
+
+    @Mock
+    private HttpServletRequest mockRequest;
+
+    @InjectMocks
+    private LogServiceImpl logService;
+
+    @BeforeEach
+    void setUp() {
+        // Initialize mocks
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testFromStatus_ClientErrorRange() {
-        assertEquals(HttpStatusInfo.CLIENT_ERROR, HttpStatusInfo.fromStatus(400));
-        assertEquals(HttpStatusInfo.CLIENT_ERROR, HttpStatusInfo.fromStatus(450));
-        assertEquals(HttpStatusInfo.CLIENT_ERROR, HttpStatusInfo.fromStatus(499));
+    void logRequest_success() {
+        // Given
+        String application = "testApp";
+        String environment = "testEnv";
+        String requestUri = "/test/uri";
+        String method = "GET";
+        long latencyMs = 200;
+
+        // Mock the behavior of the request
+        when(mockRequest.getMethod()).thenReturn(method);
+        when(mockRequest.getRequestURI()).thenReturn(requestUri);
+        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
+
+        // Mock LogFactory and LogProcessorService behavior
+        RestLog restLog = mock(RestLog.class);
+        when(logFactory.createRestLog(any(), any(), any(), any(), anyInt(), any(), anyLong())).thenReturn(restLog);
+
+        // When
+        logService.logRequest(mockRequest, latencyMs);
+
+        // Then
+        verify(logFactory, times(1)).createRestLog(any(), eq(method), eq(requestUri), any(Map.class), eq(0), any(), eq(latencyMs));
+        verify(logProcessorService, times(1)).processLog(eq(restLog), eq(LogType.REQUEST));
     }
 
     @Test
-    void testFromStatus_ServerErrorRange() {
-        assertEquals(HttpStatusInfo.SERVER_ERROR, HttpStatusInfo.fromStatus(500));
-        assertEquals(HttpStatusInfo.SERVER_ERROR, HttpStatusInfo.fromStatus(550));
-        assertEquals(HttpStatusInfo.SERVER_ERROR, HttpStatusInfo.fromStatus(599));
-    }
+    void logRequest_withException() {
+        // Given
+        String application = "testApp";
+        String environment = "testEnv";
+        long latencyMs = 200;
 
-    @Test
-    void testFromStatus_UnknownRange() {
-        assertEquals(HttpStatusInfo.UNKNOWN, HttpStatusInfo.fromStatus(0));
-        assertEquals(HttpStatusInfo.UNKNOWN, HttpStatusInfo.fromStatus(50));
-        assertEquals(HttpStatusInfo.UNKNOWN, HttpStatusInfo.fromStatus(99));
-    }
+        // Mock the behavior of the request
+        when(mockRequest.getMethod()).thenReturn("GET");
+        when(mockRequest.getRequestURI()).thenReturn("/test/uri");
 
-    @Test
-    void testFromStatus_InvalidStatus_ReturnsNull() {
-        assertNull(HttpStatusInfo.fromStatus(700)); // Out of any defined range
+        // Simulate an exception in logFactory.createRestLog
+        when(logFactory.createRestLog(any(), any(), any(), any(), anyInt(), any(), anyLong()))
+            .thenThrow(new RuntimeException("Log creation failed"));
+
+        // When & Then
+        assertThrows(RuntimeException.class, () -> logService.logRequest(mockRequest, latencyMs));
     }
 }
