@@ -129,3 +129,73 @@ void setUp() throws IOException {
     // Mock other necessary behaviors
     when(httpRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis());
 }
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+import java.io.IOException;
+
+import static org.mockito.Mockito.*;
+
+class ResponseLogFilterTest {
+
+    @Mock
+    private LogService logService;
+
+    @Mock
+    private HttpServletRequest mockRequest;
+
+    @Mock
+    private HttpServletResponse mockResponse;
+
+    @Mock
+    private FilterChain mockFilterChain;
+
+    private ContentCachingResponseWrapper wrappedResponse;
+
+    @InjectMocks
+    private ResponseLogFilter responseLogFilter;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        MockitoAnnotations.openMocks(this);
+        
+        // Mock ContentCachingResponseWrapper with HttpServletResponse
+        wrappedResponse = new ContentCachingResponseWrapper(mockResponse);
+
+        // Mock behavior of request
+        when(mockRequest.getAttribute("startTime")).thenReturn(System.currentTimeMillis() - 100);
+    }
+
+    @Test
+    void testDoFilter_SuccessfulRequest() throws IOException, ServletException {
+        // Act
+        responseLogFilter.doFilter(mockRequest, wrappedResponse, mockFilterChain);
+
+        // Assert
+        verify(mockFilterChain).doFilter(eq(mockRequest), eq(wrappedResponse)); // Ensure request goes through filter
+        verify(logService).logResponse(eq(wrappedResponse), eq(mockRequest), anyLong()); // Log response must be called
+        verify(wrappedResponse).copyBodyToResponse(); // Ensure response body is copied
+    }
+
+    @Test
+    void testDoFilter_ExceptionThrown() throws IOException, ServletException {
+        // Arrange
+        doThrow(new RuntimeException("Test Exception")).when(mockFilterChain).doFilter(any(), any());
+
+        // Act & Assert
+        try {
+            responseLogFilter.doFilter(mockRequest, wrappedResponse, mockFilterChain);
+        } catch (Exception e) {
+            verify(logService).logException(any(RuntimeException.class)); // Exception must be logged
+        }
+    }
+}
