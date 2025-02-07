@@ -1,3 +1,5 @@
 Approach	When to Use?
 ✅ @Component with @Autowired Constructor	When you want BaseLogDetails as a Spring-managed bean
 ✅ @Bean in Configuration	If you want BaseLogDetails as a POJO but still inject values automatically
+
+What about a normal internal information log? For example to say that something was successful
