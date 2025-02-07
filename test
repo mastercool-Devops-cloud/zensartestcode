@@ -3,3 +3,16 @@ public static String getStatusInfo(final int statusCode) {
             .map(HttpStatus::getLogLevel)
             .orElse("INFO");
 }
+The HTTP log level should be part of HTTP logs, not general logs. 
+HTTP logs should have their own structure & log level.
+General application logs should not mix with HTTP-specific logs.
+{
+  "timestamp": "2025-02-06T12:00:00Z",
+  "source": "payment-service",
+  "env": "uat",
+  "httpMethod": "POST",
+  "url": "/api/orders",
+  "statusCode": 500,
+  "logLevel": "ERROR",
+  "latencyMs": 1024
+}
