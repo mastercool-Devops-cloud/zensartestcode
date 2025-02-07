@@ -16,3 +16,4 @@ General application logs should not mix with HTTP-specific logs.
   "logLevel": "ERROR",
   "latencyMs": 1024
 }
+Requests do not have http codes, so maybe null would be better, but make sure to used the Jackson library that hides the null values.
