@@ -1,60 +1,8 @@
 So I need you to do something that checks what the service name is. If it is from your service for example the log service.
 But then log it out as a Jason object. 
 
-try creating a Pinder that logs a Jason object here that comes from your service, because what's gonna happen is we're gonna bring this into the other project, but you still wanna bend the others as.
-Configuration:
-  status: info
-  name: Log4j2Config
-
-  Appenders:
-    Console:
-      name: ConsoleAppender
-      target: SYSTEM_OUT
-      PatternLayout:
-        pattern: "%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n"
-
-    RollingFile:
-      name: RollingFileAppender
-      fileName: logs/app.log
-      filePattern: logs/app-%d{yyyy-MM-dd}.log.gz
-      PatternLayout:
-        pattern: "%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n"
-      Policies:
-        TimeBasedTriggeringPolicy:
-          interval: 1
-          modulate: true
-        SizeBasedTriggeringPolicy:
-          size: 10MB
-
-    JsonFile:
-      name: JsonFileAppender
-      fileName: logs/app.json
-      filePattern: logs/app-%d{yyyy-MM-dd}.json.gz
-      JsonLayout:
-        compact: false
-        eventEol: true
-
-  Loggers:
-    Logger:
-      - name: com.sb.fedssimplification.loggingutility  # Utility module package
-        level: debug
-        additivity: false
-        AppenderRef:
-          - ref: JsonFileAppender
-          - ref: RollingFileAppender
-          - ref: ConsoleAppender
-
-      - name: com.ab.cashflow.services  # Main application package
-        level: debug
-        additivity: false
-        AppenderRef:
-          - ref: JsonFileAppender
-          - ref: RollingFileAppender
-          - ref: ConsoleAppender
-
-    Root:
-      level: info
-      AppenderRef:
-        - ref: ConsoleAppender
-        - ref: RollingFileAppender
-        - ref: JsonFileAppender
+<Configuration status="INFO">
+    <Properties>
+        <Property name="log4j.configurationFile">log4j2.yml, log4j2-component.yml</Property>
+    </Properties>
+</Configuration>
