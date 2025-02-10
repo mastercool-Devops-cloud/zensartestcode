@@ -1,8 +1,197 @@
-So I need you to do something that checks what the service name is. If it is from your service for example the log service.
-But then log it out as a Jason object. 
+Configuration:
+  status: info
+  name: Log4j2Config
 
-<Configuration status="INFO">
+  Properties:
+    Property:
+      - name: LogPath
+        value: logs/cashflow-calculator/local
+      - name: LogFile
+        value: cashflow-calculator
+      - name: LogPattern
+        value: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%logger{6}] [%C{1}.%M(%F:%L)]: %msg%n"
+
+  Appenders:
+    Console:
+      name: ConsoleAppender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "${LogPattern}"
+
+    RollingFile:
+      name: JsonFileAppender
+      fileName: "${LogPath}/${LogFile}.json"
+      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.json.gz"
+      JsonLayout:
+        compact: false
+        eventEol: true
+
+    RollingFile:
+      name: PlainFileAppender
+      fileName: "${LogPath}/${LogFile}.log"
+      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz"
+      PatternLayout:
+        pattern: "${LogPattern}"
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1
+          modulate: true
+        SizeBasedTriggeringPolicy:
+          size: 10MB
+
+  Loggers:
+    Logger:
+      - name: com.example.specificservice
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: JsonFileAppender
+
+      - name: com.ab.cashflow.services
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: PlainFileAppender
+
+    Root:
+      level: info
+      AppenderRef:
+        - ref: ConsoleAppender
+        - ref: PlainFileAppender
+
+------------------------------------
+Configuration:
+  status: info
+  name: Log4j2Config
+
+  Properties:
+    Property:
+      - name: LogPath
+        value: logs/cashflow-calculator/local
+      - name: LogFile
+        value: cashflow-calculator
+      - name: LogPattern
+        value: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%logger{6}] [%C{1}.%M(%F:%L)]: %msg%n"
+
+  Appenders:
+
+    # Console Appender
+    Console:
+      name: ConsoleAppender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "${LogPattern}"
+
+    # Rolling File Appender with JSON Layout for Specific Service
+    RollingFile:
+      name: JsonFileAppender
+      fileName: "${LogPath}/${LogFile}.json"
+      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.json.gz"
+      JsonLayout:
+        compact: false
+        eventEol: true
+      Filters:
+        RegexFilter:
+          regex: ".*com\\.example\\.specificservice.*"
+          onMatch: ACCEPT
+          onMismatch: DENY
+
+    # Rolling File Appender with Pattern Layout for General Logs
+    RollingFile:
+      name: PlainFileAppender
+      fileName: "${LogPath}/${LogFile}.log"
+      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz"
+      PatternLayout:
+        pattern: "${LogPattern}"
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1
+          modulate: true
+        SizeBasedTriggeringPolicy:
+          size: 10MB
+
+  Loggers:
+
+    # Logger for Specific Service (Logs in JSON)
+    Logger:
+      - name: com.example.specificservice
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: JsonFileAppender
+
+      # Logger for General Application Logs (Logs in Plain Text)
+      - name: com.ab.cashflow.services
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: PlainFileAppender
+
+    # Default Root Logger
+    Root:
+      level: info
+      AppenderRef:
+        - ref: ConsoleAppender
+        - ref: PlainFileAppender
+-----------------------------------
+<Configuration status="info" name="Log4j2Config">
+
     <Properties>
-        <Property name="log4j.configurationFile">log4j2.yml, log4j2-component.yml</Property>
+        <Property name="LogPath">logs/cashflow-calculator/local</Property>
+        <Property name="LogFile">cashflow-calculator</Property>
+        <Property name="LogPattern">%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%logger{6}] [%C{1}.%M(%F:%L)]: %msg%n</Property>
     </Properties>
+
+    <Appenders>
+
+        <!-- Console Appender -->
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout>
+                <Pattern>${LogPattern}</Pattern>
+            </PatternLayout>
+        </Console>
+
+        <!-- Rolling File Appender with JSON Layout for Specific Service -->
+        <RollingFile name="JsonFileAppender" fileName="${LogPath}/${LogFile}.json"
+                     filePattern="${LogPath}/${LogFile}-%d{yyyy-MM-dd}.json.gz">
+            <JsonLayout complete="false" compact="true"/>
+            <Filters>
+                <RegexFilter regex=".*com\.example\.specificservice.*" onMatch="ACCEPT" onMismatch="DENY"/>
+            </Filters>
+        </RollingFile>
+
+        <!-- Rolling File Appender with Pattern Layout for General Logs -->
+        <RollingFile name="PlainFileAppender" fileName="${LogPath}/${LogFile}.log"
+                     filePattern="${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout>
+                <Pattern>${LogPattern}</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+        </RollingFile>
+
+    </Appenders>
+
+    <Loggers>
+
+        <!-- Logger for Specific Service (Logs in JSON) -->
+        <Logger name="com.example.specificservice" level="info" additivity="false">
+            <AppenderRef ref="JsonFileAppender"/>
+        </Logger>
+
+        <!-- Logger for General Application Logs (Logs in Plain Text) -->
+        <Logger name="com.ab.cashflow.services" level="debug" additivity="false">
+            <AppenderRef ref="PlainFileAppender"/>
+        </Logger>
+
+        <!-- Default Root Logger -->
+        <Root level="info">
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="PlainFileAppender"/>
+        </Root>
+
+    </Loggers>
+
 </Configuration>
