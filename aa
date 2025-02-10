@@ -10,29 +10,51 @@ Configuration:
     Console:
       name: ConsoleAppender
       target: SYSTEM_OUT
-      JsonLayout:
-        compact: false   # Pretty print JSON format
-        eventEol: true   # Newline after each JSON event
+      PatternLayout:
+        pattern: "%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n"
 
     RollingFile:
+      name: RollingFileAppender
+      fileName: logs/app.log
+      filePattern: logs/app-%d{yyyy-MM-dd}.log.gz
+      PatternLayout:
+        pattern: "%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n"
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1
+          modulate: true
+        SizeBasedTriggeringPolicy:
+          size: 10MB
+
+    JsonFile:
       name: JsonFileAppender
       fileName: logs/app.json
       filePattern: logs/app-%d{yyyy-MM-dd}.json.gz
       JsonLayout:
-        compact: false   # Pretty printed JSON logs
-        eventEol: true   # Ensures newline for each event
+        compact: false
+        eventEol: true
 
   Loggers:
     Logger:
-      - name: com.sb.fedssimplification.loggingutility.service.LogService
-        level: info
+      - name: com.sb.fedssimplification.loggingutility  # Utility module package
+        level: debug
         additivity: false
         AppenderRef:
-          - ref: ConsoleAppender
           - ref: JsonFileAppender
+          - ref: RollingFileAppender
+          - ref: ConsoleAppender
+
+      - name: com.ab.cashflow.services  # Main application package
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: JsonFileAppender
+          - ref: RollingFileAppender
+          - ref: ConsoleAppender
 
     Root:
       level: info
       AppenderRef:
         - ref: ConsoleAppender
+        - ref: RollingFileAppender
         - ref: JsonFileAppender
