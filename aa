@@ -1,34 +1,4 @@
-Configuration:
-  status: info
-  name: Log4j2Config
+So I need you to do something that checks what the service name is. If it is from your service for example the log service.
+But then log it out as a Jason object. 
 
-  Appenders:
-    Console:
-      name: ConsoleAppender
-      target: SYSTEM_OUT
-      JsonLayout:
-        compact: false  # Pretty print JSON (set to true for compact format)
-        eventEol: true  # Adds a newline after each JSON event
-
-    RollingFile:
-      name: FileAppender
-      fileName: logs/app.log
-      filePattern: logs/app-%d{yyyy-MM-dd}.log.gz
-      JsonLayout:
-        compact: false  # Pretty print JSON format
-        eventEol: true  # Ensures a new line after each log entry
-
-  Loggers:
-    Logger:
-      - name: com.example  # Base package to log
-        level: debug
-        additivity: false
-        AppenderRef:
-          - ref: ConsoleAppender
-          - ref: FileAppender
-
-    Root:
-      level: info
-      AppenderRef:
-        - ref: ConsoleAppender
-        - ref: FileAppender
+try creating a Pinder that logs a Jason object here that comes from your service, because what's gonna happen is we're gonna bring this into the other project, but you still wanna bend the others as.
