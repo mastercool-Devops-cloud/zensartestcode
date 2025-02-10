@@ -2,3 +2,37 @@ So I need you to do something that checks what the service name is. If it is fro
 But then log it out as a Jason object. 
 
 try creating a Pinder that logs a Jason object here that comes from your service, because what's gonna happen is we're gonna bring this into the other project, but you still wanna bend the others as.
+Configuration:
+  status: info
+  name: Log4j2Config
+
+  Appenders:
+    Console:
+      name: ConsoleAppender
+      target: SYSTEM_OUT
+      JsonLayout:
+        compact: false   # Pretty print JSON format
+        eventEol: true   # Newline after each JSON event
+
+    RollingFile:
+      name: JsonFileAppender
+      fileName: logs/app.json
+      filePattern: logs/app-%d{yyyy-MM-dd}.json.gz
+      JsonLayout:
+        compact: false   # Pretty printed JSON logs
+        eventEol: true   # Ensures newline for each event
+
+  Loggers:
+    Logger:
+      - name: com.sb.fedssimplification.loggingutility.service.LogService
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: ConsoleAppender
+          - ref: JsonFileAppender
+
+    Root:
+      level: info
+      AppenderRef:
+        - ref: ConsoleAppender
+        - ref: JsonFileAppender
