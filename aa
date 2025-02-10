@@ -1,3 +1,34 @@
-Optional.ofNullable(HttpStatus.fromStatus(responseStatus))
-                          .map(HttpStatus::getLogLevel)
-                          .orElse("INFO");
+Configuration:
+  status: info
+  name: Log4j2Config
+
+  Appenders:
+    Console:
+      name: ConsoleAppender
+      target: SYSTEM_OUT
+      JsonLayout:
+        compact: false  # Pretty print JSON (set to true for compact format)
+        eventEol: true  # Adds a newline after each JSON event
+
+    RollingFile:
+      name: FileAppender
+      fileName: logs/app.log
+      filePattern: logs/app-%d{yyyy-MM-dd}.log.gz
+      JsonLayout:
+        compact: false  # Pretty print JSON format
+        eventEol: true  # Ensures a new line after each log entry
+
+  Loggers:
+    Logger:
+      - name: com.example  # Base package to log
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: ConsoleAppender
+          - ref: FileAppender
+
+    Root:
+      level: info
+      AppenderRef:
+        - ref: ConsoleAppender
+        - ref: FileAppender
