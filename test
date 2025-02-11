@@ -227,3 +227,9 @@ class LogServiceImplTest {
         assert new String(wrappedResponse.getContentAsByteArray()).contains("Success");
     }
 }
+-----------------------------------------
+java.lang.AssertionError
+	at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogResponse(LogServiceImplTest.java:78)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
