@@ -106,3 +106,9 @@ class LogServiceImplTest {
         assertEquals("UNKNOWN", ipAddress);
     }
 }
+java.lang.NullPointerException: Cannot invoke "jakarta.servlet.ServletInputStream.readAllBytes()" because the return value of "jakarta.servlet.http.HttpServletRequest.getInputStream()" is null
+
+	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpLogHelper.getRequestBody(HttpLogHelper.java:23)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest(LogServiceImplTest.java:48)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
