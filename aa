@@ -8,31 +8,28 @@
 
     <Appenders>
 
-        <!-- Rolling File Appender with Composite Layout -->
+        <!-- Rolling File Appender Handling Both JSON & Plain Text -->
         <RollingFile name="SharedFileAppender" fileName="${LogPath}/${LogFile}.log"
                      filePattern="${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz">
 
             <Composite>
-
-                <!-- Apply filters -->
                 <Filters>
-                    <!-- Only log errors and above -->
-                    <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
-                    <!-- Filter logs from a specific package -->
+                    <!-- JSON for Specific Package -->
                     <RegexFilter regex=".*com\.example\.specificservice.*" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
                 </Filters>
 
-                <Layouts>
+                <!-- JSON Layout for com.example.specificservice -->
+                <JsonLayout complete="false" compact="true"/>
 
-                    <!-- JSON Layout -->
-                    <JsonLayout complete="false" compact="true"/>
+                <Filters>
+                    <!-- Plain Text for Other Packages -->
+                    <RegexFilter regex=".*com\.example\.specificservice.*" onMatch="DENY" onMismatch="NEUTRAL"/>
+                </Filters>
 
-                    <!-- Standard Pattern Layout -->
-                    <PatternLayout>
-                        <Pattern>${LogPattern}</Pattern>
-                    </PatternLayout>
-
-                </Layouts>
+                <!-- Plain Text Layout for Other Logs -->
+                <PatternLayout>
+                    <Pattern>${LogPattern}</Pattern>
+                </PatternLayout>
 
             </Composite>
 
@@ -48,12 +45,17 @@
 
     <Loggers>
 
-        <!-- Logger for Specific Service -->
+        <!-- Logger for Specific Service (Logs in JSON) -->
         <Logger name="com.example.specificservice" level="info" additivity="false">
             <AppenderRef ref="SharedFileAppender"/>
         </Logger>
 
-        <!-- Root Logger -->
+        <!-- Logger for General Application Logs (Logs in Plain Text) -->
+        <Logger name="com.ab.cashflow.services" level="debug" additivity="false">
+            <AppenderRef ref="SharedFileAppender"/>
+        </Logger>
+
+        <!-- Default Root Logger -->
         <Root level="info">
             <AppenderRef ref="SharedFileAppender"/>
         </Root>
