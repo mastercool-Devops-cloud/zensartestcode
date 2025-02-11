@@ -112,3 +112,39 @@ java.lang.NullPointerException: Cannot invoke "jakarta.servlet.ServletInputStrea
 	at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogRequest(LogServiceImplTest.java:48)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.mock.web.DelegatingServletInputStream;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+
+import static org.mockito.Mockito.*;
+
+class LogServiceImplTest {
+
+    @Test
+    void testLogRequest() throws IOException {
+        // Mock HttpServletRequest
+        HttpServletRequest httpRequest = mock(HttpServletRequest.class);
+
+        // Simulate request body content
+        String requestBody = "{\"key\": \"value\"}";
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(requestBody.getBytes());
+        ServletInputStream servletInputStream = new DelegatingServletInputStream(byteArrayInputStream);
+
+        // Mock getInputStream() to return a valid input stream
+        when(httpRequest.getInputStream()).thenReturn(servletInputStream);
+
+        // Call the method under test
+        LogServiceImpl logService = new LogServiceImpl(new LogFactory(), new LogProcessorService());
+        logService.logRequest(httpRequest, 200L);
+
+        // Verify interactions
+        verify(httpRequest, times(1)).getInputStream();
+    }
+}
+
