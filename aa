@@ -145,3 +145,8 @@ Configuration:
       AppenderRef:
         - ref: ConsoleAppender
         - ref: SharedFileAppender
+-----------------------------------------
+2025-02-11T07:57:26.116631300Z main ERROR Null object returned for RollingFile in Appenders.
+2025-02-11T07:57:26.148915Z main ERROR Unable to locate appender "SharedFileAppender" for logger config "root"
+2025-02-11T07:57:26.148915Z main ERROR Unable to locate appender "SharedFileAppender" for logger config "com.sb.fedssimplification.utilitymodules.loggingutility.service"
+2025-02-11T07:57:26.148915Z main ERROR Unable to locate appender "SharedFileAppender" for logger config "com.sb.fedssimplification.cashflowcalculator"
