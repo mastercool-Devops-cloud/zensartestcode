@@ -63,3 +63,5 @@
     </Loggers>
 
 </Configuration>
+com.sb.fedssimplification.utilitymodules.loggingutility.service
+com.sb.fedssimplification.cashflowcalculator
