@@ -150,3 +150,85 @@ Configuration:
 2025-02-11T07:57:26.148915Z main ERROR Unable to locate appender "SharedFileAppender" for logger config "root"
 2025-02-11T07:57:26.148915Z main ERROR Unable to locate appender "SharedFileAppender" for logger config "com.sb.fedssimplification.utilitymodules.loggingutility.service"
 2025-02-11T07:57:26.148915Z main ERROR Unable to locate appender "SharedFileAppender" for logger config "com.sb.fedssimplification.cashflowcalculator"
+
+Configuration:
+  status: info
+  name: Log4j2Config
+
+  Properties:
+    Property:
+      - name: LogPath
+        value: logs/cashflow-calculator/local
+      - name: LogFile
+        value: cashflow-calculator
+      - name: LogPattern
+        value: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%logger{6}] [%C{1}.%M(%F:%L)]: %msg%n"
+
+  Appenders:
+
+    # Console Appender
+    Console:
+      name: ConsoleAppender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "${LogPattern}"
+
+    # Corrected Rolling File Appender (Shared)
+    RollingFile:
+      name: SharedFileAppender
+      fileName: "${LogPath}/${LogFile}.log"
+      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz"
+      
+      # Composite Layout (Combining JSON and Plain Text)
+      Layout:
+        Composite:
+          Layouts:
+            - JsonLayout:
+                complete: false
+                compact: true
+            - PatternLayout:
+                pattern: "${LogPattern}"
+
+      # Policies for log rotation
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1
+          modulate: true
+        SizeBasedTriggeringPolicy:
+          size: 10MB
+
+      # Filters to match correct package names
+      Filters:
+        - RegexFilter:
+            regex: ".*com\\.sb\\.fedssimplification\\.utilitymodules\\.loggingutility\\.service.*"
+            onMatch: ACCEPT
+            onMismatch: NEUTRAL
+        - RegexFilter:
+            regex: ".*com\\.sb\\.fedssimplification\\.cashflowcalculator.*"
+            onMatch: ACCEPT
+            onMismatch: DENY
+
+  Loggers:
+
+    # Logger for Specific Service (Logs in JSON)
+    Logger:
+      - name: com.sb.fedssimplification.utilitymodules.loggingutility.service
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: SharedFileAppender
+
+      # Logger for Cashflow Service (Logs in Plain Text)
+      - name: com.sb.fedssimplification.cashflowcalculator
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: SharedFileAppender
+
+    # Default Root Logger
+    Root:
+      level: info
+      AppenderRef:
+        - ref: ConsoleAppender
+        - ref: SharedFileAppender
+
