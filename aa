@@ -13,20 +13,19 @@
                      filePattern="${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz">
 
             <Composite>
-                <Filters>
-                    <!-- JSON for Specific Package -->
-                    <RegexFilter regex=".*com\.example\.specificservice.*" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-                </Filters>
 
-                <!-- JSON Layout for com.example.specificservice -->
+                <!-- JSON Layout for Specific Packages -->
+                <Filters>
+                    <RegexFilter regex=".*(com\.sb\.fedssimplification\.utilitymodules\.loggingutility\.service|com\.sb\.fedssimplification\.cashflowcalculator).*"
+                                 onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+                </Filters>
                 <JsonLayout complete="false" compact="true"/>
 
+                <!-- Plain Text Layout for Other Packages -->
                 <Filters>
-                    <!-- Plain Text for Other Packages -->
-                    <RegexFilter regex=".*com\.example\.specificservice.*" onMatch="DENY" onMismatch="NEUTRAL"/>
+                    <RegexFilter regex=".*(com\.sb\.fedssimplification\.utilitymodules\.loggingutility\.service|com\.sb\.fedssimplification\.cashflowcalculator).*"
+                                 onMatch="DENY" onMismatch="NEUTRAL"/>
                 </Filters>
-
-                <!-- Plain Text Layout for Other Logs -->
                 <PatternLayout>
                     <Pattern>${LogPattern}</Pattern>
                 </PatternLayout>
@@ -45,12 +44,17 @@
 
     <Loggers>
 
-        <!-- Logger for Specific Service (Logs in JSON) -->
-        <Logger name="com.example.specificservice" level="info" additivity="false">
+        <!-- Logger for Utility Module Service (Logs in JSON) -->
+        <Logger name="com.sb.fedssimplification.utilitymodules.loggingutility.service" level="info" additivity="false">
             <AppenderRef ref="SharedFileAppender"/>
         </Logger>
 
-        <!-- Logger for General Application Logs (Logs in Plain Text) -->
+        <!-- Logger for Cashflow Calculator (Logs in JSON) -->
+        <Logger name="com.sb.fedssimplification.cashflowcalculator" level="info" additivity="false">
+            <AppenderRef ref="SharedFileAppender"/>
+        </Logger>
+
+        <!-- Logger for Other Application Logs (Logs in Plain Text) -->
         <Logger name="com.ab.cashflow.services" level="debug" additivity="false">
             <AppenderRef ref="SharedFileAppender"/>
         </Logger>
@@ -63,5 +67,3 @@
     </Loggers>
 
 </Configuration>
-com.sb.fedssimplification.utilitymodules.loggingutility.service
-com.sb.fedssimplification.cashflowcalculator
