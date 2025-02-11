@@ -183,3 +183,13 @@ class LogServiceImplTest {
         verify(httpRequest, times(1)).getInputStream();
     }
 }
+-------------------------------------------
+java.lang.NullPointerException: Cannot read the array length because "bytes" is null
+
+	at java.base/java.lang.String.<init>(String.java:1425)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.helper.HttpLogHelper.getResponseBody(HttpLogHelper.java:37)
+	at com.sb.fedssimplification.utilitymodules.loggingutility.service.impl.LogServiceImplTest.testLogResponse(LogServiceImplTest.java:67)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
