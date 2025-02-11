@@ -1,53 +1,108 @@
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
+
+import jakarta.servlet.http.HttpServletRequest;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.catalina.connector.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockito.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 
-class LogFactoryTest {
+class LogServiceImplTest {
 
-    private BaseLogDetails baseLogDetails;
+    @Mock
+    private LogFactory logFactory;
+    
+    @Mock
+    private LogProcessorService logProcessorService;
+
+    @Mock
+    private HttpServletRequest httpRequest;
+
+    @Mock
+    private ContentCachingResponseWrapper wrappedResponse;
+
+    @InjectMocks
+    private LogServiceImpl logService;
+
+    private static final Logger log = LogManager.getLogger(LogServiceImplTest.class);
 
     @BeforeEach
     void setUp() {
-        baseLogDetails = Mockito.mock(BaseLogDetails.class);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testCreateRestLog() {
+    void testLogRequest() {
         // Given
-        String httpMethod = "POST";
-        String url = "http://example.com/api";
-        Map<String, String> body = Map.of("key", "value");
-        Integer statusCode = 200;
-        long latencyMs = 150;
+        when(httpRequest.getMethod()).thenReturn("POST");
+        when(httpRequest.getRequestURI()).thenReturn("/api/test");
+        when(HttpLogHelper.getRequestBody(httpRequest)).thenReturn(Map.of("key", "value"));
 
         // When
-        RestLog restLog = LogFactory.createRestLog(baseLogDetails, httpMethod, url, body, statusCode, latencyMs);
+        logService.logRequest(httpRequest, 100L);
 
         // Then
-        assertNotNull(restLog);
-        assertEquals(baseLogDetails, restLog.getBaseLogDetails());
-        assertEquals(httpMethod, restLog.getHttpMethod());
-        assertEquals(url, restLog.getUrl());
-        assertEquals(body, restLog.getBody());
-        assertEquals(statusCode, restLog.getStatusCode());
-        assertEquals(latencyMs, restLog.getLatencyMs());
+        verify(logFactory, times(1)).createRestLog(any(), eq("POST"), eq("/api/test"), any(), isNull(), eq(100L));
     }
 
     @Test
-    void testCreateErrorLog() {
+    void testLogResponse() throws IOException {
         // Given
-        String errorMessage = "Null Pointer Exception";
-        String stackTrace = "at com.example.Main.main(Main.java:10)";
+        when(wrappedResponse.getStatus()).thenReturn(HttpStatus.OK.value());
+        when(HttpLogHelper.getResponseBody(wrappedResponse)).thenReturn(Map.of("response", "ok"));
 
         // When
-        ErrorLog errorLog = LogFactory.createErrorLog(baseLogDetails, errorMessage, stackTrace);
+        logService.logResponse(wrappedResponse, httpRequest, 200L);
 
         // Then
-        assertNotNull(errorLog);
-        assertEquals(baseLogDetails, errorLog.getBaseLogDetails());
-        assertEquals(errorMessage, errorLog.getErrorMessage());
-        assertEquals(stackTrace, errorLog.getStackTrace());
+        verify(logFactory, times(1)).createRestLog(any(), isNull(), isNull(), any(), eq(HttpStatus.OK.value()), eq(200L));
+    }
+
+    @Test
+    void testLogException() {
+        // Given
+        Exception exception = new RuntimeException("Test Exception");
+
+        // When
+        logService.logException(exception);
+
+        // Then
+        verify(logFactory, times(1)).createErrorLog(any(), eq("Test Exception"), anyString());
+    }
+
+    @Test
+    void testGetLocalIpAddress() throws UnknownHostException {
+        // Given
+        InetAddress mockInetAddress = mock(InetAddress.class);
+        when(mockInetAddress.getHostAddress()).thenReturn("192.168.1.1");
+        InetAddress.setLocalHost(mockInetAddress);
+
+        // When
+        String ipAddress = logService.getLocalIpAddress();
+
+        // Then
+        assertEquals("192.168.1.1", ipAddress);
+    }
+
+    @Test
+    void testGetLocalIpAddress_UnknownHostException() throws UnknownHostException {
+        // Given
+        InetAddress.setLocalHost(null);
+
+        // When
+        String ipAddress = logService.getLocalIpAddress();
+
+        // Then
+        assertEquals("UNKNOWN", ipAddress);
     }
 }
