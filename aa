@@ -90,52 +90,58 @@ Configuration:
       PatternLayout:
         pattern: "${LogPattern}"
 
-    # Rolling File Appenders (List)
+    # Single Rolling File Appender (Shared)
     RollingFile:
-      - name: JsonFileAppender
-        fileName: "${LogPath}/${LogFile}.json"
-        filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.json.gz"
-        JsonLayout:
-          compact: false
-          eventEol: true
-        Filters:
-          RegexFilter:
-            regex: ".*com\\.example\\.specificservice.*"
+      name: SharedFileAppender
+      fileName: "${LogPath}/${LogFile}.log"
+      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz"
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1
+          modulate: true
+        SizeBasedTriggeringPolicy:
+          size: 10MB
+
+      # Composite Layout (Both JSON and Plain Text)
+      Composite:
+        Layouts:
+          - JsonLayout:
+              complete: false
+              compact: true
+          - PatternLayout:
+              pattern: "${LogPattern}"
+
+      # Filters for different packages
+      Filters:
+        - RegexFilter:
+            regex: ".*com\\.sb\\.fedssimplification\\.utilitymodules\\.loggingutility\\.service.*"
+            onMatch: ACCEPT
+            onMismatch: NEUTRAL
+        - RegexFilter:
+            regex: ".*com\\.sb\\.fedssimplification\\.cashflowcalculator.*"
             onMatch: ACCEPT
             onMismatch: DENY
-
-      - name: PlainFileAppender
-        fileName: "${LogPath}/${LogFile}.log"
-        filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz"
-        PatternLayout:
-          pattern: "${LogPattern}"
-        Policies:
-          TimeBasedTriggeringPolicy:
-            interval: 1
-            modulate: true
-          SizeBasedTriggeringPolicy:
-            size: 10MB
 
   Loggers:
 
     # Logger for Specific Service (Logs in JSON)
     Logger:
-      - name: com.example.specificservice
+      - name: com.sb.fedssimplification.utilitymodules.loggingutility.service
         level: info
         additivity: false
         AppenderRef:
-          - ref: JsonFileAppender
+          - ref: SharedFileAppender
 
-      # Logger for General Application Logs (Logs in Plain Text)
-      - name: com.ab.cashflow.services
+      # Logger for Cashflow Service (Logs in Plain Text)
+      - name: com.sb.fedssimplification.cashflowcalculator
         level: debug
         additivity: false
         AppenderRef:
-          - ref: PlainFileAppender
+          - ref: SharedFileAppender
 
     # Default Root Logger
     Root:
       level: info
       AppenderRef:
         - ref: ConsoleAppender
-        - ref: PlainFileAppender
+        - ref: SharedFileAppender
