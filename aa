@@ -90,33 +90,31 @@ Configuration:
       PatternLayout:
         pattern: "${LogPattern}"
 
-    # Rolling File Appender with JSON Layout for Specific Service
+    # Rolling File Appenders (List)
     RollingFile:
-      name: JsonFileAppender
-      fileName: "${LogPath}/${LogFile}.json"
-      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.json.gz"
-      JsonLayout:
-        compact: false
-        eventEol: true
-      Filters:
-        RegexFilter:
-          regex: ".*com\\.example\\.specificservice.*"
-          onMatch: ACCEPT
-          onMismatch: DENY
+      - name: JsonFileAppender
+        fileName: "${LogPath}/${LogFile}.json"
+        filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.json.gz"
+        JsonLayout:
+          compact: false
+          eventEol: true
+        Filters:
+          RegexFilter:
+            regex: ".*com\\.example\\.specificservice.*"
+            onMatch: ACCEPT
+            onMismatch: DENY
 
-    # Rolling File Appender with Pattern Layout for General Logs
-    RollingFile:
-      name: PlainFileAppender
-      fileName: "${LogPath}/${LogFile}.log"
-      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz"
-      PatternLayout:
-        pattern: "${LogPattern}"
-      Policies:
-        TimeBasedTriggeringPolicy:
-          interval: 1
-          modulate: true
-        SizeBasedTriggeringPolicy:
-          size: 10MB
+      - name: PlainFileAppender
+        fileName: "${LogPath}/${LogFile}.log"
+        filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz"
+        PatternLayout:
+          pattern: "${LogPattern}"
+        Policies:
+          TimeBasedTriggeringPolicy:
+            interval: 1
+            modulate: true
+          SizeBasedTriggeringPolicy:
+            size: 10MB
 
   Loggers:
 
