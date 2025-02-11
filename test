@@ -1,19 +1,53 @@
-public static String getStatusInfo(final int statusCode) {
-    return Optional.ofNullable(HttpStatus.fromStatus(statusCode))
-            .map(HttpStatus::getLogLevel)
-            .orElse("INFO");
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import java.util.Map;
+
+class LogFactoryTest {
+
+    private BaseLogDetails baseLogDetails;
+
+    @BeforeEach
+    void setUp() {
+        baseLogDetails = Mockito.mock(BaseLogDetails.class);
+    }
+
+    @Test
+    void testCreateRestLog() {
+        // Given
+        String httpMethod = "POST";
+        String url = "http://example.com/api";
+        Map<String, String> body = Map.of("key", "value");
+        Integer statusCode = 200;
+        long latencyMs = 150;
+
+        // When
+        RestLog restLog = LogFactory.createRestLog(baseLogDetails, httpMethod, url, body, statusCode, latencyMs);
+
+        // Then
+        assertNotNull(restLog);
+        assertEquals(baseLogDetails, restLog.getBaseLogDetails());
+        assertEquals(httpMethod, restLog.getHttpMethod());
+        assertEquals(url, restLog.getUrl());
+        assertEquals(body, restLog.getBody());
+        assertEquals(statusCode, restLog.getStatusCode());
+        assertEquals(latencyMs, restLog.getLatencyMs());
+    }
+
+    @Test
+    void testCreateErrorLog() {
+        // Given
+        String errorMessage = "Null Pointer Exception";
+        String stackTrace = "at com.example.Main.main(Main.java:10)";
+
+        // When
+        ErrorLog errorLog = LogFactory.createErrorLog(baseLogDetails, errorMessage, stackTrace);
+
+        // Then
+        assertNotNull(errorLog);
+        assertEquals(baseLogDetails, errorLog.getBaseLogDetails());
+        assertEquals(errorMessage, errorLog.getErrorMessage());
+        assertEquals(stackTrace, errorLog.getStackTrace());
+    }
 }
-The HTTP log level should be part of HTTP logs, not general logs. 
-HTTP logs should have their own structure & log level.
-General application logs should not mix with HTTP-specific logs.
-{
-  "timestamp": "2025-02-06T12:00:00Z",
-  "source": "payment-service",
-  "env": "uat",
-  "httpMethod": "POST",
-  "url": "/api/orders",
-  "statusCode": 500,
-  "logLevel": "ERROR",
-  "latencyMs": 1024
-}
-Requests do not have http codes, so maybe null would be better, but make sure to used the Jackson library that hides the null values.
