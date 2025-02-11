@@ -7,3 +7,14 @@ Requests do not have http codes, so maybe null would be better, but make sure to
           complete: false
           compact: true
           objectMessageOnly: true
+      - name: RollingFileJsonAppender
+        fileName: ${log-path}/${log-file}.log
+        filePattern: ${log-path}/${log-file}-%d{yyyy-MM-dd}.log
+        JsonLayout:
+          complete: false
+          compact: true
+          objectMessageOnly: true
+        Policies:
+          TimeBasedTriggeringPolicy:
+            interval: 1
+            modulate: true
