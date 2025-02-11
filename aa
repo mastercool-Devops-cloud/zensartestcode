@@ -67,3 +67,77 @@
     </Loggers>
 
 </Configuration>
+-----------------------------------------
+Configuration:
+  status: info
+  name: Log4j2Config
+
+  Properties:
+    Property:
+      - name: LogPath
+        value: logs/cashflow-calculator/local
+      - name: LogFile
+        value: cashflow-calculator
+      - name: LogPattern
+        value: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%logger{6}] [%C{1}.%M(%F:%L)]: %msg%n"
+
+  Appenders:
+
+    # Console Appender
+    Console:
+      name: ConsoleAppender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "${LogPattern}"
+
+    # Rolling File Appender with JSON Layout for Specific Service
+    RollingFile:
+      name: JsonFileAppender
+      fileName: "${LogPath}/${LogFile}.json"
+      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.json.gz"
+      JsonLayout:
+        compact: false
+        eventEol: true
+      Filters:
+        RegexFilter:
+          regex: ".*com\\.example\\.specificservice.*"
+          onMatch: ACCEPT
+          onMismatch: DENY
+
+    # Rolling File Appender with Pattern Layout for General Logs
+    RollingFile:
+      name: PlainFileAppender
+      fileName: "${LogPath}/${LogFile}.log"
+      filePattern: "${LogPath}/${LogFile}-%d{yyyy-MM-dd}.log.gz"
+      PatternLayout:
+        pattern: "${LogPattern}"
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1
+          modulate: true
+        SizeBasedTriggeringPolicy:
+          size: 10MB
+
+  Loggers:
+
+    # Logger for Specific Service (Logs in JSON)
+    Logger:
+      - name: com.example.specificservice
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: JsonFileAppender
+
+      # Logger for General Application Logs (Logs in Plain Text)
+      - name: com.ab.cashflow.services
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: PlainFileAppender
+
+    # Default Root Logger
+    Root:
+      level: info
+      AppenderRef:
+        - ref: ConsoleAppender
+        - ref: PlainFileAppender
