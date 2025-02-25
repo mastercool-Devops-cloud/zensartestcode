@@ -1,20 +1,2 @@
-Requests do not have http codes, so maybe null would be better, but make sure to used the Jackson library that hides the null values.
-  Appenders:
-    Console:
-      - name: ConsoleJson
-        target: SYSTEM_OUT
-        JsonLayout:
-          complete: false
-          compact: true
-          objectMessageOnly: true
-      - name: RollingFileJsonAppender
-        fileName: ${log-path}/${log-file}.log
-        filePattern: ${log-path}/${log-file}-%d{yyyy-MM-dd}.log
-        JsonLayout:
-          complete: false
-          compact: true
-          objectMessageOnly: true
-        Policies:
-          TimeBasedTriggeringPolicy:
-            interval: 1
-            modulate: true
+Caused by: com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.NoHttpResponseException: localhost:2375 failed to respond
+	at com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.impl.io.DefaultHttpResponseParser.createConnectionClosedException(DefaultHttpResponseParser.java:87)
