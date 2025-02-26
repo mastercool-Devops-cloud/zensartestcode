@@ -1,2 +1,4 @@
 12:35:28.411 [docker-java-stream--895222699] ERROR com.github.dockerjava.api.async.ResultCallbackTemplate -- Error during callback
 com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"x509: certificate signed by unknown authority"}
+
+gvenzl/oracle-xe:21-slim-faststart
