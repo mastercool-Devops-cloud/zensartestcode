@@ -1,2 +1,2 @@
-Caused by: com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.NoHttpResponseException: localhost:2375 failed to respond
-	at com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.impl.io.DefaultHttpResponseParser.createConnectionClosedException(DefaultHttpResponseParser.java:87)
+12:35:28.411 [docker-java-stream--895222699] ERROR com.github.dockerjava.api.async.ResultCallbackTemplate -- Error during callback
+com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"x509: certificate signed by unknown authority"}
