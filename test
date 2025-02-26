@@ -14,6 +14,9 @@ public class OracleTest {
     @DynamicPropertySource
     static void registerOracleProperties(DynamicPropertyRegistry registry) {
         oracleContainer.start();
+.withCreateContainerCmdModifier(cmd -> 
+                cmd.withHostConfig(cmd.getHostConfig().withPortBindings(Collections.singletonList("1521:1521")))
+            )
 
         String jdbcUrl = "jdbc:oracle:thin:@localhost:1521/testDB";
         registry.add("spring.datasource.url", () -> jdbcUrl);
