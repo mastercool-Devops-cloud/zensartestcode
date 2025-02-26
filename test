@@ -34,8 +34,6 @@ public class OracleTest {
     }
 }
 
-.withCreateContainerCmdModifier(cmd -> {
-                HostConfig hostConfig = new HostConfig();
-                hostConfig.withPortBindings("1521:1521"); // 🔹 Bind fixed port 1521
-                cmd.withHostConfig(hostConfig); // 🔹 Set custom host config
-            })
+.withCreateContainerCmdModifier(cmd -> 
+                cmd.withHostConfig(cmd.getHostConfig().withPortBindings(Collections.singletonList("1521:1521")))
+            )
