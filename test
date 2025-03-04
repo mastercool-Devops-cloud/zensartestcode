@@ -1,2 +1,6 @@
 [ERROR] com.sb.fedssimplification.automationtesting.OracleTest -- Time elapsed: 85.78 s <<< ERROR!
 java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@615e83ac testClass = com.sb.fedssimplification.automationtesting.OracleTest, locations = [], classes = [com.sb.fedssimplification.automationtesting.AutomationtestingApplication, com.sb.fedssimplification.automationtesting.OracleTestContainerConfig], contextInitializerClasses = [], activeProfiles = [], propertySourceDescriptors = [], propertySourceProperties =
+
+
+java.lang.RuntimeException: com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.NoHttpResponseException: localhost:2375 failed to respond
+	at com.github.dockerjava.zerodep.ApacheDockerHttpClientImpl.execute(ApacheDockerHttpClientImpl.java:210) ~[docker-java-transport-zerodep-3.4.0.jar:na]
