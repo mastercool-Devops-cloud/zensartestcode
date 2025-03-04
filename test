@@ -8,3 +8,7 @@ java.lang.RuntimeException: com.github.dockerjava.zerodep.shaded.org.apache.hc.c
 
 podman system service --time=0 tcp://localhost:2375
 $env:DOCKER_HOST="tcp://localhost:2375"
+
+Trying to pull docker.io/gvenzl/oracle-xe:latest...
+Error: initializing source docker://gvenzl/oracle-xe:latest: pinging container registry registry-1.docker.io: Get "https://registry-1.docker.io/v2/": dial tcp [2600:1f18:2148:bc00:5cac:48a0:7f88:7266]:443: connect: network is unreachable
+
