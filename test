@@ -4,3 +4,7 @@ java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMerge
 
 java.lang.RuntimeException: com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.NoHttpResponseException: localhost:2375 failed to respond
 	at com.github.dockerjava.zerodep.ApacheDockerHttpClientImpl.execute(ApacheDockerHttpClientImpl.java:210) ~[docker-java-transport-zerodep-3.4.0.jar:na]
+
+
+podman system service --time=0 tcp://localhost:2375
+$env:DOCKER_HOST="tcp://localhost:2375"
