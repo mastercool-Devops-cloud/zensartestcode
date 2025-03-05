@@ -60,3 +60,6 @@ public class OracleTestContainerConfig {
         return dataSource;
     }
 }
+
+private static final OracleContainer oracleContainer = OracleTestContainerConfig.getInstance();
+    private static final DataSource dataSource = OracleTestContainerConfig.getDataSource();
