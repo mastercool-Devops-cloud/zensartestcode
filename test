@@ -1,53 +1,184 @@
-import javax.annotation.PostConstruct;
-import javax.sql.DataSource;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.Statement;
+java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@3815a7d1 testClass = com.sb.fedssimplification.automationtesting.OracleTest, locations = [], classes = [com.sb.fedssimplification.automationtesting.AutomationtestingApplication], contextInitializerClasses = [], activeProfiles = [], propertySourceDescriptors = [], propertySourceProperties = ["org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true"], contextCustomizers = [[ImportsContextCustomizer@24dc150c key = [com.sb.fedssimplification.automationtesting.OracleTestContainerConfig]], org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@16fdec90, org.springframework.boot.test.json.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer@dbd8e44, org.springframework.boot.test.mock.mockito.MockitoContextCustomizer@0, org.springframework.boot.test.web.client.TestRestTemplateContextCustomizer@74bada02, org.springframework.boot.test.web.reactive.server.WebTestClientContextCustomizer@db57326, org.springframework.boot.test.web.reactor.netty.DisableReactorResourceFactoryGlobalResourcesContextCustomizerFactory$DisableReactorResourceFactoryGlobalResourcesContextCustomizerCustomizer@517d4a0d, org.springframework.boot.test.autoconfigure.OnFailureConditionReportContextCustomizerFactory$OnFailureConditionReportContextCustomizer@1941a8ff, org.springframework.boot.test.autoconfigure.actuate.observability.ObservabilityContextCustomizerFactory$DisableObservabilityContextCustomizer@1f, org.springframework.boot.test.autoconfigure.properties.PropertyMappingContextCustomizer@0, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverContextCustomizer@2a448449, org.springframework.test.context.support.DynamicPropertiesContextCustomizer@0, org.springframework.boot.testcontainers.service.connection.ServiceConnectionContextCustomizer@0, org.springframework.boot.test.context.SpringBootTestAnnotation@6c126c65], resourceBasePath = "src/main/webapp", contextLoader = org.springframework.boot.test.context.SpringBootContextLoader, parent = null]
 
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import com.zaxxer.hikari.HikariDataSource;
-import org.testcontainers.containers.OracleContainer;
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:180)
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:130)
+	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:191)
+	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:130)
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:260)
+	at org.springframework.test.context.junit.jupiter.SpringExtension.postProcessTestInstance(SpringExtension.java:160)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at java.base/java.util.Optional.orElseGet(Optional.java:364)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'dataSource' defined in class path resource [com/sb/fedssimplification/automationtesting/OracleTestContainerConfig.class]: Failed to instantiate [javax.sql.DataSource]: Factory method 'dataSource' threw exception with message: Container startup failed for image gvenzl/oracle-xe:21-slim-faststart
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:657)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:489)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1351)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1181)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:563)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:523)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:336)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:288)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:334)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:199)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1122)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1093)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1030)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.test.context.SpringBootContextLoader.lambda$loadContext$3(SpringBootContextLoader.java:137)
+	at org.springframework.util.function.ThrowingSupplier.get(ThrowingSupplier.java:58)
+	at org.springframework.util.function.ThrowingSupplier.get(ThrowingSupplier.java:46)
+	at org.springframework.boot.SpringApplication.withHook(SpringApplication.java:1461)
+	at org.springframework.boot.test.context.SpringBootContextLoader$ContextLoaderHook.run(SpringBootContextLoader.java:553)
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:137)
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:108)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:225)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:152)
+	... 18 more
+Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [javax.sql.DataSource]: Factory method 'dataSource' threw exception with message: Container startup failed for image gvenzl/oracle-xe:21-slim-faststart
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:199)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiateWithFactoryMethod(SimpleInstantiationStrategy.java:88)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:168)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:653)
+	... 44 more
+Caused by: org.testcontainers.containers.ContainerLaunchException: Container startup failed for image gvenzl/oracle-xe:21-slim-faststart
+	at org.testcontainers.containers.GenericContainer.doStart(GenericContainer.java:351)
+	at org.testcontainers.containers.GenericContainer.start(GenericContainer.java:322)
+	at com.sb.fedssimplification.automationtesting.OracleTestContainerConfig.dataSource(OracleTestContainerConfig.java:25)
+	at com.sb.fedssimplification.automationtesting.OracleTestContainerConfig$$SpringCGLIB$$0.CGLIB$dataSource$0(<generated>)
+	at com.sb.fedssimplification.automationtesting.OracleTestContainerConfig$$SpringCGLIB$$FastClass$$1.invoke(<generated>)
+	at org.springframework.cglib.proxy.MethodProxy.invokeSuper(MethodProxy.java:258)
+	at org.springframework.context.annotation.ConfigurationClassEnhancer$BeanMethodInterceptor.intercept(ConfigurationClassEnhancer.java:348)
+	at com.sb.fedssimplification.automationtesting.OracleTestContainerConfig$$SpringCGLIB$$0.dataSource(<generated>)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:171)
+	... 47 more
+Caused by: org.rnorth.ducttape.RetryCountExceededException: Retry limit hit with exception
+	at org.rnorth.ducttape.unreliables.Unreliables.retryUntilSuccess(Unreliables.java:88)
+	at org.testcontainers.containers.GenericContainer.doStart(GenericContainer.java:336)
+	... 56 more
+Caused by: org.testcontainers.containers.ContainerLaunchException: Could not create/start container
+	at org.testcontainers.containers.GenericContainer.tryStart(GenericContainer.java:556)
+	at org.testcontainers.containers.GenericContainer.lambda$doStart$0(GenericContainer.java:346)
+	at org.rnorth.ducttape.unreliables.Unreliables.retryUntilSuccess(Unreliables.java:81)
+	... 57 more
+Caused by: org.testcontainers.ext.ScriptUtils$UncategorizedScriptException: Failed to execute database script from resource [CREATE TABLE FX_FEC_AUTOM_DEV
+(	 CUST_ACNT_N NUMBER(11,0),
+     CUST_IBT_N NUMBER(4,0),
+     OPRTR_IBT_N NUMBER(4,0),
+     BUY_CRNCY_C VARCHAR2(3),
+     SELL_CRNCY_C VARCHAR2(3),
+     BUY_CRNCY_A NUMBER(18,2),
+     SELL_CRNCY_A NUMBER(18,2),
+     NETTD_A NUMBER(18,2),
+     SPOT_A NUMBER(18,2),
+     SPOT_R NUMBER(11,6),
+     EXCHG_R NUMBER(11,6),
+     VALUE_D DATE,
+     MTRTY_D DATE,
+     PRCHS_SALE_I VARCHAR2(1),
+     CNTRT_TYPE_I VARCHAR2(1),
+     CNTR_N NUMBER(5,0),
+     CNTRT_N VARCHAR2(13),
+     PARNT_CNTRT_N VARCHAR2(13),
+     CNTRT_TYPE_C VARCHAR2(4),
+     PROC_I VARCHAR2(1),
+     TRANS_N VARCHAR2(16),
+     COVR_N VARCHAR2(13),
+     ERROR_X VARCHAR2(100),
+     FEC_N VARCHAR2(13),
+     FORGN_AGENT_C NUMBER(7,0),
+     FEC_TRANS_N VARCHAR2(16),
+     DELVR_N VARCHAR2(13),
+     ADVCE_X LONG,
+     FEC_DTAIL_X VARCHAR2(100),
+     INSRT_U VARCHAR2(26),
+     UPDTD_U VARCHAR2(26),
+     PROFT_LOSS_I VARCHAR2(1),
+     EXCTV_TYPE_C VARCHAR2(2),
+     STORE_A NUMBER(17,2)
+)
 
-@TestConfiguration
-public class OracleTestContainerConfig {
+-- SU
+INSERT INTO FX_FEC_AUTOM_DEV
+(CUST_ACNT_N, CUST_IBT_N, OPRTR_IBT_N, BUY_CRNCY_C, SELL_CRNCY_C, BUY_CRNCY_A, SELL_CRNCY_A, NETTD_A, SPOT_A, SPOT_R, EXCHG_R, VALUE_D, MTRTY_D, PRCHS_SALE_I, CNTRT_TYPE_I, CNTR_N, CNTRT_N, PARNT_CNTRT_N, CNTRT_TYPE_C, PROC_I, TRANS_N, COVR_N, ERROR_X, FEC_N, FORGN_AGENT_C, FEC_TRANS_N, DELVR_N, ADVCE_X, FEC_DTAIL_X, INSRT_U, UPDTD_U, PROFT_LOSS_I, EXCTV_TYPE_C, STORE_A)
+VALUES(12768014, 2345, 0, 'ZAR', 'USD', 5352.15, 300, 0, 1757.13, 17.5713, 17.8405, TIMESTAMP '2024-10-30 00:00:00.000000', TIMESTAMP '2024-10-30 00:00:00.000000', 'S', ' ', 0, '99C7C4DN', '99C7BV9R', 'SU', 'X', ' ', '0', ' ', '99C7BV9R', 9999992, '241030SU99C7C4DN', '0', '' , 'CLIENTREF=REL BRCH TEST 30-AUG-04~|~USER=PATRICK.F', '2024-10-30-10.55.19.000000', '2024-10-30-10.55.19.000000', 'P', 'FE', 26.92);
 
-    private static final String USERNAME = "FX_SIMPLIFICATION";
-    private static final String PASSWORD = "abc123";
-    private static final String IMAGE_NAME = "gvenzl/oracle-xe:21-slim-faststart";
+-- CC
+INSERT INTO FX_FEC_AUTOM_DEV
+(CUST_ACNT_N, CUST_IBT_N, OPRTR_IBT_N, BUY_CRNCY_C, SELL_CRNCY_C, BUY_CRNCY_A, SELL_CRNCY_A, NETTD_A, SPOT_A, SPOT_R, EXCHG_R, VALUE_D, MTRTY_D, PRCHS_SALE_I, CNTRT_TYPE_I, CNTR_N, CNTRT_N, PARNT_CNTRT_N, CNTRT_TYPE_C, PROC_I, TRANS_N, COVR_N, ERROR_X, FEC_N, FORGN_AGENT_C, FEC_TRANS_N, DELVR_N, ADVCE_X, FEC_DTAIL_X, INSRT_U, UPDTD_U, PROFT_LOSS_I, EXCTV_TYPE_C, STORE_A)
+VALUES(23333707, 9953, 0, 'ZAR', 'EUR', 1597767.81, 81488, 0, 18145, 18.145, 19.6074, TIMESTAMP '2024-10-30 00:00:00.000000', TIMESTAMP '2024-10-30 00:00:00.000000', 'S', ' ', 0, '99C7BLT8', '99C79V49', 'CC', 'X', ' ', '0', ' ', '99C79V49', 9999992, '241030EX99C7BLT8', '0', '' , 'EMTP#106968566#25062024 08:06:15 RTS.27520886.FX.0', '2024-10-30-10.12.39.000000', '2024-10-30-10.12.39.000000', 'P', 'FE', 1462.4);
 
-    private static final OracleContainer ORACLE_CONTAINER = new OracleContainer(IMAGE_NAME)
-            .withUsername(USERNAME)
-            .withPassword(PASSWORD);
+-- DE -- Profit
+INSERT INTO FX_FEC_AUTOM_DEV
+(CUST_ACNT_N, CUST_IBT_N, OPRTR_IBT_N, BUY_CRNCY_C, SELL_CRNCY_C, BUY_CRNCY_A, SELL_CRNCY_A, NETTD_A, SPOT_A, SPOT_R, EXCHG_R, VALUE_D, MTRTY_D, PRCHS_SALE_I, CNTRT_TYPE_I, CNTR_N, CNTRT_N, PARNT_CNTRT_N, CNTRT_TYPE_C, PROC_I, TRANS_N, COVR_N, ERROR_X, FEC_N, FORGN_AGENT_C, FEC_TRANS_N, DELVR_N, ADVCE_X, FEC_DTAIL_X, INSRT_U, UPDTD_U, PROFT_LOSS_I, EXCTV_TYPE_C, STORE_A)
+VALUES(1573888, 2305, 0, 'USD', 'ZAR', 30000, 574521, 574521, 0, 0, 19.1507, TIMESTAMP '2024-10-30 00:00:00.000000', TIMESTAMP '2024-10-30 00:00:00.000000', 'B', ' ', 0, '99C7BV5D', '99C75W5P', 'DE', 'X', ' ', '0', ' ', '99C75W5P', 90715, '241030FE99C7BV5D', '99C7BV5D', '' , ' ', '2024-10-30-17.02.51.000000', '2024-10-30-17.02.51.000000', ' ', 'FE', 0);
 
-    @Bean
-    public DataSource dataSource() {
-        HikariDataSource dataSource = new HikariDataSource();
-        dataSource.setJdbcUrl(ORACLE_CONTAINER.getJdbcUrl());
-        dataSource.setUsername(ORACLE_CONTAINER.getUsername());
-        dataSource.setPassword(ORACLE_CONTAINER.getPassword());
-        dataSource.setDriverClassName("oracle.jdbc.OracleDriver");
-        return dataSource;
-    }
+INSERT INTO FX_FEC_AUTOM_DEV
+(CUST_ACNT_N, CUST_IBT_N, OPRTR_IBT_N, BUY_CRNCY_C, SELL_CRNCY_C, BUY_CRNCY_A, SELL_CRNCY_A, NETTD_A, SPOT_A, SPOT_R, EXCHG_R, VALUE_D, MTRTY_D, PRCHS_SALE_I, CNTRT_TYPE_I, CNTR_N, CNTRT_N, PARNT_CNTRT_N, CNTRT_TYPE_C, PROC_I, TRANS_N, COVR_N, ERROR_X, FEC_N, FORGN_AGENT_C, FEC_TRANS_N, DELVR_N, ADVCE_X, FEC_DTAIL_X, INSRT_U, UPDTD_U, PROFT_LOSS_I, EXCTV_TYPE_C, STORE_A)
+VALUES(1573888, 2305, 0, 'ZAR', 'USD', 604504.5, 30000, 604504.5, 0, 0, 20.15015, TIMESTAMP '2024-10-30 00:00:00.000000', TIMESTAMP '2024-10-30 00:00:00.000000', 'S', ' ', 0, '99C7BV58', '99C75YLZ', 'DE', 'X', ' ', '0', ' ', '99C75W5P', 90715, '241030FE99C7BV58', '99C7BV58', '' , ' ', '2024-10-30-17.02.51.000000', '2024-10-30-17.02.51.000000', ' ', 'FE', 0);
 
-    @PostConstruct
-    public void initializeDatabase() {
-        ORACLE_CONTAINER.start();  // Start the container first
+-- DE -- Loss  -- Parent
+INSERT INTO FX_FEC_AUTOM_DEV
+(CUST_ACNT_N, CUST_IBT_N, OPRTR_IBT_N, BUY_CRNCY_C, SELL_CRNCY_C, BUY_CRNCY_A, SELL_CRNCY_A, NETTD_A, SPOT_A, SPOT_R, EXCHG_R, VALUE_D, MTRTY_D, PRCHS_SALE_I, CNTRT_TYPE_I, CNTR_N, CNTRT_N, PARNT_CNTRT_N, CNTRT_TYPE_C, PROC_I, TRANS_N, COVR_N, ERROR_X, FEC_N, FORGN_AGENT_C, FEC_TRANS_N, DELVR_N, ADVCE_X, FEC_DTAIL_X, INSRT_U, UPDTD_U, PROFT_LOSS_I, EXCTV_TYPE_C, STORE_A)
+VALUES(23299517, 6342, 0, 'ZAR', 'USD', 18050.7, 1000, 18050.7, 0, 0, 18.0507, TIMESTAMP '2024-10-30 00:00:00.000000', TIMESTAMP '2024-10-30 00:00:00.000000', 'S', ' ', 0, '99C7BDHN', '99C79NJB', 'DE', 'X', ' ', '0', ' ', '99C79NJB', 90715, '241030FE99C7BDHN', '99C7BDHN', '' , ' ', '2024-10-30-18.08.08.000000', '2024-10-30-18.08.08.000000', ' ', 'FE', 0);
+]
+	at org.testcontainers.ext.ScriptUtils.executeDatabaseScript(ScriptUtils.java:319)
+	at org.testcontainers.ext.ScriptUtils.executeDatabaseScript(ScriptUtils.java:225)
+	at org.testcontainers.ext.ScriptUtils.runInitScript(ScriptUtils.java:213)
+	at org.testcontainers.containers.JdbcDatabaseContainer.lambda$runInitScriptIfRequired$0(JdbcDatabaseContainer.java:368)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.testcontainers.containers.JdbcDatabaseContainer.runInitScriptIfRequired(JdbcDatabaseContainer.java:368)
+	at org.testcontainers.containers.JdbcDatabaseContainer.containerIsStarted(JdbcDatabaseContainer.java:221)
+	at org.testcontainers.containers.GenericContainer.containerIsStarted(GenericContainer.java:721)
+	at org.testcontainers.containers.GenericContainer.tryStart(GenericContainer.java:534)
+	... 59 more
+Caused by: org.testcontainers.ext.ScriptUtils$ScriptStatementFailedException: Script execution failed (SQL_QUERY_FX_FEC_AUTOM_DEV.sql:1): CREATE TABLE FX_FEC_AUTOM_DEV ( CUST_ACNT_N NUMBER(11,0), CUST_IBT_N NUMBER(4,0), OPRTR_IBT_N NUMBER(4,0), BUY_CRNCY_C VARCHAR2(3), SELL_CRNCY_C VARCHAR2(3), BUY_CRNCY_A NUMBER(18,2), SELL_CRNCY_A NUMBER(18,2), NETTD_A NUMBER(18,2), SPOT_A NUMBER(18,2), SPOT_R NUMBER(11,6), EXCHG_R NUMBER(11,6), VALUE_D DATE, MTRTY_D DATE, PRCHS_SALE_I VARCHAR2(1), CNTRT_TYPE_I VARCHAR2(1), CNTR_N NUMBER(5,0), CNTRT_N VARCHAR2(13), PARNT_CNTRT_N VARCHAR2(13), CNTRT_TYPE_C VARCHAR2(4), PROC_I VARCHAR2(1), TRANS_N VARCHAR2(16), COVR_N VARCHAR2(13), ERROR_X VARCHAR2(100), FEC_N VARCHAR2(13), FORGN_AGENT_C NUMBER(7,0), FEC_TRANS_N VARCHAR2(16), DELVR_N VARCHAR2(13), ADVCE_X LONG, FEC_DTAIL_X VARCHAR2(100), INSRT_U VARCHAR2(26), UPDTD_U VARCHAR2(26), PROFT_LOSS_I VARCHAR2(1), EXCTV_TYPE_C VARCHAR2(2), STORE_A NUMBER(17,2) ) INSERT INTO FX_FEC_AUTOM_DEV (CUST_ACNT_N, CUST_IBT_N, OPRTR_IBT_N, BUY_CRNCY_C, SELL_CRNCY_C, BUY_CRNCY_A, SELL_CRNCY_A, NETTD_A, SPOT_A, SPOT_R, EXCHG_R, VALUE_D, MTRTY_D, PRCHS_SALE_I, CNTRT_TYPE_I, CNTR_N, CNTRT_N, PARNT_CNTRT_N, CNTRT_TYPE_C, PROC_I, TRANS_N, COVR_N, ERROR_X, FEC_N, FORGN_AGENT_C, FEC_TRANS_N, DELVR_N, ADVCE_X, FEC_DTAIL_X, INSRT_U, UPDTD_U, PROFT_LOSS_I, EXCTV_TYPE_C, STORE_A) VALUES(12768014, 2345, 0, 'ZAR', 'USD', 5352.15, 300, 0, 1757.13, 17.5713, 17.8405, TIMESTAMP '2024-10-30 00:00:00.000000', TIMESTAMP '2024-10-30 00:00:00.000000', 'S', ' ', 0, '99C7C4DN', '99C7BV9R', 'SU', 'X', ' ', '0', ' ', '99C7BV9R', 9999992, '241030SU99C7C4DN', '0', '' , 'CLIENTREF=REL BRCH TEST 30-AUG-04~|~USER=PATRICK.F', '2024-10-30-10.55.19.000000', '2024-10-30-10.55.19.000000', 'P', 'FE', 26.92)
+	at org.testcontainers.jdbc.JdbcDatabaseDelegate.execute(JdbcDatabaseDelegate.java:59)
+	at org.testcontainers.delegate.AbstractDatabaseDelegate.execute(AbstractDatabaseDelegate.java:38)
+	at org.testcontainers.ext.ScriptUtils.executeDatabaseScript(ScriptUtils.java:307)
+	... 75 more
+Caused by: java.sql.SQLSyntaxErrorException: ORA-00922: missing or invalid option
 
-        try (Connection connection = dataSource().getConnection();
-             Statement statement = connection.createStatement()) {
+https://docs.oracle.com/error-help/db/ora-00922/
+	at oracle.jdbc.driver.T4CTTIoer11.processError(T4CTTIoer11.java:709)
+	at oracle.jdbc.driver.T4CTTIoer11.processError(T4CTTIoer11.java:609)
+	at oracle.jdbc.driver.T4C8Oall.processError(T4C8Oall.java:1347)
+	at oracle.jdbc.driver.T4CTTIfun.receive(T4CTTIfun.java:1100)
+	at oracle.jdbc.driver.T4CTTIfun.doRPC(T4CTTIfun.java:408)
+	at oracle.jdbc.driver.T4C8Oall.doOALL(T4C8Oall.java:499)
+	at oracle.jdbc.driver.T4CStatement.doOall8(T4CStatement.java:190)
+	at oracle.jdbc.driver.T4CStatement.executeForRows(T4CStatement.java:1399)
+	at oracle.jdbc.driver.OracleStatement.executeSQLStatement(OracleStatement.java:2008)
+	at oracle.jdbc.driver.OracleStatement.doExecuteWithTimeout(OracleStatement.java:1621)
+	at oracle.jdbc.driver.OracleStatement.executeInternal(OracleStatement.java:2686)
+	at oracle.jdbc.driver.OracleStatement.execute(OracleStatement.java:2635)
+	at oracle.jdbc.driver.OracleStatementWrapper.execute(OracleStatementWrapper.java:336)
+	at org.testcontainers.jdbc.JdbcDatabaseDelegate.execute(JdbcDatabaseDelegate.java:46)
+	... 77 more
+Caused by: Error : 922, Position : 814, SQL = CREATE TABLE FX_FEC_AUTOM_DEV ( CUST_ACNT_N NUMBER(11,0), CUST_IBT_N NUMBER(4,0), OPRTR_IBT_N NUMBER(4,0), BUY_CRNCY_C VARCHAR2(3), SELL_CRNCY_C VARCHAR2(3), BUY_CRNCY_A NUMBER(18,2), SELL_CRNCY_A NUMBER(18,2), NETTD_A NUMBER(18,2), SPOT_A NUMBER(18,2), SPOT_R NUMBER(11,6), EXCHG_R NUMBER(11,6), VALUE_D DATE, MTRTY_D DATE, PRCHS_SALE_I VARCHAR2(1), CNTRT_TYPE_I VARCHAR2(1), CNTR_N NUMBER(5,0), CNTRT_N VARCHAR2(13), PARNT_CNTRT_N VARCHAR2(13), CNTRT_TYPE_C VARCHAR2(4), PROC_I VARCHAR2(1), TRANS_N VARCHAR2(16), COVR_N VARCHAR2(13), ERROR_X VARCHAR2(100), FEC_N VARCHAR2(13), FORGN_AGENT_C NUMBER(7,0), FEC_TRANS_N VARCHAR2(16), DELVR_N VARCHAR2(13), ADVCE_X LONG, FEC_DTAIL_X VARCHAR2(100), INSRT_U VARCHAR2(26), UPDTD_U VARCHAR2(26), PROFT_LOSS_I VARCHAR2(1), EXCTV_TYPE_C VARCHAR2(2), STORE_A NUMBER(17,2) ) INSERT INTO FX_FEC_AUTOM_DEV (CUST_ACNT_N, CUST_IBT_N, OPRTR_IBT_N, BUY_CRNCY_C, SELL_CRNCY_C, BUY_CRNCY_A, SELL_CRNCY_A, NETTD_A, SPOT_A, SPOT_R, EXCHG_R, VALUE_D, MTRTY_D, PRCHS_SALE_I, CNTRT_TYPE_I, CNTR_N, CNTRT_N, PARNT_CNTRT_N, CNTRT_TYPE_C, PROC_I, TRANS_N, COVR_N, ERROR_X, FEC_N, FORGN_AGENT_C, FEC_TRANS_N, DELVR_N, ADVCE_X, FEC_DTAIL_X, INSRT_U, UPDTD_U, PROFT_LOSS_I, EXCTV_TYPE_C, STORE_A) VALUES(12768014, 2345, 0, 'ZAR', 'USD', 5352.15, 300, 0, 1757.13, 17.5713, 17.8405, TIMESTAMP '2024-10-30 00:00:00.000000', TIMESTAMP '2024-10-30 00:00:00.000000', 'S', ' ', 0, '99C7C4DN', '99C7BV9R', 'SU', 'X', ' ', '0', ' ', '99C7BV9R', 9999992, '241030SU99C7C4DN', '0', '' , 'CLIENTREF=REL BRCH TEST 30-AUG-04~|~USER=PATRICK.F', '2024-10-30-10.55.19.000000', '2024-10-30-10.55.19.000000', 'P', 'FE', 26.92), Original SQL = CREATE TABLE FX_FEC_AUTOM_DEV ( CUST_ACNT_N NUMBER(11,0), CUST_IBT_N NUMBER(4,0), OPRTR_IBT_N NUMBER(4,0), BUY_CRNCY_C VARCHAR2(3), SELL_CRNCY_C VARCHAR2(3), BUY_CRNCY_A NUMBER(18,2), SELL_CRNCY_A NUMBER(18,2), NETTD_A NUMBER(18,2), SPOT_A NUMBER(18,2), SPOT_R NUMBER(11,6), EXCHG_R NUMBER(11,6), VALUE_D DATE, MTRTY_D DATE, PRCHS_SALE_I VARCHAR2(1), CNTRT_TYPE_I VARCHAR2(1), CNTR_N NUMBER(5,0), CNTRT_N VARCHAR2(13), PARNT_CNTRT_N VARCHAR2(13), CNTRT_TYPE_C VARCHAR2(4), PROC_I VARCHAR2(1), TRANS_N VARCHAR2(16), COVR_N VARCHAR2(13), ERROR_X VARCHAR2(100), FEC_N VARCHAR2(13), FORGN_AGENT_C NUMBER(7,0), FEC_TRANS_N VARCHAR2(16), DELVR_N VARCHAR2(13), ADVCE_X LONG, FEC_DTAIL_X VARCHAR2(100), INSRT_U VARCHAR2(26), UPDTD_U VARCHAR2(26), PROFT_LOSS_I VARCHAR2(1), EXCTV_TYPE_C VARCHAR2(2), STORE_A NUMBER(17,2) ) INSERT INTO FX_FEC_AUTOM_DEV (CUST_ACNT_N, CUST_IBT_N, OPRTR_IBT_N, BUY_CRNCY_C, SELL_CRNCY_C, BUY_CRNCY_A, SELL_CRNCY_A, NETTD_A, SPOT_A, SPOT_R, EXCHG_R, VALUE_D, MTRTY_D, PRCHS_SALE_I, CNTRT_TYPE_I, CNTR_N, CNTRT_N, PARNT_CNTRT_N, CNTRT_TYPE_C, PROC_I, TRANS_N, COVR_N, ERROR_X, FEC_N, FORGN_AGENT_C, FEC_TRANS_N, DELVR_N, ADVCE_X, FEC_DTAIL_X, INSRT_U, UPDTD_U, PROFT_LOSS_I, EXCTV_TYPE_C, STORE_A) VALUES(12768014, 2345, 0, 'ZAR', 'USD', 5352.15, 300, 0, 1757.13, 17.5713, 17.8405, TIMESTAMP '2024-10-30 00:00:00.000000', TIMESTAMP '2024-10-30 00:00:00.000000', 'S', ' ', 0, '99C7C4DN', '99C7BV9R', 'SU', 'X', ' ', '0', ' ', '99C7BV9R', 9999992, '241030SU99C7C4DN', '0', '' , 'CLIENTREF=REL BRCH TEST 30-AUG-04~|~USER=PATRICK.F', '2024-10-30-10.55.19.000000', '2024-10-30-10.55.19.000000', 'P', 'FE', 26.92), Error Message = ORA-00922: missing or invalid option
 
-            executeSqlScript(statement, "src/test/resources/CREATE_FX_FEC_AUTOM_DEV.sql");
-            executeSqlScript(statement, "src/test/resources/INSERT_FX_FEC_AUTOM_DEV.sql");
+	at oracle.jdbc.driver.T4CTTIoer11.processError(T4CTTIoer11.java:717)
+	... 90 more
 
-        } catch (Exception e) {
-            throw new RuntimeException("Error setting up database", e);
-        }
-    }
-
-    private void executeSqlScript(Statement statement, String filePath) throws Exception {
-        String sql = new String(Files.readAllBytes(Paths.get(filePath)));
-        statement.execute(sql);
-    }
-}
