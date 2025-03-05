@@ -1,14 +1,10 @@
-[ERROR] com.sb.fedssimplification.automationtesting.OracleTest -- Time elapsed: 85.78 s <<< ERROR!
-java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@615e83ac testClass = com.sb.fedssimplification.automationtesting.OracleTest, locations = [], classes = [com.sb.fedssimplification.automationtesting.AutomationtestingApplication, com.sb.fedssimplification.automationtesting.OracleTestContainerConfig], contextInitializerClasses = [], activeProfiles = [], propertySourceDescriptors = [], propertySourceProperties =
-
-
-java.lang.RuntimeException: com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.NoHttpResponseException: localhost:2375 failed to respond
-	at com.github.dockerjava.zerodep.ApacheDockerHttpClientImpl.execute(ApacheDockerHttpClientImpl.java:210) ~[docker-java-transport-zerodep-3.4.0.jar:na]
-
-
-podman system service --time=0 tcp://localhost:2375
-$env:DOCKER_HOST="tcp://localhost:2375"
-
+PS C:\Users\RC76327> podman machine start
+Starting machine "podman-machine-default"
+Error: machine podman-machine-default: VM already running or starting
+PS C:\Users\RC76327> wsl.exe -d wsl-vpnkit service wsl-vpnkit start
+PS C:\Users\RC76327> podman ps
+CONTAINER ID  IMAGE       COMMAND     CREATED     STATUS      PORTS       NAMES
+PS C:\Users\RC76327> podman pull gvenzl/oracle-xe:latest
+Resolving "gvenzl/oracle-xe" using unqualified-search registries (/etc/containers/registries.conf.d/999-podman-machine.conf)
 Trying to pull docker.io/gvenzl/oracle-xe:latest...
-Error: initializing source docker://gvenzl/oracle-xe:latest: pinging container registry registry-1.docker.io: Get "https://registry-1.docker.io/v2/": dial tcp [2600:1f18:2148:bc00:5cac:48a0:7f88:7266]:443: connect: network is unreachable
-
+Error: initializing source docker://gvenzl/oracle-xe:latest: Get "https://registry-1.docker.io/v2/gvenzl/oracle-xe/manifests/latest": http: server gave HTTP response to HTTPS client
