@@ -1,10 +1,62 @@
-PS C:\Users\RC76327> podman machine start
-Starting machine "podman-machine-default"
-Error: machine podman-machine-default: VM already running or starting
-PS C:\Users\RC76327> wsl.exe -d wsl-vpnkit service wsl-vpnkit start
-PS C:\Users\RC76327> podman ps
-CONTAINER ID  IMAGE       COMMAND     CREATED     STATUS      PORTS       NAMES
-PS C:\Users\RC76327> podman pull gvenzl/oracle-xe:latest
-Resolving "gvenzl/oracle-xe" using unqualified-search registries (/etc/containers/registries.conf.d/999-podman-machine.conf)
-Trying to pull docker.io/gvenzl/oracle-xe:latest...
-Error: initializing source docker://gvenzl/oracle-xe:latest: Get "https://registry-1.docker.io/v2/gvenzl/oracle-xe/manifests/latest": http: server gave HTTP response to HTTPS client
+import javax.sql.DataSource;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.Statement;
+
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import com.zaxxer.hikari.HikariDataSource;
+import org.testcontainers.containers.OracleContainer;
+
+@TestConfiguration
+public class OracleTestContainerConfig {
+
+    private static final String USERNAME = "FX_SIMPLIFICATION";
+    private static final String PASSWORD = "abc123";
+    private static final String IMAGE_NAME = "gvenzl/oracle-xe:21-slim-faststart";
+
+    private static final OracleContainer ORACLE_CONTAINER;
+
+    static {
+        ORACLE_CONTAINER = new OracleContainer(IMAGE_NAME)
+                .withUsername(USERNAME)
+                .withPassword(PASSWORD);
+
+        ORACLE_CONTAINER.start();
+
+        // Execute SQL scripts after starting the container
+        initializeDatabase();
+    }
+
+    private static void initializeDatabase() {
+        try (Connection connection = ORACLE_CONTAINER.createConnection("");
+             Statement statement = connection.createStatement()) {
+
+            executeSqlScript(statement, "src/test/resources/CREATE_FX_FEC_AUTOM_DEV.sql");
+            executeSqlScript(statement, "src/test/resources/INSERT_FX_FEC_AUTOM_DEV.sql");
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error setting up database", e);
+        }
+    }
+
+    private static void executeSqlScript(Statement statement, String filePath) throws Exception {
+        String sql = new String(Files.readAllBytes(Paths.get(filePath)));
+        statement.execute(sql);
+    }
+
+    public static OracleContainer getInstance() {
+        return ORACLE_CONTAINER;
+    }
+
+    @Bean
+    public DataSource dataSource() {
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl(ORACLE_CONTAINER.getJdbcUrl());
+        dataSource.setUsername(ORACLE_CONTAINER.getUsername());
+        dataSource.setPassword(ORACLE_CONTAINER.getPassword());
+        dataSource.setDriverClassName("oracle.jdbc.OracleDriver");
+        return dataSource;
+    }
+}
