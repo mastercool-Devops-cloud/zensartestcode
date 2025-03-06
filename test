@@ -17,3 +17,6 @@ try (FileWriter writer = new FileWriter("schema.sql")) {
     System.out.println("✅ Schema exported to schema.sql");
 
 SELECT DBMS_METADATA.GET_DDL('TABLE', TABLE_NAME) FROM USER_TABLES;
+
+SELECT DBMS_METADATA.GET_DDL('TABLE', TABLE_NAME, 'YOUR_SCHEMA_NAME') FROM ALL_TABLES WHERE OWNER = 'YOUR_SCHEMA_NAME';
+
