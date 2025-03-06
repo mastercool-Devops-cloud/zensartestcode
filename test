@@ -1,52 +1,11 @@
-is there away that you can generate the sql script for the schema/tables from the FEDS DB programtically?
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
-import javax.sql.DataSource;
-import java.util.List;
+org.springframework.jdbc.BadSqlGrammarException: StatementCallback; bad SQL grammar [SELECT DBMS_METADATA.GET_DDL('TABLE', FX_FEC_AUTOM_DEV) FROM FX]
 
-@Repository
-public class SchemaExporterRepository {
-    private final JdbcTemplate jdbcTemplate;
-
-    public SchemaExporterRepository(DataSource dataSource) {
-        this.jdbcTemplate = new JdbcTemplate(dataSource);
-    }
-
-    public List<String> getTableDDL() {
-        String sql = "SELECT DBMS_METADATA.GET_DDL('TABLE', TABLE_NAME) FROM USER_TABLES";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString(1));
-    }
-}
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import javax.sql.DataSource;
-import java.util.List;
-
-@SpringBootTest
-@ExtendWith(SpringExtension.class)
-public class SchemaExporterTest {
-
-    @Autowired
-    private DataSource dataSource;
-
-    @Autowired
-    private SchemaExporterRepository schemaExporterRepository;
-
-    @Test
-    public void testDatabaseConnection() throws Exception {
-        try (var conn = dataSource.getConnection()) {
-            System.out.println("✅ Connection successful: " + conn.getMetaData().getURL());
-        }
-    }
-
-    @Test
-    public void testGenerateSchemaDDL() {
-        List<String> ddlScripts = schemaExporterRepository.getTableDDL();
-        ddlScripts.forEach(System.out::println);
-    }
-}
+	at org.springframework.jdbc.support.SQLExceptionSubclassTranslator.doTranslate(SQLExceptionSubclassTranslator.java:103)
+	at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:107)
+	at org.springframework.jdbc.core.JdbcTemplate.translateException(JdbcTemplate.java:1556)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:408)
+	at org.springframework.jdbc.core.JdbcTemplate.query(JdbcTemplate.java:476)
+	at org.springframework.jdbc.core.JdbcTemplate.query(JdbcTemplate.java:486)
+	at com.sb.fedssimplification.automationtesting.repo.SchemaExporterRepository.getTableDDL(SchemaExporterRepository.java:18)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
