@@ -1,1 +1,24 @@
-s there away that you can generate the sql script for the schema/tables from the FEDS DB programtically?
+is there away that you can generate the sql script for the schema/tables from the FEDS DB programtically?
+import java.sql.*;
+
+public class OracleSchemaExporter {
+    public static void main(String[] args) {
+        String url = "jdbc:oracle:thin:@<host>:1521:<service>";
+        String user = "feds_user";
+        String password = "password";
+
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             Statement stmt = conn.createStatement()) {
+            
+            String query = "SELECT DBMS_METADATA.GET_DDL('TABLE', TABLE_NAME, 'FEDS_SCHEMA') FROM USER_TABLES";
+            ResultSet rs = stmt.executeQuery(query);
+
+            while (rs.next()) {
+                String ddl = rs.getString(1);
+                System.out.println(ddl);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
