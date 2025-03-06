@@ -9,3 +9,9 @@ org.springframework.jdbc.BadSqlGrammarException: StatementCallback; bad SQL gram
 	at com.sb.fedssimplification.automationtesting.repo.SchemaExporterRepository.getTableDDL(SchemaExporterRepository.java:18)
 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+try (FileWriter writer = new FileWriter("schema.sql")) {
+        for (String ddl : ddlScripts) {
+            writer.write(ddl + ";\n\n");
+        }
+    }
+    System.out.println("✅ Schema exported to schema.sql");
