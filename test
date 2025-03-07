@@ -27,3 +27,27 @@ spring:
       data-source-properties:
         oracle.jdbc.ReadTimeout: 15000
       max-lifetime: 840000
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.DependsOn;
+
+import javax.sql.DataSource;
+
+@TestConfiguration
+public class DbOracleRealConfig {
+
+    @Bean
+    @ConfigurationProperties(prefix = "spring.datasource.hikari")
+    public HikariConfig hikariConfig() {
+        return new HikariConfig();
+    }
+
+    @Bean
+    @DependsOn("hikariConfig")
+    public DataSource dataSource(HikariConfig hikariConfig) {
+        return new HikariDataSource(hikariConfig);
+    }
+}
