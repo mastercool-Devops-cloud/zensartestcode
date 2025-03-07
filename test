@@ -149,5 +149,30 @@ Caused by: Error : 1008, Position : 0, SQL = SELECT DBMS_METADATA.GET_DDL('TABLE
 
 	at oracle.jdbc.driver.T4CTTIoer11.processError(T4CTTIoer11.java:717)
 	... 33 more
+public List<String> getTableData(String schemaName, String tableName) {
+        String sql = "SELECT * FROM " + schemaName + "." + tableName;
 
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("schemaName", schemaName)
+                .addValue("tableName", tableName);
+
+        return namedJdbcTemplate.query(sql, params, (rs, rowNum) -> {
+            int columnCount = rs.getMetaData().getColumnCount();
+            StringBuilder insertStmt = new StringBuilder("INSERT INTO " + schemaName + "." + tableName + " VALUES (");
+
+            for (int i = 1; i <= columnCount; i++) {
+                Object value = rs.getObject(i);
+                if (value instanceof String) {
+                    insertStmt.append("'").append(value.toString().replace("'", "''")).append("'");
+                } else if (value == null) {
+                    insertStmt.append("NULL");
+                } else {
+                    insertStmt.append(value);
+                }
+                if (i < columnCount) insertStmt.append(", ");
+            }
+            insertStmt.append(");");
+            return insertStmt.toString();
+        });
+    }
 
