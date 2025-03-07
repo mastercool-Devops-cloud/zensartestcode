@@ -1,1 +1,21 @@
 return ddl.replaceAll("TABLESPACE\\s+FX_M", "");
+public String getTableDDL(String schemaName, String tableName) {
+    String sql = """
+        BEGIN
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', false);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', false);
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', false);
+        END;
+        """;
+
+    namedJdbcTemplate.getJdbcTemplate().execute(sql);
+
+    String ddlQuery = "SELECT DBMS_METADATA.GET_DDL('TABLE', :tableName, :schemaName) FROM DUAL";
+
+    MapSqlParameterSource params = new MapSqlParameterSource()
+            .addValue("tableName", tableName.toUpperCase())
+            .addValue("schemaName", schemaName.toUpperCase());
+
+    return namedJdbcTemplate.queryForObject(ddlQuery, params, String.class);
+}
+
