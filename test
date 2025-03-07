@@ -16,8 +16,13 @@ public class SchemaExporterRepository {
 
     // Extract table schema (DDL)
     public String getTableDDL(String schemaName, String tableName) {
-        String sql = "SELECT DBMS_METADATA.GET_DDL('TABLE', ?, ?) FROM DUAL";
-        return jdbcTemplate.queryForObject(sql, new Object[]{tableName.toUpperCase(), schemaName.toUpperCase()}, String.class);
+        String sql = "SELECT DBMS_METADATA.GET_DDL('TABLE', :tableName, :schemaName) FROM DUAL";
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tableName", tableName.toUpperCase())
+                .addValue("schemaName", schemaName.toUpperCase());
+
+        return namedJdbcTemplate.queryForObject(sql, params, String.class);
     }
 
     // Extract table data (INSERT statements)
