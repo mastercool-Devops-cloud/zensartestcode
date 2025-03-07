@@ -1,53 +1,48 @@
-spring:
-  datasource:
-    hikari:
-      pool-name: feds_database_conn_pool
-      transaction-isolation: 8
-      jdbc-url: >
-        jdbc:oracle:thin:@(DESCRIPTION=(FAILOVER=ON)(LOAD_BALANCE=ON)
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1621))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1621))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1622))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1622))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1821))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1821))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1822))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1822))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1623))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1623))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon01-vip.standardbank.co.za)(PORT=1823))
-        (ADDRESS=(PROTOCOL=TCP)(HOST=doracon02-vip.standardbank.co.za)(PORT=1823))
-        (CONNECT_DATA=(SERVICE_NAME=TCDUAT01)(SERVER=DEDICATED)
-        (FAILOVER_MODE=(TYPE=session)(METHOD=basic)(DELAY=5)(RETRIES=100))))
-      username: FX
-      password: XJS4x#LKX8vyPhr
-      driver-class-name: oracle.jdbc.OracleDriver
-      maximum-pool-size: 10
-      minimum-idle: 5
-      data-source-properties:
-        oracle.jdbc.ReadTimeout: 15000
-      max-lifetime: 840000
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
-
-import javax.sql.DataSource;
-
-@TestConfiguration
-public class DbOracleRealConfig {
-
-    @Bean
-    @ConfigurationProperties(prefix = "spring.datasource.hikari")
-    public HikariConfig hikariConfig() {
-        return new HikariConfig();
-    }
-
-    @Bean
-    @DependsOn("hikariConfig")
-    public DataSource dataSource(HikariConfig hikariConfig) {
-        return new HikariDataSource(hikariConfig);
-    }
-}
+CREATE TABLE "FX"."FX_FEC_AUTOM_DEV" 
+   (	"CUST_ACNT_N" NUMBER(11,0), 
+	"CUST_IBT_N" NUMBER(4,0), 
+	"OPRTR_IBT_N" NUMBER(4,0), 
+	"BUY_CRNCY_C" VARCHAR2(3), 
+	"SELL_CRNCY_C" VARCHAR2(3), 
+	"BUY_CRNCY_A" NUMBER(18,2), 
+	"SELL_CRNCY_A" NUMBER(18,2), 
+	"NETTD_A" NUMBER(18,2), 
+	"SPOT_A" NUMBER(18,2), 
+	"SPOT_R" NUMBER(11,6), 
+	"EXCHG_R" NUMBER(11,6), 
+	"VALUE_D" DATE, 
+	"MTRTY_D" DATE, 
+	"PRCHS_SALE_I" VARCHAR2(1), 
+	"CNTRT_TYPE_I" VARCHAR2(1), 
+	"CNTR_N" NUMBER(5,0), 
+	"CNTRT_N" VARCHAR2(13), 
+	"PARNT_CNTRT_N" VARCHAR2(13), 
+	"CNTRT_TYPE_C" VARCHAR2(4), 
+	"PROC_I" VARCHAR2(1), 
+	"TRANS_N" VARCHAR2(16), 
+	"COVR_N" VARCHAR2(13), 
+	"ERROR_X" VARCHAR2(100), 
+	"FEC_N" VARCHAR2(13), 
+	"FORGN_AGENT_C" NUMBER(7,0), 
+	"FEC_TRANS_N" VARCHAR2(16), 
+	"DELVR_N" VARCHAR2(13), 
+	"ADVCE_X" LONG, 
+	"FEC_DTAIL_X" VARCHAR2(100), 
+	"INSRT_U" VARCHAR2(26), 
+	"UPDTD_U" VARCHAR2(26), 
+	"PROFT_LOSS_I" VARCHAR2(1), 
+	"EXCTV_TYPE_C" VARCHAR2(2), 
+	"STORE_A" NUMBER(17,2), 
+	 CONSTRAINT "FX_FEC_AUTOM_UNIQUE" UNIQUE ("CNTRT_N")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "FX_M"  ENABLE
+   ) SEGMENT CREATION IMMEDIATE 
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 
+ NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1
+  BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "FX_M" ;
