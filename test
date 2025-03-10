@@ -18,9 +18,10 @@ public String getObjectDDL(String schemaName, String objectName) {
         throw new IllegalArgumentException("Object not found or not a TABLE/VIEW: " + objectName);
     }
 
-    // Step 2: Set DBMS_METADATA options to exclude TABLESPACE and STORAGE
+    // Step 2: Set DBMS_METADATA options to exclude SCHEMA, TABLESPACE, STORAGE
     String configSql = """
         BEGIN
+            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SCHEMA', false);
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', false);
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', false);
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', false);
@@ -33,15 +34,12 @@ public String getObjectDDL(String schemaName, String objectName) {
 
     params.addValue("objectType", objectType);
 
-    return namedJdbcTemplate.queryForObject(ddlQuery, params, String.class);
-}
-CREATE TABLE "FX"."FX_FEC_AUTOM_DEV" 
+    String ddl = namedJdbcTemplate.queryForObject(ddlQuery, params, String.class);
 
-String sql = """
-    BEGIN
-        DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SCHEMA', false);
-        DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', false);
-        DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', false);
-        DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', false);
-    END;
-    """;
+    // Step 4: Remove schema name manually if still present (SCHEMA_NAME.TABLE_NAME → TABLE_NAME)
+    if (ddl != null) {
+        ddl = ddl.replaceAll(schemaName.toUpperCase() + "\\.", ""); 
+    }
+
+    return ddl;
+}
