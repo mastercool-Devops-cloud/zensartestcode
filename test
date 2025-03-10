@@ -1,45 +1,25 @@
-public String getObjectDDL(String schemaName, String objectName) {
-    // Step 1: Identify the object type (TABLE or VIEW)
-    String objectTypeQuery = """
-        SELECT OBJECT_TYPE 
-        FROM ALL_OBJECTS 
-        WHERE OWNER = :schemaName 
-          AND OBJECT_NAME = :objectName 
-          AND OBJECT_TYPE IN ('TABLE', 'VIEW')
-    """;
+org.springframework.jdbc.UncategorizedSQLException: StatementCallback; uncategorized SQLException for SQL [BEGIN
+    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SCHEMA', false);
+    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', false);
+    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', false);
+    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', false);
+END;
+]; SQL state [99999]; error code [31600]; ORA-31600: invalid input value SCHEMA for parameter NAME in function SET_TRANSFORM_PARAM
+ORA-06512: at "SYS.DBMS_SYS_ERROR", line 105
+ORA-06512: at "SYS.DBMS_METADATA_INT", line 8892
+ORA-06512: at "SYS.DBMS_METADATA_INT", line 10468
+ORA-06512: at "SYS.DBMS_METADATA", line 8552
+ORA-06512: at line 2
 
-    MapSqlParameterSource params = new MapSqlParameterSource()
-            .addValue("schemaName", schemaName.toUpperCase())
-            .addValue("objectName", objectName.toUpperCase());
+https://docs.oracle.com/error-help/db/ora-31600/
 
-    String objectType = namedJdbcTemplate.queryForObject(objectTypeQuery, params, String.class);
-
-    if (objectType == null) {
-        throw new IllegalArgumentException("Object not found or not a TABLE/VIEW: " + objectName);
-    }
-
-    // Step 2: Set DBMS_METADATA options to exclude SCHEMA, TABLESPACE, STORAGE
-    String configSql = """
-        BEGIN
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SCHEMA', false);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', false);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', false);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', false);
-        END;
-        """;
-    namedJdbcTemplate.getJdbcTemplate().execute(configSql);
-
-    // Step 3: Generate the correct DDL for the object
-    String ddlQuery = "SELECT DBMS_METADATA.GET_DDL(:objectType, :objectName, :schemaName) FROM DUAL";
-
-    params.addValue("objectType", objectType);
-
-    String ddl = namedJdbcTemplate.queryForObject(ddlQuery, params, String.class);
-
-    // Step 4: Remove schema name manually if still present (SCHEMA_NAME.TABLE_NAME → TABLE_NAME)
-    if (ddl != null) {
-        ddl = ddl.replaceAll(schemaName.toUpperCase() + "\\.", ""); 
-    }
-
-    return ddl;
-}
+	at org.springframework.jdbc.core.JdbcTemplate.translateException(JdbcTemplate.java:1557)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:408)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:444)
+	at com.sb.fedssimplification.automationtesting.repo.SchemaExporterRepository.getObjectDDL(SchemaExporterRepository.java:46)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+	a
