@@ -1,56 +1,33 @@
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
 @Import({DbOracleRealConfig.class, SchemaExporterRepository.class})
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)  // Ensures setup runs once before all tests
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)  // Allows ordering
+@TestInstance(TestInstance.Lifecycle.PER_CLASS) // Ensures setup runs first
+@TestMethodOrder(OrderAnnotation.class) // Ensures method execution order within this test
 public class SchemaExporterTest {
 
     @Autowired
     private SchemaExporterRepository schemaExporterRepository;
 
-    private static final String CONFIG_KEY = "schema.export.enabled";
-    private static boolean isSchemaExportEnabled;
-
     @BeforeAll
-    static void setup() {
-        // Check if schema export is enabled via system property or application.properties
-        isSchemaExportEnabled = Boolean.parseBoolean(System.getProperty(CONFIG_KEY, "true"));  // Default: true
+    void setup() throws IOException {
+        System.out.println("🔄 Running SchemaExporterTest first to export schema...");
 
-        if (isSchemaExportEnabled) {
-            System.out.println("✅ Schema export is enabled. Running SchemaExporterTest...");
-        } else {
-            System.out.println("❌ Schema export is disabled. Skipping SchemaExporterTest...");
-        }
-    }
-
-    @Test
-    @Order(1)  // Ensure this test runs first
-    void testGenerateSchemaAndData() throws IOException {
-        if (!isSchemaExportEnabled) {
-            System.out.println("🔹 Skipping schema export as it's disabled.");
-            return;
-        }
-
-        // Define schema and table name
         String schemaName = "FX";
         String tableName = "FX_FEC_AUTOM_DEV";
 
-        // Fetch table schema (DDL)
+        // Fetch and store table schema (DDL)
         String ddlScript = schemaExporterRepository.getTableDDL(schemaName, tableName);
 
-        // Define output file path
+        // Write to file
         String filePath = "src/test/resources/sql/schema.sql";
         File file = new File(filePath);
-
-        // Ensure directory exists
         file.getParentFile().mkdirs();
 
-        // Write to file
         try (FileWriter writer = new FileWriter(file)) {
             writer.write("-- Table Schema\n");
             writer.write(ddlScript + ";\n\n");
         }
 
-        System.out.println("✅ Schema & Data for " + tableName + " exported to: " + file.getAbsolutePath());
+        System.out.println("✅ Schema exported before other tests.");
     }
 }
