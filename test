@@ -35,3 +35,4 @@ public String getObjectDDL(String schemaName, String objectName) {
 
     return namedJdbcTemplate.queryForObject(ddlQuery, params, String.class);
 }
+CREATE TABLE "FX"."FX_FEC_AUTOM_DEV" 
