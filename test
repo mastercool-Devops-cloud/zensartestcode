@@ -1,21 +1,37 @@
-return ddl.replaceAll("TABLESPACE\\s+FX_M", "");
-public String getTableDDL(String schemaName, String tableName) {
-    String sql = """
+public String getObjectDDL(String schemaName, String objectName) {
+    // Step 1: Identify the object type (TABLE or VIEW)
+    String objectTypeQuery = """
+        SELECT OBJECT_TYPE 
+        FROM ALL_OBJECTS 
+        WHERE OWNER = :schemaName 
+          AND OBJECT_NAME = :objectName 
+          AND OBJECT_TYPE IN ('TABLE', 'VIEW')
+    """;
+
+    MapSqlParameterSource params = new MapSqlParameterSource()
+            .addValue("schemaName", schemaName.toUpperCase())
+            .addValue("objectName", objectName.toUpperCase());
+
+    String objectType = namedJdbcTemplate.queryForObject(objectTypeQuery, params, String.class);
+
+    if (objectType == null) {
+        throw new IllegalArgumentException("Object not found or not a TABLE/VIEW: " + objectName);
+    }
+
+    // Step 2: Set DBMS_METADATA options to exclude TABLESPACE and STORAGE
+    String configSql = """
         BEGIN
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', false);
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', false);
             DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', false);
         END;
         """;
+    namedJdbcTemplate.getJdbcTemplate().execute(configSql);
 
-    namedJdbcTemplate.getJdbcTemplate().execute(sql);
+    // Step 3: Generate the correct DDL for the object
+    String ddlQuery = "SELECT DBMS_METADATA.GET_DDL(:objectType, :objectName, :schemaName) FROM DUAL";
 
-    String ddlQuery = "SELECT DBMS_METADATA.GET_DDL('TABLE', :tableName, :schemaName) FROM DUAL";
-
-    MapSqlParameterSource params = new MapSqlParameterSource()
-            .addValue("tableName", tableName.toUpperCase())
-            .addValue("schemaName", schemaName.toUpperCase());
+    params.addValue("objectType", objectType);
 
     return namedJdbcTemplate.queryForObject(ddlQuery, params, String.class);
 }
-
