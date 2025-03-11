@@ -46,3 +46,4 @@ Caused by: org.springframework.beans.factory.support.BeanDefinitionOverrideExcep
 	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:152)
 	... 18 more
 
+@ContextConfiguration(exclude = OracleTestContainerConfig.class)
