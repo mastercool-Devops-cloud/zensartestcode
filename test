@@ -1,33 +1,22 @@
-@SpringBootTest
-@ExtendWith(SpringExtension.class)
-@Import({DbOracleRealConfig.class, SchemaExporterRepository.class})
-@TestInstance(TestInstance.Lifecycle.PER_CLASS) // Ensures setup runs first
-@TestMethodOrder(OrderAnnotation.class) // Ensures method execution order within this test
-public class SchemaExporterTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public abstract class BaseTestSetup {
 
     @Autowired
-    private SchemaExporterRepository schemaExporterRepository;
+    private SchemaExporterService schemaExporterService;
 
     @BeforeAll
-    void setup() throws IOException {
-        System.out.println("🔄 Running SchemaExporterTest first to export schema...");
+    public void setUpSchemaExporter() throws IOException {
+        schemaExporterService.exportSchema();
+    }
+}
 
-        String schemaName = "FX";
-        String tableName = "FX_FEC_AUTOM_DEV";
+@SpringBootTest
+@ExtendWith(SpringExtension.class)
+@Import(OracleTestContainerConfig.class)
+public class OracleTest extends BaseTestSetup {
 
-        // Fetch and store table schema (DDL)
-        String ddlScript = schemaExporterRepository.getTableDDL(schemaName, tableName);
-
-        // Write to file
-        String filePath = "src/test/resources/sql/schema.sql";
-        File file = new File(filePath);
-        file.getParentFile().mkdirs();
-
-        try (FileWriter writer = new FileWriter(file)) {
-            writer.write("-- Table Schema\n");
-            writer.write(ddlScript + ";\n\n");
-        }
-
-        System.out.println("✅ Schema exported before other tests.");
+    @Test
+    public void testOracleConnection() {
+        System.out.println("🔄 Oracle Test is running after Schema Exporter...");
     }
 }
