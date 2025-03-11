@@ -1,34 +1,3 @@
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public abstract class BaseTestSetup {
-
-    @Autowired
-    private SchemaExporterService schemaExporterService;
-
-    @BeforeAll
-    public void setUpSchemaExporter() throws IOException {
-        schemaExporterService.exportSchema();
-    }
-}
-
-@SpringBootTest
-@ExtendWith(SpringExtension.class)
-@Import(OracleTestContainerConfig.class)
-public class OracleTest extends BaseTestSetup {
-
-
-@PostConstruct
-    public void setup() throws IOException {
-        LOGGER.info("🛠 Running Schema Exporter before Oracle Container startup...");
-        schemaExporterService.exportSchema();
-        LOGGER.info("✅ Schema Export Completed. Starting Oracle Container...");
-        ORACLE_CONTAINER.start();
-    }
-    @Test
-    public void testOracleConnection() {
-        System.out.println("🔄 Oracle Test is running after Schema Exporter...");
-    }
-}
-
 Caused by: org.springframework.beans.factory.support.BeanDefinitionOverrideException: Invalid bean definition with name 'dataSource' defined in class path resource [com/sb/fedssimplification/automationtesting/DbOracleTestRealConfig.class]: Cannot register bean definition [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=com.sb.fedssimplification.automationtesting.DbOracleTestRealConfig; factoryMethodName=dataSource; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/sb/fedssimplification/automationtesting/DbOracleTestRealConfig.class]] for bean 'dataSource' since there is already [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=com.sb.fedssimplification.automationtesting.OracleTestContainerConfig; factoryMethodName=dataSource; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/sb/fedssimplification/automationtesting/OracleTestContainerConfig.class]] bound.
 	at org.springframework.beans.factory.support.DefaultListableBeanFactory.registerBeanDefinition(DefaultListableBeanFactory.java:1151)
 	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitionsForBeanMethod(ConfigurationClassBeanDefinitionReader.java:292)
@@ -54,4 +23,3 @@ Caused by: org.springframework.beans.factory.support.BeanDefinitionOverrideExcep
 	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:152)
 	... 18 more
 
-@ContextConfiguration(exclude = OracleTestContainerConfig.class)
