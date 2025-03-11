@@ -15,6 +15,14 @@ public abstract class BaseTestSetup {
 @Import(OracleTestContainerConfig.class)
 public class OracleTest extends BaseTestSetup {
 
+
+@PostConstruct
+    public void setup() throws IOException {
+        LOGGER.info("🛠 Running Schema Exporter before Oracle Container startup...");
+        schemaExporterService.exportSchema();
+        LOGGER.info("✅ Schema Export Completed. Starting Oracle Container...");
+        ORACLE_CONTAINER.start();
+    }
     @Test
     public void testOracleConnection() {
         System.out.println("🔄 Oracle Test is running after Schema Exporter...");
