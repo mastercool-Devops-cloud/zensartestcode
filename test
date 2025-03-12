@@ -1,30 +1,6 @@
-#!/bin/bash
-echo "Running SchemaExporterTest..."
-mvn -Dtest=SchemaExporterTest test
-if [ $? -ne 0 ]; then
-    echo "SchemaExporterTest failed! Stopping execution."
-    exit 1
-fi
-echo "SchemaExporterTest completed successfully!"
-
-
-<plugin>
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>exec-maven-plugin</artifactId>
-    <version>3.1.0</version>
-    <executions>
-        <execution>
-            <id>run-schema-export</id>
-            <phase>pre-integration-test</phase>  
-            <goals>
-                <goal>exec</goal>
-            </goals>
-        </execution>
-    </executions>
-    <configuration>
-        <executable>bash</executable>
-        <arguments>
-            <argument>${project.basedir}/run-schema-export.sh</argument>
-        </arguments>
-    </configuration>
-</plugin>
+[ERROR] /D:/Fed project/POC Demo code/Fed-Simplification-github/LoggingUtilityUsingTwoLogObject/fec-deal-management-automated-tests/src/main/ja
+va/com/sb/fedssimplification/automationtesting/AutomationtestingApplication.java:[3,32] cannot access org.springframework.boot.SpringApplication
+  bad class file: C:\Users\RC76327\.m2\repository\org\springframework\boot\spring-boot\3.4.0\spring-boot-3.4.0.jar(org/springframework/boot/SpringApplication.class)
+    class file has wrong version 61.0, should be 52.0
+    Please remove or make sure it appears in the correct subdirectory of the classpath.
+[INFO] 1 error
