@@ -1,24 +1,23 @@
-BEGIN
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', false);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', false);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', false);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'CONSTRAINTS', false);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'REF_CONSTRAINTS', false);
-            DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'INDEXES', false);
-        END;
-org.springframework.jdbc.UncategorizedSQLException: StatementCallback; uncategorized SQLException for SQL [BEGIN
-    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'STORAGE', false);
-    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'TABLESPACE', false);
-    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'SEGMENT_ATTRIBUTES', false);
-    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'CONSTRAINTS', false);
-    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'REF_CONSTRAINTS', false);
-    DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM, 'INDEXES', false);
-END;
-]; SQL state [99999]; error code [31600]; ORA-31600: invalid input value INDEXES for parameter NAME in function SET_TRANSFORM_PARAM
-ORA-06512: at "SYS.DBMS_SYS_ERROR", line 105
-ORA-06512: at "SYS.DBMS_METADATA_INT", line 8892
-ORA-06512: at "SYS.DBMS_METADATA_INT", line 10468
-ORA-06512: at "SYS.DBMS_METADATA", line 8552
-ORA-06512: at line 7
+Approach 1: Use the Same BOM as Cashflow Application
+✅ Pros:
 
-https://docs.oracle.com/error-help/db/ora-31600/
+Ensures compatibility with the application's dependencies.
+Avoids dependency conflicts when running tests alongside the main application.
+Reduces maintenance overhead, as both application and test automation stay in sync.
+❌ Cons:
+
+If the test automation framework needs additional dependencies (e.g., Selenium, Cucumber, RestAssured), it might pollute the application BOM.
+Updating dependencies for testing could unintentionally affect the application's runtime behavior.
+Approach 2: Create a Separate BOM for Test Automation
+✅ Pros:
+
+Allows the test automation framework to have independent dependency management without affecting the application.
+Test-specific dependencies (JUnit 5, Mockito, WireMock, RestAssured, etc.) can be managed separately.
+Better isolation—the test framework is decoupled from the main application.
+❌ Cons:
+
+Might lead to version mismatches if not properly managed, especially for libraries used in both application and testing (e.g., Jackson, Spring).
+Requires extra maintenance to keep versions aligned.
+Best Practice Recommendation
+If your test automation framework is tightly integrated with the cashflow application (e.g., embedded testing within the same codebase), use the same BOM to avoid compatibility issues.
+If your test automation is separate (e.g., running API/UI tests in a different module or repo), create a separate BOM to ensure flexibility and independence.
