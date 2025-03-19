@@ -12,3 +12,8 @@ org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' fa
 	at org.junit.platform.launcher.core.DefaultLauncher.discover(DefaultLauncher.java:99)
 	at org.junit.platform.launcher.core.DefaultLauncher.discover(DefaultLauncher.java:77)
 	at org.
+ <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-launcher</artifactId>
+        <scope>test</scope>
+    </dependency>
