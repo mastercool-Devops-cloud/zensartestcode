@@ -1,3 +1,35 @@
  <junit-jupiter-engine.version>5.10.2</junit-jupiter-engine.version>
         <junit-jupiter-api.version>5.11.3</junit-jupiter-api.version>
         <junit-platform-launcher.version>1.9.0</junit-platform-launcher.version>
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.junit</groupId>
+            <artifactId>junit-bom</artifactId>
+            <version>5.10.2</version>  <!-- Ensure all JUnit components match -->
+            <scope>import</scope>
+            <type>pom</type>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-launcher</artifactId>
+        <version>1.10.0</version>  <!-- Ensure compatibility -->
+        <scope>test</scope>
+    </dependency>
+</dependencies>
