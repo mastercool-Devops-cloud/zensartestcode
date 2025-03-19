@@ -63,3 +63,13 @@
                     </configuration>
                     
                 </plugin>
+
+<configuration>
+    <argLine>${surefireArgLine} --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+    <excludes>
+        <exclude>**/*AcceptanceTest.java</exclude>
+    </excludes>
+    <systemPropertyVariables>
+        <user.timezone>Africa/Johannesburg</user.timezone>
+    </systemPropertyVariables>
+</configuration>
