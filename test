@@ -46,3 +46,20 @@
         </plugin>
     </plugins>
 </build>
+
+
+ <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <inherited>true</inherited>
+                    <configuration>
+                        <argLine>${surefireArgLine}</argLine>
+                        <excludes>
+                            <exclude>**/*AcceptanceTest.java</exclude>
+                        </excludes>
+                        <systemPropertyVariables>
+                            <user.timezone>Africa/Johannesburg</user.timezone>
+                        </systemPropertyVariables>
+                    </configuration>
+                    
+                </plugin>
