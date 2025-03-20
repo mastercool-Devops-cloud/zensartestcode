@@ -7,40 +7,24 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.3.2</version>
+		<version>3.4.0</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
 	<groupId>com.sb.fedssimplification</groupId>
 	<artifactId>automationtesting</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>0.0.1-SNAPSHOT</version>
 	<name>automationtesting</name>
 	<description>Demo project for Spring Boot</description>
 
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>com.sb.fedssimplification</groupId>
-				<artifactId>feds-bom</artifactId>
-				<version>2.4.2-SNAPSHOT</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
+	<properties>
+		<java.version>21</java.version>
+		<spring-cloud.version>2024.0.0-RC1</spring-cloud.version>
+		<testcontainers.version>1.20.4</testcontainers.version>
+		<mq-jms-spring-boot-starter.version>3.3.3</mq-jms-spring-boot-starter.version>
+	</properties>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.httpcomponents</groupId>
-					<artifactId>httpclient</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
@@ -94,23 +78,41 @@
 			<artifactId>oracle-free</artifactId>
 			<scope>test</scope>
 		</dependency>
-
+		<!-- Testcontainers Core -->
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Testcontainers Oracle-XE Module -->
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>oracle-xe</artifactId>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>com.ibm.mq</groupId>
 			<artifactId>mq-jms-spring-boot-starter</artifactId>
+			<version>${mq-jms-spring-boot-starter.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>
@@ -151,154 +153,3 @@
 
 </project>
 
-
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <groupId>com.sb.fedssimplification</groupId>
-    <artifactId>feds-bom</artifactId>
-    <version>2.4.2-SNAPSHOT</version>
-    <name>feds-bom</name>
-    <packaging>pom</packaging>
-    <description>FEDS Simplification Bill of Materials project</description>
-
-    <properties>
-        <java.version>21</java.version>
-        <release.url>https://aws-tools.standardbank.co.za/nexus/repository/releases/</release.url>
-        <snapshot.url>https://aws-tools.standardbank.co.za/nexus/repository/snapshots/</snapshot.url>
-        <h2.version>2.1.214</h2.version>
-        <oracle.jdbc.version>23.5.0.24.07</oracle.jdbc.version>
-        <jackson-databind.version>2.17.2</jackson-databind.version>
-        <junit-jupiter-engine.version>5.9.0</junit-jupiter-engine.version>
-        <spring-cloud-dependencies.version>2023.0.3</spring-cloud-dependencies.version>
-        <feds-utility-modules.version>2.0.2-SNAPSHOT</feds-utility-modules.version>
-
-        <commons-lang3.version>3.17.0</commons-lang3.version>
-        <httpclient.version>5.3.1</httpclient.version>
-        <mapstruct.version>1.6.0</mapstruct.version>
-        <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
-        <mq-jms-spring-boot-starter.version>3.3.3</mq-jms-spring-boot-starter.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
-    </properties>
-
-    <scm>
-        <connection>scm:git:https://x-access-token:${env.GITHUB_TOKEN}@github.com/standardbank-cibgm/feds-simplification-maven-bom.git</connection>
-        <developerConnection>scm:git:https://x-access-token:${env.GITHUB_TOKEN}@github.com/standardbank-cibgm/feds-simplification-maven-bom.git</developerConnection>
-        <url>https://github.com/standardbank-cibgm/feds-simplification-maven-bom.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
-    <distributionManagement>
-        <repository>
-            <id>sbsa3-releases</id>
-            <name>SBSA GMT Releases</name>
-            <url>${release.url}</url>
-        </repository>
-        <snapshotRepository>
-            <id>sbsa3-snapshots</id>
-            <name>SBSA GMT Snapshots</name>
-            <url>${snapshot.url}</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud-dependencies.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.oracle.database.jdbc</groupId>
-                <artifactId>ojdbc11</artifactId>
-                <version>${oracle.jdbc.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>${h2.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson-databind.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>${junit-jupiter-engine.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.sb.fedssimplification.utilitymodules</groupId>
-                <artifactId>secrets-manager</artifactId>
-                <version>${feds-utility-modules.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.sb.fedssimplification.utilitymodules</groupId>
-                <artifactId>logging-utility</artifactId>
-                <version>${feds-utility-modules.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
-                <version>${httpclient.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mapstruct</groupId>
-                <artifactId>mapstruct</artifactId>
-                <version>${mapstruct.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ibm.mq</groupId>
-                <artifactId>mq-jms-spring-boot-starter</artifactId>
-                <version>${mq-jms-spring-boot-starter.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers</artifactId>
-                <version>${testcontainers.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>oracle-xe</artifactId>
-                <version>${testcontainers.version}</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>${maven-release-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>default</id>
-                        <goals>
-                            <goal>prepare</goal>
-                            <goal>perform</goal>
-                        </goals>
-                        <configuration>
-                            <releaseVersion>${project.version}</releaseVersion>
-                            <pomFileName>${project.name}/pom.xml</pomFileName>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-</project>
