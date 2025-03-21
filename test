@@ -1,5 +1,5 @@
-What is not a trade/transaction messaging format?
-FIX
-SWIFT
-OASYS
-FpML
+Portfolio Accounting done at the end of the day does not include
+Transaction Posting
+Interest Accrual Posting
+NAV Computation
+Unrealised Gain/Loss Computation
