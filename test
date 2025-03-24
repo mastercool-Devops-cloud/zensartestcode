@@ -1,5 +1,1 @@
-Clearing Houses need to carry out the clearances on a
-Either a or b
-Gross Basis
-Neither a nor b
-Net Basis
+podman pull aws-tools.standardbank.co.za:8092/cashflow-processor:3.10.0-SNAPSHOT-adb0498 --tls-verify=false
