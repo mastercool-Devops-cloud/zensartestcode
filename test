@@ -11,3 +11,24 @@ The registry does not have a valid SSL/TLS certificate.
 You are in a development/testing environment where strict security checks are not enforced.
 
 The registry uses a self-signed or private CA certificate.
+
+--------------------------------
+mTLS (Mutual TLS) in Podman
+Mutual TLS (mTLS) is an enhanced form of TLS authentication where both the client (Podman) and the server (registry) authenticate each other using certificates.
+
+By default, TLS (one-way) only verifies the server's certificate. In mTLS (two-way), both the server and client present valid certificates.
+-------
+ How to Use mTLS with Podman Pull?
+To enable mTLS while pulling an image, you need:
+
+Server Certificate & Key → Installed on the registry.
+
+Client Certificate & Key → Used by Podman to authenticate to the registry.
+
+Trusted CA Certificate → To verify the registry's certificate.
+-------
+Required Files in /path/to/certs/
+File Name	Description
+ca.crt	CA certificate that signed the registry’s certificate
+client.cert	Client certificate (issued by the same CA)
+client.key	Private key for the client certificate
