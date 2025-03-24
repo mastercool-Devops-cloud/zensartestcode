@@ -1,1 +1,13 @@
 podman pull aws-tools.standardbank.co.za:8092/cashflow-processor:3.10.0-SNAPSHOT-adb0498 --tls-verify=false
+
+--tls-verify=false
+
+This option disables TLS verification when pulling the image.
+
+It is used when:
+
+The registry does not have a valid SSL/TLS certificate.
+
+You are in a development/testing environment where strict security checks are not enforced.
+
+The registry uses a self-signed or private CA certificate.
