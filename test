@@ -45,27 +45,23 @@ Client applications request their configuration from the Config Server via REST 
 
 If @RefreshScope is used, applications can refresh properties without restarting.
 
-Could not find artifact org.apache.httpcomponents:httpclient:pom:5.3.1 in sbsa3-central (https://aws-tools.standardbank.co.za/nexus/repository/central)
-<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
-			<scope>test</scope>
-			<!--<exclusions>
-				<exclusion>
-					<groupId>org.apache.httpcomponents</groupId>
-					<artifactId>httpclient</artifactId>
-				</exclusion>
-			</exclusions>-->
-		</dependency>
-By adding the exclusion, you told Maven not to include httpclient, which means:
+server:
+  port: 8888
 
-Maven no longer tries to download httpclient:5.3.1 (avoiding the error).
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/your-org/config-repo  # Replace with your Git repository
+          clone-on-start: true
+          default-label: main  # Git branch to use
 
-If httpclient was not strictly necessary for your tests, the application continues to work fine.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, refresh
 
-It prevents potential dependency conflicts if another version of httpclient is already present in the project.
-The issue was caused because Maven couldn't find httpclient:5.3.1 in your Nexus repository.
-
-Excluding httpclient from spring-cloud-starter-contract-stub-runner prevented Maven from trying to download it.
-
-The fix worked because your project didn’t actually need httpclient or already had a different version available.
