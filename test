@@ -57,3 +57,15 @@ Could not find artifact org.apache.httpcomponents:httpclient:pom:5.3.1 in sbsa3-
 				</exclusion>
 			</exclusions>-->
 		</dependency>
+By adding the exclusion, you told Maven not to include httpclient, which means:
+
+Maven no longer tries to download httpclient:5.3.1 (avoiding the error).
+
+If httpclient was not strictly necessary for your tests, the application continues to work fine.
+
+It prevents potential dependency conflicts if another version of httpclient is already present in the project.
+The issue was caused because Maven couldn't find httpclient:5.3.1 in your Nexus repository.
+
+Excluding httpclient from spring-cloud-starter-contract-stub-runner prevented Maven from trying to download it.
+
+The fix worked because your project didn’t actually need httpclient or already had a different version available.
