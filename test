@@ -1,34 +1,47 @@
-podman pull aws-tools.standardbank.co.za:8092/cashflow-processor:3.10.0-SNAPSHOT-adb0498 --tls-verify=false
+Why Do We Need Spring Cloud Config Server?
+In a microservices architecture, managing configuration centrally is essential to maintain consistency, scalability, and flexibility. The Spring Cloud Config Server provides a centralized configuration management system that allows applications to dynamically fetch configuration properties from an external repository (like Git, database, or file system).
 
---tls-verify=false
+Purpose of Spring Cloud Config Server
+Centralized Configuration Management
 
-This option disables TLS verification when pulling the image.
+Stores application properties in a single location (e.g., Git, database).
 
-It is used when:
+Eliminates the need to manage properties in individual services.
 
-The registry does not have a valid SSL/TLS certificate.
+Dynamic Configuration Updates
 
-You are in a development/testing environment where strict security checks are not enforced.
+Allows applications to refresh configurations at runtime without redeployment.
 
-The registry uses a self-signed or private CA certificate.
+Useful when changing database credentials, API URLs, feature toggles, etc.
 
---------------------------------
-mTLS (Mutual TLS) in Podman
-Mutual TLS (mTLS) is an enhanced form of TLS authentication where both the client (Podman) and the server (registry) authenticate each other using certificates.
+Environment-Specific Configurations
 
-By default, TLS (one-way) only verifies the server's certificate. In mTLS (two-way), both the server and client present valid certificates.
--------
- How to Use mTLS with Podman Pull?
-To enable mTLS while pulling an image, you need:
+Supports multiple environments (Dev, UAT, Production).
 
-Server Certificate & Key → Installed on the registry.
+Uses profiles (application-dev.yml, application-prod.yml) for environment-specific settings.
 
-Client Certificate & Key → Used by Podman to authenticate to the registry.
+Secure & Encrypted Properties
 
-Trusted CA Certificate → To verify the registry's certificate.
--------
-Required Files in /path/to/certs/
-File Name	Description
-ca.crt	CA certificate that signed the registry’s certificate
-client.cert	Client certificate (issued by the same CA)
-client.key	Private key for the client certificate
+Supports encryption of sensitive properties like passwords, API keys.
+
+Uses @EnableConfigServer with encrypted values.
+
+Version Control & Auditing
+
+Configurations are stored in Git, enabling versioning and rollback.
+
+Every change is tracked, ensuring reliability.
+
+Integration with Spring Boot Applications
+
+Clients can fetch properties dynamically using spring.cloud.config.uri.
+
+Works seamlessly with @RefreshScope to update beans dynamically.
+
+How It Works?
+Spring Cloud Config Server fetches configuration properties from a Git repository, database, or file system.
+
+Client applications request their configuration from the Config Server via REST API (/config/{application}/{profile}).
+
+If @RefreshScope is used, applications can refresh properties without restarting.
+
