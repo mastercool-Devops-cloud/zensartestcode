@@ -45,3 +45,15 @@ Client applications request their configuration from the Config Server via REST 
 
 If @RefreshScope is used, applications can refresh properties without restarting.
 
+Could not find artifact org.apache.httpcomponents:httpclient:pom:5.3.1 in sbsa3-central (https://aws-tools.standardbank.co.za/nexus/repository/central)
+<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
+			<scope>test</scope>
+			<!--<exclusions>
+				<exclusion>
+					<groupId>org.apache.httpcomponents</groupId>
+					<artifactId>httpclient</artifactId>
+				</exclusion>
+			</exclusions>-->
+		</dependency>
