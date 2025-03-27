@@ -257,4 +257,4 @@ management:
         include: health, info, refresh
 -----------------------
 curl -X GET http://localhost:8337/application/default
-
+warning: in the working copy of 'src/main/resources/application.yml', LF will be replaced by CRLF the next time Git touches it
