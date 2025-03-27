@@ -16,6 +16,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>feds-config-server</name>
 	<description>Service that manages to provides a centralized configuration management system.</description>
+The FEDS Config Server is a Spring Cloud Config Server responsible for managing and serving configuration properties for various microservices within the FEDS (Financial Enterprise Data Services) ecosystem. It centralizes all environment-specific configurations, ensuring consistency, security, and ease of maintenance across multiple applications
 
 	<properties>
 		<java.version>21</java.version>
