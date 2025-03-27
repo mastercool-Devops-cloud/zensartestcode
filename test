@@ -1,61 +1,252 @@
-Why Do We Need Spring Cloud Config Server?
-In a microservices architecture, managing configuration centrally is essential to maintain consistency, scalability, and flexibility. The Spring Cloud Config Server provides a centralized configuration management system that allows applications to dynamically fetch configuration properties from an external repository (like Git, database, or file system).
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-Purpose of Spring Cloud Config Server
-Centralized Configuration Management
+	<modelVersion>4.0.0</modelVersion>
 
-Stores application properties in a single location (e.g., Git, database).
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.4.4</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
 
-Eliminates the need to manage properties in individual services.
+	<groupId>com.sb.fedssimplification.configserver</groupId>
+	<artifactId>feds-config-server</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>feds-config-server</name>
+	<description>Service that manages to provides a centralized configuration management system.</description>
 
-Dynamic Configuration Updates
+	<properties>
+		<java.version>21</java.version>
+		<spring-cloud.version>2024.0.1</spring-cloud.version>
+		<container.registry>aws-tools.standardbank.co.za:8092</container.registry>
+		<release.url>https://aws-tools.standardbank.co.za/nexus/repository/releases/</release.url>
+		<snapshot.url>https://aws-tools.standardbank.co.za/nexus/repository/snapshots/</snapshot.url>
+		<maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+		<maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+		<maven-deploy-plugin.version>3.1.4</maven-deploy-plugin.version>
+		<versions-maven-plugin.version>2.18.1</versions-maven-plugin.version>
+		<maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
+		<git.commit.id>${env.GIT_SHA}</git.commit.id>
+	</properties>
 
-Allows applications to refresh configurations at runtime without redeployment.
+	<scm>
+		<connection>scm:git:https://x-access-token:${env.GITHUB_TOKEN}@github.com/standardbank-cibgm/feds-simplification-maven-parent.git</connection>
+		<developerConnection>scm:git:https://x-access-token:${env.GITHUB_TOKEN}@github.com/standardbank-cibgm/feds-simplification-maven-parent.git</developerConnection>
+		<url>https://github.com/standardbank-cibgm/feds-simplification-maven-parent.git</url>
+		<tag>HEAD</tag>
+	</scm>
 
-Useful when changing database credentials, API URLs, feature toggles, etc.
+	<distributionManagement>
+		<repository>
+			<id>sbsa3-releases</id>
+			<name>SBSA GMT Releases</name>
+			<url>${release.url}</url>
+		</repository>
+		<snapshotRepository>
+			<id>sbsa3-snapshots</id>
+			<name>SBSA GMT Snapshots</name>
+			<url>${snapshot.url}</url>
+		</snapshotRepository>
+	</distributionManagement>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-config-server</artifactId>
+		</dependency>
 
-Environment-Specific Configurations
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
-Supports multiple environments (Dev, UAT, Production).
+	<!--<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>-->
 
-Uses profiles (application-dev.yml, application-prod.yml) for environment-specific settings.
-
-Secure & Encrypted Properties
-
-Supports encryption of sensitive properties like passwords, API keys.
-
-Uses @EnableConfigServer with encrypted values.
-
-Version Control & Auditing
-
-Configurations are stored in Git, enabling versioning and rollback.
-
-Every change is tracked, ensuring reliability.
-
-Integration with Spring Boot Applications
-
-Clients can fetch properties dynamically using spring.cloud.config.uri.
-
-Works seamlessly with @RefreshScope to update beans dynamically.
-
-How It Works?
-Spring Cloud Config Server fetches configuration properties from a Git repository, database, or file system.
-
-Client applications request their configuration from the Config Server via REST API (/config/{application}/{profile}).
-
-If @RefreshScope is used, applications can refresh properties without restarting.
-
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>${maven-javadoc-plugin.version}</version>
+					<configuration>
+						<failOnError>false</failOnError>
+					</configuration>
+					<executions>
+						<execution>
+							<phase>none</phase>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>${maven-surefire-plugin.version}</version>
+					<inherited>true</inherited>
+					<configuration>
+						<argLine>${surefireArgLine}</argLine>
+						<excludes>
+							<exclude>**/*AcceptanceTest.java</exclude>
+						</excludes>
+						<systemPropertyVariables>
+							<user.timezone>Africa/Johannesburg</user.timezone>
+						</systemPropertyVariables>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>versions-maven-plugin</artifactId>
+					<version>${versions-maven-plugin.version}</version>
+					<configuration>
+						<generateBackupPoms>false</generateBackupPoms>
+						<allowSnapshots>true</allowSnapshots>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+	<profiles>
+		<profile>
+			<id>image-deploy-nexus</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<goals>
+									<goal>build-image</goal>
+								</goals>
+								<phase>deploy</phase>
+								<configuration>
+									<image>
+										<name>${container.registry}/${project.artifactId}:${project.version}-${git.commit.id}</name>
+										<publish>true</publish>
+									</image>
+									<docker>
+										<publishRegistry>
+											<username>${env.NEXUS3_SERVER_USER}</username>
+											<password>${env.NEXUS3_SERVER_PASSWORD}</password>
+										</publishRegistry>
+									</docker>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-deploy-plugin</artifactId>
+						<version>${maven-deploy-plugin.version}</version>
+						<configuration>
+							<skip>true</skip>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<goals>
+									<goal>build-image</goal>
+								</goals>
+								<phase>deploy</phase>
+								<configuration>
+									<image>
+										<name>${container.registry}/${project.artifactId}:${project.version}</name>
+										<publish>true</publish>
+									</image>
+									<docker>
+										<publishRegistry>
+											<username>${env.NEXUS3_SERVER_USER}</username>
+											<password>${env.NEXUS3_SERVER_PASSWORD}</password>
+										</publishRegistry>
+									</docker>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-release-plugin</artifactId>
+						<version>${maven-release-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>prepare</goal>
+									<goal>perform</goal>
+								</goals>
+								<configuration>
+									<releaseVersion>${project.version}</releaseVersion>
+									<pomFileName>${project.name}/pom.xml</pomFileName>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>skip-checks</id>
+			<properties>
+				<checkstyle.skip>true</checkstyle.skip>
+				<spotbugs.skip>true</spotbugs.skip>
+				<jacoco.skip>true</jacoco.skip>
+			</properties>
+		</profile>
+	</profiles>
+</project>
+-------------------------
 server:
-  port: 8888
+  port: 8337
 
 spring:
   application:
-    name: config-server
+    name: feds-config-server
   cloud:
     config:
       server:
         git:
-          uri: https://github.com/your-org/config-repo  # Replace with your Git repository
+          uri: https://github.com/orgs/standardbank-cibgm/repositories  # Replace with your Git repository
           clone-on-start: true
           default-label: main  # Git branch to use
 
@@ -64,4 +255,42 @@ management:
     web:
       exposure:
         include: health, info, refresh
-
+-----------------------
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'defaultEnvironmentRepository' defined in class path resource [org/springframework/cloud/config/server/config/DefaultRepositoryConfiguration.class]: Invalid remote: origin
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1812)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:601)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:523)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:347)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
+	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.addCandidateEntry(DefaultListableBeanFactory.java:1919)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.findAutowireCandidates(DefaultListableBeanFactory.java:1883)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveMultipleBeanCollection(DefaultListableBeanFactory.java:1773)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveMultipleBeans(DefaultListableBeanFactory.java:1741)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1616)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1555)
+	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
+	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
+	... 77 more
+Caused by: org.eclipse.jgit.api.errors.InvalidRemoteException: Invalid remote: origin
+	at org.eclipse.jgit.api.FetchCommand.call(FetchCommand.java:246)
+	at org.eclipse.jgit.api.CloneCommand.fetch(CloneCommand.java:319)
+	at org.eclipse.jgit.api.CloneCommand.call(CloneCommand.java:189)
+	at org.springframework.cloud.config.server.environment.JGitEnvironmentRepository.cloneToBasedir(JGitEnvironmentRepository.java:659)
+	at org.springframework.cloud.config.server.environment.JGitEnvironmentRepository.initClonedRepository(JGitEnvironmentRepository.java:362)
+	at org.springframework.cloud.config.server.environment.JGitEnvironmentRepository.afterPropertiesSet(JGitEnvironmentRepository.java:283)
+	at org.springframework.cloud.config.server.environment.MultipleJGitEnvironmentRepository.afterPropertiesSet(MultipleJGitEnvironmentRepository.java:72)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1859)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1808)
+	... 92 more
+Caused by: org.eclipse.jgit.errors.NoRemoteRepositoryException: https://github.com/orgs/standardbank-cibgm/repositories: https://github.com/orgs/standardbank-cibgm/repositories/info/refs?service=git-upload-pack not found: Not Found
+	at org.eclipse.jgit.transport.TransportHttp.createNotFoundException(TransportHttp.java:609)
+	at org.eclipse.jgit.transport.TransportHttp.connect(TransportHttp.java:677)
+	at org.eclipse.jgit.transport.TransportHttp.openFetch(TransportHttp.java:465)
+	at org.eclipse.jgit.transport.FetchProcess.executeImp(FetchProcess.java:153)
+	at org.eclipse.jgit.transport.FetchProcess.execute(FetchProcess.java:105)
+	at org.eclipse.jgit.transport.Transport.fetch(Transport.java:1480)
+	at org.eclipse.jgit.api.FetchCommand.call(FetchCommand.java:238)
+	... 100 more
