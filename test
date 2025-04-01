@@ -3,3 +3,5 @@ Caused by: org.eclipse.jgit.errors.TransportException: https://github.com/standa
 	at org.eclipse.jgit.transport.TransportHttp.openFetch(TransportHttp.java:465) ~[org.eclipse.jgit-6.10.0.202406032230-r.jar:6.10.0.202406032230-r]
 	at org.eclipse.jgit.transport.FetchProcess.executeImp(FetchProcess.java:153) ~[org.eclipse.jgit-6.10.0.202406032230-r.jar:6.10.0.202406032230-r]
 	at
+
+Your Spring Cloud Config Server cannot authenticate with your GitHub repository (https://github.com/standardbank-cibgm/feds-config.git). 
