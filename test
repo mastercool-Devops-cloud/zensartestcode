@@ -1,1 +1,5 @@
-git clone https://x-access-token:$GITHUB_TOKEN@github.com/standardbank-cibgm/feds-simplification-maven-parent.git
+Caused by: org.eclipse.jgit.errors.TransportException: https://github.com/standardbank-cibgm/feds-config.git: Authentication is required but no CredentialsProvider has been registered
+	at org.eclipse.jgit.transport.TransportHttp.connect(TransportHttp.java:687) ~[org.eclipse.jgit-6.10.0.202406032230-r.jar:6.10.0.202406032230-r]
+	at org.eclipse.jgit.transport.TransportHttp.openFetch(TransportHttp.java:465) ~[org.eclipse.jgit-6.10.0.202406032230-r.jar:6.10.0.202406032230-r]
+	at org.eclipse.jgit.transport.FetchProcess.executeImp(FetchProcess.java:153) ~[org.eclipse.jgit-6.10.0.202406032230-r.jar:6.10.0.202406032230-r]
+	at
