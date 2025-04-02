@@ -1,4 +1,3 @@
-ci.yml
 name: Build and test workflow
 
 env:
@@ -6,6 +5,7 @@ env:
   MAVEN_CLI_ADDITIONAL_GOALS_PROFILES: -P image-deploy-nexus
   NEXUS3_SERVER_USER: ${{ secrets.NEXUS3_SERVER_USER }}
   NEXUS3_SERVER_PASSWORD: ${{ secrets.NEXUS3_SERVER_PASSWORD }}
+  CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
 on:
   push:
     branches:
@@ -37,21 +37,12 @@ jobs:
           key: ${{ github.job }}-${{ hashFiles('**/pom.xml') }}
 
       - name: Maven build
+        env:
+          CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
         run: mvn $MAVEN_CLI_OPTS -U compile test-compile
 
       - name: Maven tests
+        env:
+          CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
         run: mvn $MAVEN_CLI_OPTS -U -Dmaven.test.failure.ignore=false test verify
---------------------------------------------
-CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
-- name: Maven build
-  run: mvn $MAVEN_CLI_OPTS -U -Dconfig.token=$CONFIG_TOKEN compile test-compile
-  env:
-    CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
-
-- name: Maven tests
-  run: mvn $MAVEN_CLI_OPTS -U -Dconfig.token=$CONFIG_TOKEN -Dmaven.test.failure.ignore=false test verify
-  env:
-    CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
-
-
 
