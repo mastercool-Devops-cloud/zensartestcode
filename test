@@ -1,7 +1,43 @@
-Caused by: org.eclipse.jgit.errors.TransportException: https://github.com/standardbank-cibgm/feds-config.git: Authentication is required but no CredentialsProvider has been registered
-	at org.eclipse.jgit.transport.TransportHttp.connect(TransportHttp.java:687) ~[org.eclipse.jgit-6.10.0.202406032230-r.jar:6.10.0.202406032230-r]
-	at org.eclipse.jgit.transport.TransportHttp.openFetch(TransportHttp.java:465) ~[org.eclipse.jgit-6.10.0.202406032230-r.jar:6.10.0.202406032230-r]
-	at org.eclipse.jgit.transport.FetchProcess.executeImp(FetchProcess.java:153) ~[org.eclipse.jgit-6.10.0.202406032230-r.jar:6.10.0.202406032230-r]
-	at
+ci.yml
+name: Build and test workflow
 
-Your Spring Cloud Config Server cannot authenticate with your GitHub repository (https://github.com/standardbank-cibgm/feds-config.git). 
+env:
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
+  MAVEN_CLI_ADDITIONAL_GOALS_PROFILES: -P image-deploy-nexus
+  NEXUS3_SERVER_USER: ${{ secrets.NEXUS3_SERVER_USER }}
+  NEXUS3_SERVER_PASSWORD: ${{ secrets.NEXUS3_SERVER_PASSWORD }}
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build-and-test-job:
+    runs-on: [ self-hosted, Linux, X64, enterprise ]
+    container:
+      image: aws-tools.standardbank.co.za:8092/lvhvt/java-21-build:0.6
+      env:
+        NEXUS3_SERVER_PASSWORD: ${{ secrets.NEXUS3_SERVER_PASSWORD }}
+        NEXUS3_SERVER_USER: ${{ secrets.NEXUS3_SERVER_USER}}
+      volumes:
+        - /usr/local/bin/docker:/usr/local/bin/docker
+        - /var/run/docker.sock:/var/run/docker.sock
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Maven
+        id: maven-cache
+        uses: actions/cache@v3
+        with:
+          path: /root/.m2/repository
+          key: ${{ github.job }}-${{ hashFiles('**/pom.xml') }}
+
+      - name: Maven build
+        run: mvn $MAVEN_CLI_OPTS -U compile test-compile
+
+      - name: Maven tests
+        run: mvn $MAVEN_CLI_OPTS -U -Dmaven.test.failure.ignore=false test verify
