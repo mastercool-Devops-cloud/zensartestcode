@@ -41,3 +41,17 @@ jobs:
 
       - name: Maven tests
         run: mvn $MAVEN_CLI_OPTS -U -Dmaven.test.failure.ignore=false test verify
+--------------------------------------------
+CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
+- name: Maven build
+  run: mvn $MAVEN_CLI_OPTS -U -Dconfig.token=$CONFIG_TOKEN compile test-compile
+  env:
+    CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
+
+- name: Maven tests
+  run: mvn $MAVEN_CLI_OPTS -U -Dconfig.token=$CONFIG_TOKEN -Dmaven.test.failure.ignore=false test verify
+  env:
+    CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
+
+
+
