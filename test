@@ -50,7 +50,9 @@ jobs:
   if: failure()
   run: cat target/surefire-reports/*.txt || true
 
-- name: Debug Test Failures
-  if: failure()
-  run: cat target/surefire-reports/*.txt || true
+- name: Print CONFIG_TOKEN for Debugging (Remove in Production)
+  run: echo "CONFIG_TOKEN=$CONFIG_TOKEN"
+  env:
+    CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
+
 
