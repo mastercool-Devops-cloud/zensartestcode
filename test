@@ -46,3 +46,7 @@ jobs:
           CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
         run: mvn $MAVEN_CLI_OPTS -U -Dmaven.test.failure.ignore=false test verify
 
+- name: Debug Test Failures
+  if: failure()
+  run: cat target/surefire-reports/*.txt || true
+
