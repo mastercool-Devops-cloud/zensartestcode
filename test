@@ -50,3 +50,7 @@ jobs:
   if: failure()
   run: cat target/surefire-reports/*.txt || true
 
+- name: Debug Test Failures
+  if: failure()
+  run: cat target/surefire-reports/*.txt || true
+
