@@ -1,1 +1,9 @@
-org.apache.maven.plugin.PluginExecutionException: Execution default of goal org.springframework.boot:spring-boot-maven-plugin:3.3.2:build-image failed: Unable to parse image reference "aws-tools.standardbank.co.za:8092/cashflow-calculator:3.8.0-SNAPSHOT-${env.GIT_SHA}". Image reference must be in the form '[domainHost:port/][path/]name[:tag][@digest]', with 'path' and 'name' containing only [a-z0-9][.][_][-]
+Question 2
+
+Points
+1
+What is the role of the CHRO in enforcing the policy?
+To develop new business strategies
+To monitor and review the policy's effectiveness
+To manage employee benefits
+To handle customer complaints
