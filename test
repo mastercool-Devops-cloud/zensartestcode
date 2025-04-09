@@ -55,4 +55,5 @@ jobs:
   env:
     CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
 
-
+Bad Request
+This combination of host and port requires TLS.
