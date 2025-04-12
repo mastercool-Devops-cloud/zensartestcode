@@ -19,4 +19,39 @@ I did a good work in fed dashboard to modify the configuration from development 
 
 I also resolved the deployment related issues of other feds team members.
 
+Developed RESTful services using Spring Boot 3.x following Microservices architecture.
+
+Set up database connections using Oracle Database for various microservices.
+
+Implemented Mutual TLS (mTLS) authentication where both client (Podman) and server (registry) authenticate each other using certificates.
+
+Created separate logging modules for microservices using filter concepts.
+
+Developed a centralized Spring Cloud Config Server to fetch properties from a remote GitHub repository.
+
+Implemented CI/CD pipelines for newly created GitHub repositories.
+
+Wrote JUnit test cases to ensure the quality and coverage of developed code.
+
+Created scripts for Geneos monitoring in SB to support service health checks.
+
+Participated in deployment processes using Octopus Deploy.
+
+Contributions and Achievements:
+Played a key role in the FEDS Simplification project by rapidly delivering high-quality components. Started from low-level design and actively participated in architectural discussions with stakeholders to assess technology choices, risks, and challenges.
+
+Developed reusable modules to establish secure connections between different microservices.
+
+Worked on a variety of tools beyond development, such as:
+
+Geneos monitoring.
+
+Setting up ActiveMQ on UAT environments.
+
+Configuring GitLab and supporting the migration from GitLab to GitHub.
+
+For the FEDS Simplification initiative, conducted a successful POC for the NBFI client, converting legacy database procedures into modular microservices APIs. Demonstrated the solution to the client and received appreciation for the effort.
+
+Supported the FED Dashboard team by resolving configuration-related issues and contributing to end-to-end implementation, from development to deployment, across both non-prod and prod environments.
+
 
