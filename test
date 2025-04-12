@@ -1,70 +1,22 @@
-name: Build and test workflow
+Involved to develop the REST services using Spring boot 3.X with Microservices.
+Involved to setup the database connection using oracle database for our different services.
+involved to develop the MTLS, Mutual TLS (MTLS) is an enhanced form of TLS authentication where both the client (Podman) and the server (registry) authenticate each other using certificates.
+Involved to develop the separate logging modules for Microservices using filter concepts.
+Involved to develop the Microservices concept as spring config server to access the properties from another GitHub repo.
+Involved to develop the CI/CD pipeline for our newly setup GitHub repo.
+Involved to write the JUnit test case for developed code.
+Involved to develop the script to monitor Geneos Tool in SB for health checkups.
+Involved in deployment using Octopus deployments.
 
-env:
-  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
-  MAVEN_CLI_ADDITIONAL_GOALS_PROFILES: -P image-deploy-nexus
-  NEXUS3_SERVER_USER: ${{ secrets.NEXUS3_SERVER_USER }}
-  NEXUS3_SERVER_PASSWORD: ${{ secrets.NEXUS3_SERVER_PASSWORD }}
-  CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
-on:
-  push:
-    branches:
-      - '**'
+I did a good work in fed simplification project to achieve the things quickly. I started building my understating from the scratch like started with the low level designing to involved multiple architectural discussions with the other stakeholders, related to the technologies and risk & challenges involved.
+I involved to make a reuseable modules like to get the connection establishment in between different microservices.
+I work on different tools other than coding like geneos monitoring, setup active mq on UAT boxes, setup git lab configuration on UAT boxes and also worked on migration from git lab to git hub tool.
 
-jobs:
-  build-and-test-job:
-    runs-on: [ self-hosted, Linux, X64, enterprise ]
-    container:
-      image: aws-tools.standardbank.co.za:8092/lvhvt/java-21-build:0.6
-      env:
-        NEXUS3_SERVER_PASSWORD: ${{ secrets.NEXUS3_SERVER_PASSWORD }}
-        NEXUS3_SERVER_USER: ${{ secrets.NEXUS3_SERVER_USER}}
-      volumes:
-        - /usr/local/bin/docker:/usr/local/bin/docker
-        - /var/run/docker.sock:/var/run/docker.sock
+For FEDS Simplification initiative, I did a POC for NBFI client to convert database procedure into microservices API mappings with different modules of microservices. I demonstrate it Infront of client and got appreciation for the same.
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+other than FEDS-simplification project, I involved fed dashboard team to solve their problems.
+I did a good work in fed dashboard to modify the configuration from development to deployment end to end implementation in non-prod and prod environment.
 
-      - name: Cache Maven
-        id: maven-cache
-        uses: actions/cache@v3
-        with:
-          path: /root/.m2/repository
-          key: ${{ github.job }}-${{ hashFiles('**/pom.xml') }}
-
-      - name: Maven build
-        env:
-          CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
-        run: mvn $MAVEN_CLI_OPTS -U compile test-compile
-
-      - name: Maven tests
-        env:
-          CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
-        run: mvn $MAVEN_CLI_OPTS -U -Dmaven.test.failure.ignore=false test verify
-
-- name: Debug Test Failures
-  if: failure()
-  run: cat target/surefire-reports/*.txt || true
-
-- name: Print CONFIG_TOKEN for Debugging (Remove in Production)
-  run: echo "CONFIG_TOKEN=$CONFIG_TOKEN"
-  env:
-    CONFIG_TOKEN: ${{ secrets.CONFIG_TOKEN }}
-
-java.lang.IllegalArgumentException: Invalid character found in method name [0x160x030x010x020x000x010x000x010xfc0x030x030xe50x7f0xe7J0xf8<0xf10x1b0xd10xaa0xa70x94i^FOIA,i0xe70x84B0x1dH0x11B0x0a;qo0x9f ]. HTTP method names must be tokens
-	at org.apache.coyote.http11.Http11InputBuffer.parseRequestLine(Http11InputBuffer.java:409) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:270) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1743) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.39.jar:10.1.39]
-	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+I also resolved the deployment related issues of other feds team members.
 
 
