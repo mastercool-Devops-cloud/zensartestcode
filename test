@@ -49,12 +49,22 @@ Geneos monitoring.
 Setting up ActiveMQ on UAT environments.
 
 Configuring GitLab and supporting the migration from GitLab to GitHub.
----------------------------------
-Share your experience of working in your project(s)/account(s)/role(s) etc.*
 
 For the FEDS Simplification initiative, conducted a successful POC for the NBFI client, converting legacy database procedures into modular microservices APIs. Demonstrated the solution to the client and received appreciation for the effort.
 
 Supported the FED Dashboard team by resolving configuration-related issues and contributing to end-to-end implementation, from development to deployment, across both non-prod and prod environments.
-
+----------------------------
 Share your experience of working in your project(s)/account(s)/role(s) etc.*
+In my current role, I have been extensively involved in developing and enhancing microservices-based applications using Spring Boot 3.x. My contributions span across various phases of the software development lifecycle including design, development, testing, deployment, and monitoring.
 
+As part of the FEDS Simplification project, I played a critical role in driving technical solutions from the ground up. This included creating low-level designs, participating in architectural discussions with stakeholders, and addressing technology choices, risks, and implementation strategies. I developed multiple reusable modules to streamline inter-service communication and improve maintainability.
+
+I also worked on setting up secure communication channels using Mutual TLS (mTLS) and implemented centralized configuration management through Spring Cloud Config Server, which pulled configurations from a GitHub repository. Logging and monitoring were key aspects of the project, and I contributed by creating custom logging modules using filter concepts and developing health monitoring scripts integrated with Geneos.
+
+In terms of DevOps and deployment, I set up CI/CD pipelines for new GitHub repositories and worked hands-on with Octopus Deploy for application releases. I have also supported infrastructure configurations such as setting up ActiveMQ and GitLab in UAT environments, and contributed to the migration from GitLab to GitHub.
+
+One of my key achievements includes delivering a Proof of Concept (POC) for the NBFI client, where I successfully converted complex database procedures into modular microservices APIs. The solution was well-received and appreciated by the client.
+
+Additionally, I collaborated with the FED Dashboard team to resolve critical issues and enhance configuration workflows across development, UAT, and production environments, ensuring smooth end-to-end delivery.
+
+Overall, my role has been a mix of backend development, infrastructure setup, DevOps, and client engagement, contributing to the success and scalability of enterprise-level microservices solutions.
