@@ -1,9 +1,271 @@
-Question 11
+//String is anagram or not using java stream api
 
-Points
-1
-Which of the following gases is NOT considered a greenhouse gas?
-Methane (CH₃)
-Nitrous oxide (N₂O)
-Oxygen (O₂)
-Carbon dioxide (CO₂)
+public class AnagramChecker {
+    public static void main(String[] args) {
+        String str1 = "Listen";
+        String str2 = "Silent";
+
+        boolean isAnagram = isAnagram(str1, str2);
+        System.out.println("Is anagram? " + isAnagram);
+    }
+
+    public static boolean isAnagram(String s1, String s2) {
+        String normalized1 = s1.replaceAll("\\s+", "").toLowerCase();
+        String normalized2 = s2.replaceAll("\\s+", "").toLowerCase();
+
+        String sorted1 = normalized1.chars()
+            .sorted()
+            .mapToObj(c -> String.valueOf((char) c))
+            .collect(Collectors.joining());
+	//OR
+		String sorted1 = s1.toLowerCase().chars()
+			.sorted()
+			.collect(StringBuilder::new, ::StringBuilder::appendCodePoint , StringBuilder::append).toString;
+
+        String sorted2 = normalized2.chars()
+            .sorted()
+            .mapToObj(c -> String.valueOf((char) c))
+            .collect(Collectors.joining());
+			
+	//OR
+		String sorted2 = s2.toLowerCase().chars()
+			.sorted()
+			.collect(StringBuilder::new, ::StringBuilder::appendCodePoint , StringBuilder::append).toString;
+
+
+        return sorted1.equals(sorted2);
+    }
+}
+
+---------------------------------------------------
+//String is Panagram or not using java stream api
+public class PangramChecker {
+    public static void main(String[] args) {
+        String sentence = "The quick brown fox jumps over the lazy dog";
+
+        boolean isPangram = sentence.toLowerCase()
+            .chars()
+            .filter(Character::isLetter)
+            .mapToObj(c -> (char) c)
+            .collect(Collectors.toSet())
+            .size() == 26;
+
+        System.out.println("Is pangram? " + isPangram);
+    }
+}
+
+-----------------------------------------------------
+using java stream api to print number of vowels and consonants in String
+public class VowelConsonantCounter {
+    public static void main(String[] args) {
+        String input = "Hello World";
+
+        Set<Character> vowels = Set.of('a', 'e', 'i', 'o', 'u');
+
+        long vowelCount = input.toLowerCase()
+            .chars()
+            .filter(Character::isLetter)
+            .mapToObj(c -> (char) c)
+            .filter(vowels::contains)
+            .count();
+
+        long consonantCount = input.toLowerCase()
+            .chars()
+            .filter(Character::isLetter)
+            .mapToObj(c -> (char) c)
+            .filter(c -> !vowels.contains(c))
+            .count();
+
+        System.out.println("Vowels: " + vowelCount);
+        System.out.println("Consonants: " + consonantCount);
+    }
+	----------------------------------------------
+	
+	//using java stream api to print reverse of a string?
+	
+	public class ReverseStringStream {
+    public static void main(String[] args) {
+        String input = "hello world";
+
+        String reversed = IntStream.rangeClosed(1, input.length())
+            .mapToObj(i -> input.charAt(input.length() - i))
+            .map(String::valueOf)
+            .collect(Collectors.joining());
+
+        System.out.println("Reversed: " + reversed);
+    }
+}
+
+-----------------------------------------------------
+// using java stream api to check string is palindrome or not?
+public class PalindromeChecker {
+    public static void main(String[] args) {
+        String input = "Madam";
+
+        boolean isPalindrome = isPalindrome(input);
+        System.out.println("Is palindrome? " + isPalindrome);
+    }
+
+    public static boolean isPalindrome(String str) {
+        String normalized = str.replaceAll("\\s+", "").toLowerCase();
+
+        String reversed = IntStream.rangeClosed(1, normalized.length())
+            .mapToObj(i -> normalized.charAt(normalized.length() - i))
+            .map(String::valueOf)
+            .collect(Collectors.joining());
+
+        return normalized.equals(reversed);
+    }
+}
+-------------------------------------------------------
+//check a given number is Palindrome or not using Java8 Streams
+public class NumberPalindromeChecker {
+    public static void main(String[] args) {
+        int number = 12321;
+
+        boolean isPalindrome = isPalindrome(number);
+        System.out.println("Is palindrome? " + isPalindrome);
+    }
+
+    public static boolean isPalindrome(int number) {
+        String numStr = String.valueOf(number);
+
+        String reversed = IntStream.rangeClosed(1, numStr.length())
+            .mapToObj(i -> numStr.charAt(numStr.length() - i))
+            .map(String::valueOf)
+            .collect(Collectors.joining());
+
+        return numStr.equals(reversed);
+    }
+}
+----------------------------------------------------
+//ind missing numbers in an array using Stream API
+public class MissingNumbersFinder {
+    public static void main(String[] args) {
+        int[] inputArray = {1, 2, 4, 6, 7, 10}; // Example: missing 3, 5, 8, 9
+        int min = Arrays.stream(inputArray).min().orElse(0);
+        int max = Arrays.stream(inputArray).max().orElse(0);
+
+        Set<Integer> numberSet = Arrays.stream(inputArray)
+            .boxed()
+            .collect(Collectors.toSet());
+
+        System.out.println("Missing numbers:");
+        IntStream.rangeClosed(min, max)
+            .filter(i -> !numberSet.contains(i))
+            .forEach(System.out::println);
+    }
+}
+
+traditional logic
+for(int i=0; i<IntArray.length+1; i++){
+	if(!set.contains(i))
+		System.out.println("Missing number-:"+i);
+	
+}
+
+-----------------------------------------
+//All Substrings Using Java Streams
+public class AllSubstrings {
+    public static void main(String[] args) {
+        String input = "abc";
+
+        System.out.println("All substrings:");
+        IntStream.range(0, input.length())
+            .forEach(start ->
+                IntStream.rangeClosed(start + 1, input.length())
+                    .mapToObj(end -> input.substring(start, end))
+                    .forEach(System.out::println)
+            );
+    }
+}
+
+-----------------------------------------
+//check whether two strings are rotations of each other using Java Stream AP
+public class StringRotationChecker {
+    public static void main(String[] args) {
+        String str1 = "abcd";
+        String str2 = "cdab";
+
+        boolean isRotation = isRotation(str1, str2);
+        System.out.println("Are rotations? " + isRotation);
+    }
+
+    public static boolean isRotation(String s1, String s2) {
+        if (s1.length() != s2.length()) return false;
+
+        String concatenated = s1 + s1;
+
+        // Check if s2 is a substring of concatenated using Stream
+        return IntStream.rangeClosed(0, concatenated.length() - s2.length())
+            .anyMatch(i -> concatenated.substring(i, i + s2.length()).equals(s2));
+    }
+}
+-----------------------------------------------
+//List All Prime Numbers in a Range
+public class PrimeInRange {
+    public static void main(String[] args) {
+        int start = 1;
+        int end = 50;
+
+        System.out.println("Prime numbers from " + start + " to " + end + ":");
+
+        IntStream.rangeClosed(start, end)
+            .filter(PrimeInRange::isPrime)
+            .forEach(System.out::println);
+    }
+
+    // Helper method to check if a number is prime
+    public static boolean isPrime(int number) {
+        if (number <= 1) return false;
+
+        return IntStream.rangeClosed(2, (int) Math.sqrt(number))
+            .noneMatch(i -> number % i == 0);
+    }
+}
+//Remove an Element from Array Using Java 8 Strea
+public class RemoveElementFromArray {
+    public static void main(String[] args) {
+        int[] arr = {10, 20, 30, 40, 50};
+        int elementToRemove = 30;
+
+        int[] result = Arrays.stream(arr)
+                .filter(e -> e != elementToRemove)
+                .toArray();
+
+        System.out.println("Original: " + Arrays.toString(arr));
+        System.out.println("After removal: " + Arrays.toString(result));
+    }
+}
+
+----------------------------------------------
+// How to delete an element from Array in Java using java 8 in below string
+public class RemoveStringFromArray {
+    public static void main(String[] args) {
+        String[] fruits = {"banana", "orange", "grapes", "apple"};
+        String toRemove = "grapes";
+
+        String[] result = Arrays.stream(fruits)
+                .filter(fruit -> !fruit.equals(toRemove))
+                .toArray(String[]::new);
+
+        System.out.println("Original: " + Arrays.toString(fruits));
+        System.out.println("After removal: " + Arrays.toString(result));
+    }
+}
+--------------------------------------------
+//Java 8 Program to Find Repeating Elements
+public class RepeatingElements {
+    public static void main(String[] args) {
+        Integer[] arr = {1, 2, 3, 4, 2, 5, 1, 6, 7, 3, 3};
+
+        List<Integer> repeating = Arrays.stream(arr)
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+            .entrySet().stream()
+            .filter(entry -> entry.getValue() > 1)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+
+        System.out.println("Repeating elements: " + repeating);
+    }
+}
