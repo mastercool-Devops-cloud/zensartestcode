@@ -636,3 +636,26 @@ class Employee
                 +", Salary : "+salary;
     }
 }
+Collect all names that start with Letter R Return a Map that Uses the last letter from the name as Key and the actual name as a value 
+List<String> names = Arrays.asList("John", "Smith", "Jose", "Rizal", "Rebecca", "Robert", "Ruiz", "Pikachu");
+ 
+Output: {l=Rizal, a=Rebecca, t=Robert, z=Ruiz}
+ 
+ 
+ 
+Department table 
+dept_id	dept_name
+1	HR
+2	Engineering
+3	Marketing
+ 
+Employee Table 
+emp_id	emp_name	salary	dept_id
+101	Alice	60000	1
+103	Charlie	80000	2
+104	David	55000	3
+105	Eve	NULL	3
+106	Frank	80000	1
+ 
+ 
+Find Highest Paid Employees per Department, should include the employee's name, their salary, and the name of the department they belong to
