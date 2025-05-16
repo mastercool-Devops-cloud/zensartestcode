@@ -1,97 +1,10 @@
-package com.example.config;
-
-import com.example.filter.RequestLogFilter;
-import com.example.filter.ResponseLogFilter;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-public class LoggingFilterConfig {
-
-    private final ApplicationProperties applicationProperties;
-
-    public LoggingFilterConfig(ApplicationProperties applicationProperties) {
-        this.applicationProperties = applicationProperties;
-    }
-
-    @Bean
-    public RequestLogFilter requestLogFilter() {
-        String applicationName = applicationProperties.getApplication();  // ✅ Fetch application name
-        return new RequestLogFilter(applicationName);
-    }
-
-    @Bean
-    public ResponseLogFilter responseLogFilter() {
-        return new ResponseLogFilter();
-    }
-}
------------------------------------
-package com.example.filter;
-
-import com.example.logging.util.HttpRequestLogHelper;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Component;
-
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-
-@Log4j2
-public class RequestLogFilter implements Filter {
-
-    private final String applicationName;
-
-    // ✅ Constructor to receive application name
-    public RequestLogFilter(String applicationName) {
-        this.applicationName = applicationName;
-    }
-
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-        // Initialization logic, if needed
-    }
-
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        if (request instanceof HttpServletRequest) {
-            HttpServletRequest httpRequest = (HttpServletRequest) request;
-
-            // ✅ Log the request with the application name
-            HttpRequestLogHelper.logRequest(httpRequest, applicationName);
-
-            // ✅ Set start time for latency calculation
-            long startTime = System.currentTimeMillis();
-            httpRequest.setAttribute("startTime", startTime);
-        }
-
-        // Continue the chain
-        chain.doFilter(request, response);
-    }
-
-    @Override
-    public void destroy() {
-        // Cleanup logic, if needed
-    }
-}
-------------------------------------
-package com.example.config;
-
-import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-@Getter
-@Component
-public class ApplicationProperties {
-
-    @Value("${application.name}")
-    private String application;
-}
------------------------------------------
-Optional<String> body = Optional.ofNullable((String) requestData.get("body"));
-Optional<String> contextId = Optional.ofNullable((String) requestData.get("contextId"));
-Optional<String> clientIp = Optional.ofNullable((String) requestData.get("clientIp"));
-System.out.println("Body: " + body.orElse("No Body Captured"));
-System.out.println("Context ID: " + contextId.orElse("No Context ID"));
-System.out.println("Client IP: " + clientIp.orElse("No IP Found"));
+Introduction to Reactive Programming	Basics of reactive programming, Reactive Streams specification, Key concepts: Publisher, Subscriber, Subscription, Processor	Read introductory articles and watch tutorials on reactive programming, Implement basic reactive streams using Project Reactor
+Spring WebFlux Basics	Introduction to Spring WebFlux, Mono and Flux in Spring WebFlux, Creating reactive endpoints	Set up a Spring Boot project with WebFlux, Create simple reactive REST endpoints using Mono and Flux
+Advanced WebFlux Features	Handling backpressure, Error handling in reactive streams, Testing reactive applications	Implement backpressure strategies in your WebFlux application, Write tests for reactive endpoints using StepVerifier
+Integration with Databases	Reactive database access with Spring Data R2DBC, Connecting to a reactive database (e.g., PostgreSQL)	Set up a reactive database and integrate it with your WebFlux application, Perform CRUD operations using Spring Data R2DBC
+Reactive Programming Patterns	Common patterns in reactive programming, Combining multiple reactive streams, Transforming and filtering data streams	Implement examples of reactive programming patterns, Practice combining and transforming data streams
+Performance and Scalability	Optimizing reactive applications for performance, Scalability considerations in reactive systems, Monitoring and debugging reactive applications	Analyze and optimize the performance of your WebFlux application, Set up monitoring tools for reactive applications
+AWS Cloud Fundamentals	Introduction to AWS and its core services, EC2, S3, RDS basics, IAM and security best practices	Set up an AWS account and explore the console, Launch an EC2 instance and configure S3 buckets
+AWS Networking and Security	VPC, subnets, and security groups, AWS IAM roles and policies, Best practices for securing AWS resources	Configure VPC and security groups for your EC2 instance, Set up IAM roles and policies for secure access
+Introduction to Containerization	Basics of Docker and containerization, Creating Docker images and running containers, Docker Compose for multi-container applications	Install Docker and Docker Compose, Dockerize a simple Java application and run it locally
+Containerization on AWS	AWS ECS (Elastic Container Service) basics, Deploying Docker containers on AWS ECS, Introduction to AWS EKS (Elastic Kubernetes Service)	Create an ECS cluster and deploy a containerized application, Explore the basics of Kubernetes with AWS EKS
