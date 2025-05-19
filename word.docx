@@ -8,3 +8,9 @@ AWS Cloud Fundamentals	Introduction to AWS and its core services, EC2, S3, RDS b
 AWS Networking and Security	VPC, subnets, and security groups, AWS IAM roles and policies, Best practices for securing AWS resources	Configure VPC and security groups for your EC2 instance, Set up IAM roles and policies for secure access
 Introduction to Containerization	Basics of Docker and containerization, Creating Docker images and running containers, Docker Compose for multi-container applications	Install Docker and Docker Compose, Dockerize a simple Java application and run it locally
 Containerization on AWS	AWS ECS (Elastic Container Service) basics, Deploying Docker containers on AWS ECS, Introduction to AWS EKS (Elastic Kubernetes Service)	Create an ECS cluster and deploy a containerized application, Explore the basics of Kubernetes with AWS EKS
+
+
+Print only values from map in reverse order
+Find Highest Paid Employees per Department, should include the employee's name, their salary, and the name of the department they belong to
+Collect all names that start with Letter R Return a Map that Uses the last letter from the name as Key and the actual name as a value 
+"John", "Smith", "Jose", "Rizal", "Rebecca", "Robert", "Ruiz", "Pikachu"
